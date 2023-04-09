@@ -1,5 +1,5 @@
 import pandas as pd
-import tqdm
+from tqdm.auto import tqdm
 
 from transformers import pipeline
 import evaluate
@@ -36,11 +36,13 @@ def main(model: str="openai/whisper-tiny.en"):
         batch["norm_text"] = whisper_norm(esb_datasets.get_text(batch))
         return batch
 
-    esb_datasets.preprocess_datasets(normalize_fct)
+    esb_datasets.preprocess_datasets(sampling_rate=whisper_asr.feature_extractor.sampling_rate,  # type: ignore
+                                     normalize_fct=normalize_fct,
+                                     n_samples=32)
     
     wer_results = []
 
-    tbar = tqdm.tqdm(esb_datasets.items())
+    tbar = tqdm(esb_datasets.items())
     
     for dataset_name, dataset in tbar:
         tbar.set_description(f"Processing {dataset_name}")
