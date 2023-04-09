@@ -37,7 +37,10 @@ class ESB_Datasets:
                 "SPGISpeech": self.spgispeech
         })
         
-        self.filter_sequences = ["ignore time segment in scoring", ""]
+        self.filter_sequences = [
+            "ignore time segment in scoring",  # can be found in TEDLIUM for example
+            ""
+        ]
         
         self.preprocessed = False
     
