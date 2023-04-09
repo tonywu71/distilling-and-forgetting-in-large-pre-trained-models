@@ -1,3 +1,6 @@
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
 
@@ -78,9 +81,11 @@ def main(model: str="openai/whisper-tiny.en",
     print("Results:")
     print(df)
     
-    filepath = DEFAULT_OUTPUT_DIR / filename
-    df.to_csv(f"{filepath}")
     print()
+    
+    filepath = DEFAULT_OUTPUT_DIR / filename
+    filepath.parent.mkdir(exist_ok=True)
+    df.to_csv(f"{filepath}")
     print(f"Results saved to `{filepath}`.")
     
     return
