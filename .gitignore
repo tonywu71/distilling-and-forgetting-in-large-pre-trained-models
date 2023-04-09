@@ -1,4 +1,5 @@
 # Custom
+wandb/
 .DS_Store
 *.out
 

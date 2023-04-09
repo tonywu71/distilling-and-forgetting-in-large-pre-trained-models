@@ -1,5 +1,8 @@
+import typer
+
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
@@ -9,7 +12,7 @@ from tqdm.auto import tqdm
 
 from transformers import pipeline
 import evaluate
-import typer
+
 
 from dataloader.esb import ESB_Datasets
 from normalization.whisper_normalization import get_whisper_normalizer

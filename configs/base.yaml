@@ -1,4 +1,10 @@
+experiment_name: debug_0
 lang_name: english
 lang_id: en
 pretrained_model_name_or_path: openai/whisper-tiny.en
 model_dir: ./checkpoints
+batch_size: 128
+optim: adamw_hf
+learning_rate: 1.5e-3
+warmup_steps: 256
+num_train_epochs: 1  # 10
