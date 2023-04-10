@@ -18,6 +18,7 @@ from dataloader.esb import ESB_Datasets
 from normalization.whisper_normalization import get_whisper_normalizer
 
 
+from utils.initialize import initialize_env
 from utils.constants import DEFAULT_OUTPUT_DIR
 DEFAULT_OUTPUT_DIR.mkdir(exist_ok=True)
 
@@ -38,15 +39,20 @@ def main(model: str="openai/whisper-tiny.en",
     
     assert batch_size <= n_samples, "Batch size must be smaller than the number of samples."
     
+    # Initialize the environment:
+    initialize_env()
+    
+    # Load dataset:
     esb_datasets = ESB_Datasets()
     
+    # Load pipeline:
     whisper_asr = pipeline(
         task="automatic-speech-recognition",
         model=model,
         device=0  # use 1st GPU for Whisper
     )
     
-    wer_metric = evaluate.load("wer")
+    # Preprocess the datasets:
     whisper_norm = get_whisper_normalizer(whisper_asr)
     
     def normalize_fct(batch):
@@ -57,8 +63,12 @@ def main(model: str="openai/whisper-tiny.en",
                                      normalize_fct=normalize_fct,
                                      n_samples=n_samples)
     
+    # Load metric:
+    wer_metric = evaluate.load("wer")
+    
+    
+    # Loop over the datasets:
     wer_results = []
-
     tbar = tqdm(esb_datasets.items())
     
     for dataset_name, dataset in tbar:
@@ -80,6 +90,8 @@ def main(model: str="openai/whisper-tiny.en",
 
         wer_results.append(wer)
     
+    
+    # Save the results:
     df = pd.DataFrame({"Dataset": esb_datasets.keys(), "WER": wer_results})
     print("Results:")
     print(df)

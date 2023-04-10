@@ -24,6 +24,7 @@ from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.preprocessing import preprocess_dataset
 from models.callbacks import ShuffleCallback
 from evaluation.metrics import compute_wer
+from utils.initialize import initialize_env
 from utils.config import parse_yaml_config
 
 
@@ -31,6 +32,9 @@ def main(config_filepath: str):
     """
     Fine-tune the Whisper model on the LibriSpeech dataset.
     """
+    # Initialize the environment:
+    initialize_env()
+    
     config = parse_yaml_config(config_filepath)
 
     # -----------------------   W&B   -----------------------
