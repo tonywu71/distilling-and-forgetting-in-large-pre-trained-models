@@ -4,7 +4,9 @@ lang_id: en
 pretrained_model_name_or_path: openai/whisper-tiny.en
 model_dir: ./checkpoints
 batch_size: 128
-optim: adamw_hf
+data_augmentation: False
+dataset_dir: /home/tw581/rds/hpc-work/processed_data/librispeech
+optim: adamw_pytorch
 learning_rate: 1.5e-3
 warmup_steps: 256
 num_train_epochs: 1  # 10

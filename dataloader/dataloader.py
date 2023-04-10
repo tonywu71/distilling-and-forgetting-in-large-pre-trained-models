@@ -6,7 +6,7 @@ STR_TO_LOAD_FCT = {
 }
 
 
-def load_dataset_dict(dataset_name: str, **kwargs) -> dict:
+def load_dataset_dict(dataset_name: str, **kwargs) -> DatasetDict:
     """Load the dataset dictionary."""
     if dataset_name in STR_TO_LOAD_FCT:
         dataset_dict = STR_TO_LOAD_FCT[dataset_name](**kwargs)
@@ -15,15 +15,13 @@ def load_dataset_dict(dataset_name: str, **kwargs) -> dict:
     return dataset_dict
 
 
-def shuffle_dataset_dict(dataset_dict: dict, buffer_size: int=1000) -> dict:
+def shuffle_dataset_dict(dataset_dict: DatasetDict) -> DatasetDict:
     """Shuffle the dataset dictionary."""
-    for split in dataset_dict:
-        dataset_dict[split] = dataset_dict[split].shuffle(buffer_size=buffer_size).with_format("torch")
+    dataset_dict["train"] = dataset_dict["train"].shuffle()
     return dataset_dict
 
 
-def convert_dataset_dict_to_torch(dataset_dict: dict) -> dict:
+def convert_dataset_dict_to_torch(dataset_dict: DatasetDict) -> DatasetDict:
     """Convert the dataset dictionary to PyTorch format."""
-    for split in dataset_dict:
-        dataset_dict[split] = dataset_dict[split].with_format("torch")
+    dataset_dict = dataset_dict.with_format("torch")
     return dataset_dict

@@ -1,6 +1,8 @@
 from typing import Callable, Optional
 from datasets import load_dataset, Audio
 
+from utils.constants import DEFAULT_LABEL_COL
+
 
 class ESB_Datasets:
     """
@@ -100,6 +102,8 @@ class ESB_Datasets:
             return sample["normalized_text"]
         elif "transcript" in sample:
             return sample["transcript"]
+        elif DEFAULT_LABEL_COL in sample:
+            return sample[DEFAULT_LABEL_COL]
         else:
             raise ValueError(f"Sample: {sample.keys()} has no transcript.")
 

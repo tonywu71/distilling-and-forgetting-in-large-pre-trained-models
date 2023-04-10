@@ -1,66 +1,70 @@
+from regex import F
 import typer
 
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
 
-from dataclasses import asdict
+from utils.initialize import initialize_env, print_envs
+initialize_env()
 
+from dataclasses import asdict
+from pathlib import Path
+
+from datasets import load_from_disk
 from transformers import (WhisperForConditionalGeneration,
                           WhisperProcessor,
                           Seq2SeqTrainingArguments,
                           Seq2SeqTrainer,
                           WhisperTokenizer,
                           WhisperFeatureExtractor)
+from accelerate import Accelerator
 
 import wandb
-
 
 from dataloader.dataloader import convert_dataset_dict_to_torch, load_dataset_dict, shuffle_dataset_dict
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.preprocessing import preprocess_dataset
 from models.callbacks import ShuffleCallback
 from evaluation.metrics import compute_wer
-from utils.initialize import initialize_env
-from utils.config import parse_yaml_config
+from utils.constants import WANDB_PROJECT
+from utils.config import load_yaml_config
 
 
 def main(config_filepath: str):
     """
     Fine-tune the Whisper model on the LibriSpeech dataset.
     """
-    # Initialize the environment:
-    initialize_env()
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    print("\n-----------------------\n")
     
-    config = parse_yaml_config(config_filepath)
-
+    # Print environment variables:
+    print("Environment variables:")
+    print_envs()
+    print("\n-----------------------\n")
+    
+    # Load config:
+    config = load_yaml_config(config_filepath)
+    print("Config:", config)
+    print("\n-----------------------\n")    
+    
+    
     # -----------------------   W&B   -----------------------
     wandb.login()
-
-    # initialize tracking the experiment
-    wandb.init(project="whisper_finetuning",
-               job_type="fine-tuning",
+    wandb.init(project=WANDB_PROJECT,
+               job_type="whisper_finetuning",
                name=config.experiment_name,
                config=asdict(config))
-
+    
     
     # ----------------------   Main   ----------------------
 
-    # Load feature extractor, tokenizer and processor
-    feature_extractor = WhisperFeatureExtractor.from_pretrained(
-        config.pretrained_model_name_or_path
-    )
-    tokenizer = WhisperTokenizer.from_pretrained(
-        pretrained_model_name_or_path=config.pretrained_model_name_or_path,
-        language=config.lang_name,
-        task="transcribe"
-    )
-
+    # Load processor (contains both tokenizer and feature extractor)
     processor = WhisperProcessor.from_pretrained(
         config.pretrained_model_name_or_path,
+        language=config.lang_name,
         task="transcribe"
     )
 
@@ -69,15 +73,33 @@ def main(config_filepath: str):
 
     
     # Load the dataset and preprocess it:
-    dataset_dict = load_dataset_dict(dataset_name="librispeech")
+    if Path(config.dataset_dir).exists():
+        print(f"Previously saved dataset found at `{config.dataset_dir}`. Loading from disk...")
+        dataset_dict = load_from_disk(config.dataset_dir)
+    else:
+        print(f"Dataset not found at `{config.dataset_dir}`. Extracting features from raw dataset...")
+        dataset_dict = load_dataset_dict(dataset_name="librispeech")
+        dataset_dict = preprocess_dataset(dataset_dict,
+                                          tokenizer=processor.tokenizer,  # type: ignore
+                                          feature_extractor=processor.feature_extractor,  # type: ignore
+                                          augment=config.data_augmentation)
+        dataset_dict = shuffle_dataset_dict(dataset_dict)
+        dataset_dict = convert_dataset_dict_to_torch(dataset_dict)
+        Path(config.dataset_dir).mkdir(parents=True, exist_ok=True)
+        dataset_dict.save_to_disk(config.dataset_dir)
+        print(f"Dataset saved to `{config.dataset_dir}`. It will be loaded from disk next time.")
     
-    dataset_dict = preprocess_dataset(dataset_dict, feature_extractor=feature_extractor)
-    dataset_dict = shuffle_dataset_dict(dataset_dict)
-    dataset_dict = convert_dataset_dict_to_torch(dataset_dict)
-    
+    print("DONE")
+    return
     
     # Initialize the model from a pretrained checkpoint:
-    model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path)
+    # Note: In Whisper, the decoder is conditioned on both the source and target sentences,
+    #       and the decoder inputs are the concatenation of the target sentence and a special
+    #       separator token. By default, the `forced_decoder_ids` attribute is set to a tensor
+    #       containing the target sentence and the separator token. This tells the model to
+    #       always generate the target sentence and the separator token before starting the
+    #       decoding process.
+    model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path).to(device)  # type: ignore
     model.config.forced_decoder_ids = None  # type: ignore
     model.config.suppress_tokens = []  # type: ignore
     model.config.use_cache = False  # type: ignore
@@ -99,8 +121,6 @@ def main(config_filepath: str):
         # remove_unused_columns=False, 
     )
     
-    callbacks = [ShuffleCallback()]
-
     trainer = Seq2SeqTrainer(
         args=training_args,
         model=model,  # type: ignore
@@ -108,7 +128,7 @@ def main(config_filepath: str):
         eval_dataset=dataset_dict["test"],
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
-        tokenizer=tokenizer,
+        tokenizer=processor.tokenizer,  # type: ignore
         callbacks=callbacks  # type: ignore
     )
     

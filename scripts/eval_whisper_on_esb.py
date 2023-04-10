@@ -3,7 +3,6 @@ import typer
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
 
@@ -13,14 +12,10 @@ from tqdm.auto import tqdm
 from transformers import pipeline
 import evaluate
 
-
 from dataloader.esb import ESB_Datasets
 from normalization.whisper_normalization import get_whisper_normalizer
 
-
-from utils.initialize import initialize_env
 from utils.constants import DEFAULT_OUTPUT_DIR
-DEFAULT_OUTPUT_DIR.mkdir(exist_ok=True)
 
 
 def gen_from_dataset(dataset):
@@ -36,14 +31,11 @@ def main(model: str="openai/whisper-tiny.en",
     """
     Evaluate the whisper model on the ESB benchmark.
     """
-    
     assert batch_size <= n_samples, "Batch size must be smaller than the number of samples."
-    
-    # Initialize the environment:
-    initialize_env()
     
     # Load dataset:
     esb_datasets = ESB_Datasets()
+    
     
     # Load pipeline:
     whisper_asr = pipeline(
@@ -51,6 +43,7 @@ def main(model: str="openai/whisper-tiny.en",
         model=model,
         device=0  # use 1st GPU for Whisper
     )
+    
     
     # Preprocess the datasets:
     whisper_norm = get_whisper_normalizer(whisper_asr)
@@ -62,6 +55,7 @@ def main(model: str="openai/whisper-tiny.en",
     esb_datasets.preprocess_datasets(sampling_rate=whisper_asr.feature_extractor.sampling_rate,  # type: ignore
                                      normalize_fct=normalize_fct,
                                      n_samples=n_samples)
+    
     
     # Load metric:
     wer_metric = evaluate.load("wer")
@@ -99,7 +93,7 @@ def main(model: str="openai/whisper-tiny.en",
     print()
     
     filepath = DEFAULT_OUTPUT_DIR / filename
-    filepath.parent.mkdir(exist_ok=True)
+    filepath.parent.mkdir(exist_ok=True, parents=True)
     df.to_csv(f"{filepath}")
     print(f"Results saved to `{filepath}`.")
     
