@@ -24,7 +24,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             {"input_ids": self.processor.tokenizer.truncate_sequences(feature["labels"])[0]} for feature in features]  # type: ignore
         
         # Pad the labels to max length:
-        labels_batch = self.processor.tokenizer.pad(label_features, return_tensors="pt",)  # type: ignore
+        labels_batch = self.processor.tokenizer.pad(label_features, return_tensors="pt")  # type: ignore
 
         # Replace padding with correct token for correct loss computation:
         labels = labels_batch["input_ids"].masked_fill(labels_batch.attention_mask.ne(1), PADDING_IDX)

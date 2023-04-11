@@ -1,12 +1,20 @@
-experiment_name: debug_0
+experiment_name: train-3
 lang_name: english
 lang_id: en
 pretrained_model_name_or_path: openai/whisper-tiny.en
 model_dir: ./checkpoints
-batch_size: 128
+batch_size: 16
+gradient_accumulation_steps: 2
+gradient_checkpointing: True
 data_augmentation: False
 dataset_dir: /home/tw581/rds/hpc-work/processed_data/librispeech
-optim: adamw_pytorch
-learning_rate: 1.5e-3
+optim: adamw_hf
+learning_rate: 1e-4
 warmup_steps: 256
-num_train_epochs: 1  # 10
+eval_steps: 250
+generation_num_beams: 3
+logging_steps: 100
+save_steps: 250
+save_total_limit: 2
+num_train_epochs: 5
+early_stopping_patience: 5

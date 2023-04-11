@@ -4,7 +4,7 @@ from transformers import WhisperProcessor
 from utils.constants import PADDING_IDX
 
 
-def compute_wer(pred, processor: WhisperProcessor, normalize: bool=True) -> Dict[str, float]:
+def compute_wer_fct(pred, processor: WhisperProcessor, normalize: bool=True) -> Dict[str, float]:
     """Compute the WER metric in percent for the given predictions and labels."""
     
     metric = evaluate.load("wer")
