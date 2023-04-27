@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/finetune_whisper_on_librispeech.py configs/librispeech-base.yaml >> $LOG 2> $ERR
+python scripts/finetune_whisper_on_librispeech.py configs/librispeech-debug.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

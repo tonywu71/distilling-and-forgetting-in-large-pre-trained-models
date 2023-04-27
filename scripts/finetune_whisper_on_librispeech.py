@@ -1,6 +1,8 @@
 import typer
 
 import os, sys
+import shutil
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
@@ -60,7 +62,7 @@ def main(config_filepath: str):
     # Print config:
     print(f"Config loaded from `{config_filepath}`:")
     pprint(config)
-    print("\n-----------------------\n")    
+    print("\n-----------------------\n")
     
     
     # ----------------------   Main   ----------------------
@@ -77,21 +79,39 @@ def main(config_filepath: str):
 
     
     # Load the dataset and preprocess it:
-    if Path(config.dataset_dir).exists():
-        print(f"Previously saved dataset found at `{config.dataset_dir}`. Loading from disk...")
-        dataset_dict = load_from_disk(config.dataset_dir)
+    assert Path(os.environ["PREPROCESSED_DATASETS_DIR"]).exists(), \
+        f"Preprocessed datasets directory `{os.environ['PREPROCESSED_DATASETS_DIR']}` not found."
+    
+    dataset_dir = str(Path(os.environ["PREPROCESSED_DATASETS_DIR"]) / config.dataset_name)
+    
+    if not config.force_reprocess_dataset and Path(dataset_dir).exists():
+        print(f"Previously proprocessed dataset found at `{dataset_dir}`. Loading from disk...")
+        dataset_dict = load_from_disk(dataset_dir)
     else:
-        print(f"Dataset not found at `{config.dataset_dir}`. Extracting features from raw dataset...")
-        dataset_dict = load_dataset_dict(dataset_name="librispeech")
-        dataset_dict = preprocess_dataset(dataset_dict,
-                                          tokenizer=processor.tokenizer,  # type: ignore
-                                          feature_extractor=processor.feature_extractor,  # type: ignore
-                                          augment=config.data_augmentation)
+        if config.force_reprocess_dataset:
+            print(f"`force_reprocess_dataset` was set to `True` in the config file. Reprocessing dataset from scratch...")
+            if Path(dataset_dir).exists():
+                print(f"Deleting previously preprocessed dataset at `{dataset_dir}`...")
+                shutil.rmtree(dataset_dir) 
+        else:
+            print(f"Preprocessed dataset not found at `{dataset_dir}`. Preprocessing from scratch...")
+        print(f"Loading raw dataset `{config.dataset_name}` from Huggingface...")
+        dataset_dict = load_dataset_dict(dataset_name=config.dataset_name)
+        
+        print(f"Preprocessing dataset `{config.dataset_name}`...")
+        dataset_dict = preprocess_dataset(dataset_dict,  # type: ignore
+                                        tokenizer=processor.tokenizer,  # type: ignore
+                                        feature_extractor=processor.feature_extractor,  # type: ignore
+                                        augment=config.data_augmentation)
         dataset_dict = shuffle_dataset_dict(dataset_dict)
         dataset_dict = convert_dataset_dict_to_torch(dataset_dict)
-        Path(config.dataset_dir).mkdir(parents=True, exist_ok=True)
-        dataset_dict.save_to_disk(config.dataset_dir)
-        print(f"Dataset saved to `{config.dataset_dir}`. It will be loaded from disk next time.")
+        
+        Path(dataset_dir).mkdir(parents=True, exist_ok=True)
+        dataset_dict.save_to_disk(dataset_dir)
+        print(f"Preprocessed dataset saved to `{dataset_dir}`. It will be loaded from disk next time.")
+    
+    
+    print("\n-----------------------\n")
     
     
     # Initialize the model from a pretrained checkpoint:
@@ -101,12 +121,15 @@ def main(config_filepath: str):
     #       containing the target sentence and the separator token. This tells the model to
     #       always generate the target sentence and the separator token before starting the
     #       decoding process.
+    print(f"Loading pretrained model `{config.pretrained_model_name_or_path}`...")
     model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path).to(device)  # type: ignore
     model.config.forced_decoder_ids = None  # type: ignore
     model.config.suppress_tokens = []  # type: ignore
     model.config.use_cache = False  # type: ignore
     
     # Prepare training:
+    Path(config.model_dir).mkdir(parents=True, exist_ok=True)
+    
     training_args = Seq2SeqTrainingArguments(
         output_dir=config.model_dir,
         do_eval=False,  # DEBUG
@@ -126,7 +149,7 @@ def main(config_filepath: str):
         logging_steps=config.eval_steps,
         save_strategy="steps",
         save_steps=config.save_steps,
-        save_total_limit=config.save_total_limit,
+        save_total_limit=config.early_stopping_patience,
         predict_with_generate=True,
         generation_max_length=GEN_MAX_LENGTH,
         load_best_model_at_end=True,

@@ -3,7 +3,7 @@ from typing import List, Dict, Union
 import torch
 from transformers import WhisperProcessor
 
-from utils.constants import PADDING_IDX
+from utils.constants import DEFAULT_LABEL_TOKENIZED_COL, PADDING_IDX
 
 
 class DataCollatorSpeechSeq2SeqWithPadding:
@@ -21,7 +21,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 
         # Get the tokenized label sequences:
         label_features = [
-            {"input_ids": self.processor.tokenizer.truncate_sequences(feature["labels"])[0]} for feature in features]  # type: ignore
+            {"input_ids": self.processor.tokenizer.truncate_sequences(feature[DEFAULT_LABEL_TOKENIZED_COL])[0]} for feature in features]  # type: ignore
         
         # Pad the labels to max length:
         labels_batch = self.processor.tokenizer.pad(label_features, return_tensors="pt")  # type: ignore
@@ -34,6 +34,6 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         if (labels[:, 0] == self.processor.tokenizer.bos_token_id).all().cpu().item():  # type: ignore
             labels = labels[:, 1:]
 
-        batch["labels"] = labels
+        batch[DEFAULT_LABEL_TOKENIZED_COL] = labels
 
         return batch

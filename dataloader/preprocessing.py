@@ -4,8 +4,9 @@ from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift
 
 from transformers import WhisperFeatureExtractor, WhisperTokenizer
 from datasets import Audio, Dataset, DatasetDict
+from normalization.whisper_normalization import get_whisper_normalizer
 
-from utils.constants import DEFAULT_LABEL_COL
+from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL
 
 
 # Audio augmentation object to map over the dataset:
@@ -56,7 +57,13 @@ def normalize_sentence(sentence: str) -> str:
 def prepare_dataset_fct(dataset: dict,
                         tokenizer: WhisperTokenizer,
                         feature_extractor: WhisperFeatureExtractor) -> dict:
-    """utility to create features for a dataset"""
+    """
+    Utility to create features for a dataset.
+    The dataset is assumed to have the following columns:
+    - audio: Audio
+    - 
+    - DEFAULT_LABEL_COL
+    """
     
     audio = dataset["audio"]
     
@@ -66,10 +73,10 @@ def prepare_dataset_fct(dataset: dict,
         audio["array"], sampling_rate=feature_extractor.sampling_rate).input_features[0]  # drop batch dimension
     
     # Normalize the transcription:
-    sentences = normalize_sentence(dataset[DEFAULT_LABEL_COL])
+    sentences = normalize_sentence(dataset[DEFAULT_LABEL_STR_COL])
     
     # Encode from target text to label ids:
-    dataset["labels"] = tokenizer(sentences, truncation=True).input_ids
+    dataset[DEFAULT_LABEL_TOKENIZED_COL] = tokenizer(sentences, truncation=True).input_ids
     
     return dataset
 
@@ -86,7 +93,14 @@ def preprocess_dataset(dataset_dict: DatasetDict,
                        tokenizer: WhisperTokenizer,
                        feature_extractor: WhisperFeatureExtractor,
                        augment: bool=False) -> DatasetDict:
-    """Preprocess the dataset."""
+    """
+    Preprocess the dataset:
+    - Extract audio from the dataset
+    - Augment the dataset (optional)
+    - Normalize the labels
+    - Filter empty and short sentences
+    - Prepare the dataset (extract features and tokenize labels)
+    """
     
     for split in dataset_dict:
         dataset_dict[split] = extract_audio(dataset_dict[split],
@@ -97,8 +111,21 @@ def preprocess_dataset(dataset_dict: DatasetDict,
             augment_dataset = partial(augment_dataset_fct, sample_rate=feature_extractor.sampling_rate)
             dataset_dict[split] = dataset_dict[split].map(augment_dataset)
         
-        prepare_dataset = partial(prepare_dataset_fct, tokenizer=tokenizer, feature_extractor=feature_extractor)
-        dataset_dict[split] = dataset_dict[split].filter(filter_empty_strings, input_columns=[DEFAULT_LABEL_COL])\
+        # Apply Whisper's normalization to the labels:
+        # This operation must be done before the dataset is prepared as the
+        # tokenizer should be applied to the normalized text.
+        whisper_norm = get_whisper_normalizer(tokenizer)
+        
+        def normalize_fct(batch):
+            batch[DEFAULT_LABEL_STR_COL] = whisper_norm(batch[DEFAULT_LABEL_STR_COL])
+            return batch
+
+        dataset_dict[split] = dataset_dict[split].map(normalize_fct)
+        
+        prepare_dataset = partial(prepare_dataset_fct,
+                                  tokenizer=tokenizer,
+                                  feature_extractor=feature_extractor)
+        dataset_dict[split] = dataset_dict[split].filter(filter_empty_strings, input_columns=[DEFAULT_LABEL_STR_COL])\
                                                  .map(prepare_dataset)
 
     return dataset_dict

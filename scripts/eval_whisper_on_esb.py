@@ -46,7 +46,7 @@ def main(model: str="openai/whisper-tiny.en",
     
     
     # Preprocess the datasets:
-    whisper_norm = get_whisper_normalizer(whisper_asr)
+    whisper_norm = get_whisper_normalizer(whisper_asr.tokenizer)  # type: ignore
     
     def normalize_fct(batch):
         batch["norm_text"] = whisper_norm(esb_datasets.get_text(batch))

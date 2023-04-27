@@ -1,8 +1,10 @@
-from dataloader.dataloader_custom import *
+from datasets import DatasetDict
+from dataloader.dataloader_custom import load_librispeech, load_librispeech_dummy
 
 
 STR_TO_LOAD_FCT = {
-    "librispeech": load_librispeech
+    "librispeech": load_librispeech,
+    "librispeech_dummy": load_librispeech_dummy
 }
 
 
