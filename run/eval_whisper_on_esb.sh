@@ -51,7 +51,10 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper_on_esb.py >> $LOG 2> $ERR
+python scripts/eval_whisper_on_esb.py openai/whisper-tiny.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_esb.py openai/whisper-base.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_esb.py openai/whisper-small.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_esb.py openai/whisper-medium.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
 
 #! #############################################
 

@@ -18,7 +18,7 @@ def rename_label_col(dataset_dict: DatasetDict,
     return dataset_dict
 
 
-def load_librispeech_dummy(**kwargs) -> DatasetDict:
+def load_librispeech_dummy() -> DatasetDict:
     """DEBUG ONLY. Load the LibriSpeech dummy dataset.
     Important note: Because the dummy dataset only has 1 split, we will use it for both train and test."""
     
@@ -34,11 +34,11 @@ def load_librispeech_dummy(**kwargs) -> DatasetDict:
     return dataset_dict
 
 
-def load_librispeech(**kwargs) -> DatasetDict:
+def load_librispeech(train_split: str="train.100") -> DatasetDict:
     """Load the LibriSpeech dataset."""
     
     dataset_dict = {}
-    dataset_dict["train"] = load_dataset("librispeech_asr", name="clean", split="train.100")
+    dataset_dict["train"] = load_dataset("librispeech_asr", name="clean", split=train_split)
     dataset_dict["test"] = load_dataset("librispeech_asr", name="clean", split="test")
     dataset_dict = DatasetDict(dataset_dict)
     

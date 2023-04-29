@@ -11,13 +11,14 @@ def compute_wer_fct(pred, processor: WhisperProcessor, normalize: bool=True) -> 
     Note: Setting `normalize` to `True` (default) will use the Whisper text normalizer.
     """
     
-    metric = evaluate.load("wer")
+    wer_metric = evaluate.load("wer")
     
     pred_ids = pred.predictions
     label_ids = pred.label_ids
 
-    # Replace the padding index with the pad token id so that the metric can be computed correctly:
-    label_ids[label_ids == PADDING_IDX] = processor.tokenizer.pad_token_id  # type: ignore
+    # Replace the padding index with the pad token id to undo the step we applied
+    # in the data collator to ignore padded tokens correctly in the loss:
+    label_ids[label_ids==PADDING_IDX] = processor.tokenizer.pad_token_id  # type: ignore
     
     # Decode the predictions:
     pred_str = processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=True, normalize=normalize)  # type: ignore
@@ -26,6 +27,6 @@ def compute_wer_fct(pred, processor: WhisperProcessor, normalize: bool=True) -> 
     label_str = processor.tokenizer.batch_decode(label_ids, skip_special_tokens=True, normalize=normalize)  # type: ignore
 
     # Compute the WER in percent:
-    wer = 100 * metric.compute(predictions=pred_str, references=label_str)  # type: ignore
+    wer = 100 * wer_metric.compute(references=label_str, predictions=pred_str)  # type: ignore
 
     return {"wer": wer}

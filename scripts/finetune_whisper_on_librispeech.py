@@ -1,9 +1,11 @@
 import typer
 
 import os, sys
-import shutil
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from typing import List
+import shutil
 
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
@@ -21,16 +23,18 @@ from transformers import (WhisperForConditionalGeneration,
                           WhisperProcessor,
                           Seq2SeqTrainingArguments,
                           Seq2SeqTrainer,
-                          EarlyStoppingCallback)
+                          EarlyStoppingCallback,
+                          TrainerCallback)
 
 import wandb
 
-from dataloader.dataloader import convert_dataset_dict_to_torch, load_dataset_dict, shuffle_dataset_dict
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from dataloader.dataloader import load_dataset_dict
 from dataloader.preprocessing import preprocess_dataset
 from evaluation.metrics import compute_wer_fct
-from utils.constants import GEN_MAX_LENGTH, WANDB_PROJECT
+from utils.callbacks import WandbCustomCallback
 from utils.config import load_yaml_config
+from utils.constants import DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP, GEN_MAX_LENGTH, WANDB_PROJECT
 
 
 def main(config_filepath: str):
@@ -44,7 +48,7 @@ def main(config_filepath: str):
     # -----------------------   W&B   -----------------------
     wandb.login()
     wandb.init(project=WANDB_PROJECT,
-               job_type="whisper_finetuning",
+               job_type="finetuning",
                name=config.experiment_name,
                config=asdict(config))
     
@@ -103,8 +107,8 @@ def main(config_filepath: str):
                                         tokenizer=processor.tokenizer,  # type: ignore
                                         feature_extractor=processor.feature_extractor,  # type: ignore
                                         augment=config.data_augmentation)
-        dataset_dict = shuffle_dataset_dict(dataset_dict)
-        dataset_dict = convert_dataset_dict_to_torch(dataset_dict)
+        
+        # Note: The pytorch tensor conversation will be done in the DataCollator.
         
         Path(dataset_dir).mkdir(parents=True, exist_ok=True)
         dataset_dict.save_to_disk(dataset_dir)
@@ -132,7 +136,6 @@ def main(config_filepath: str):
     
     training_args = Seq2SeqTrainingArguments(
         output_dir=config.model_dir,
-        do_eval=False,  # DEBUG
         per_device_train_batch_size=config.batch_size,
         per_device_eval_batch_size=config.batch_size,
         gradient_accumulation_steps=config.gradient_accumulation_steps,  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-accumulation
@@ -146,6 +149,7 @@ def main(config_filepath: str):
         eval_steps=config.eval_steps,
         generation_num_beams=config.generation_num_beams,
         logging_strategy="steps",
+        logging_first_step=True,
         logging_steps=config.eval_steps,
         save_strategy="steps",
         save_steps=config.save_steps,
@@ -158,13 +162,21 @@ def main(config_filepath: str):
         report_to="wandb"  # type: ignore
     )
     
+    # Define the compute_metrics function:
     compute_wer = partial(compute_wer_fct,
                           processor=processor,
                           normalize=True)
     
-    callbacks = []
+    
+    # Define callbacks:
+    callbacks: List[TrainerCallback] = []
+    
+    # TODO: WIP
+    # callbacks.append(WandbCustomCallback(config=config, n_batches=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
+    
     if config.early_stopping_patience != -1:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))
+    
     
     trainer = Seq2SeqTrainer(
         args=training_args,
@@ -173,17 +185,19 @@ def main(config_filepath: str):
         eval_dataset=dataset_dict["test"],  # type: ignore
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
-        tokenizer=processor.tokenizer  # type: ignore
+        tokenizer=processor,  # type: ignore
+        callbacks=callbacks
     )
     
     print("Starting training...")
-    
+        
     # Train the model:
     trainer.train()
     
     print("Training finished.")
     
     wandb.finish()
+    
     return
 
 

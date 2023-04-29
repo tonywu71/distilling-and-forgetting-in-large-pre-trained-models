@@ -9,6 +9,9 @@ from normalization.whisper_normalization import get_whisper_normalizer
 from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL
 
 
+DEFAULT_NUM_PROC = 8  # see https://docs.hpc.cam.ac.uk/hpc/user-guide/a100.html#hardware
+
+
 # Audio augmentation object to map over the dataset:
 AUGMENT_WAVEFORM = Compose([
     AddGaussianNoise(min_amplitude=0.005, max_amplitude=0.015, p=0.3),
@@ -59,12 +62,7 @@ def prepare_dataset_fct(dataset: dict,
                         feature_extractor: WhisperFeatureExtractor) -> dict:
     """
     Utility to create features for a dataset.
-    The dataset is assumed to have the following columns:
-    - audio: Audio
-    - 
-    - DEFAULT_LABEL_COL
-    """
-    
+    """    
     audio = dataset["audio"]
     
     # Extract features from audio (including log-Mel input features):
@@ -72,11 +70,12 @@ def prepare_dataset_fct(dataset: dict,
     dataset["input_features"] = feature_extractor(
         audio["array"], sampling_rate=feature_extractor.sampling_rate).input_features[0]  # drop batch dimension
     
+    # --- Deprecated ---
     # Normalize the transcription:
-    sentences = normalize_sentence(dataset[DEFAULT_LABEL_STR_COL])
+    # sentences = normalize_sentence(dataset[DEFAULT_LABEL_STR_COL])
     
     # Encode from target text to label ids:
-    dataset[DEFAULT_LABEL_TOKENIZED_COL] = tokenizer(sentences, truncation=True).input_ids
+    dataset[DEFAULT_LABEL_TOKENIZED_COL] = tokenizer(dataset[DEFAULT_LABEL_STR_COL]).input_ids
     
     return dataset
 
@@ -109,7 +108,7 @@ def preprocess_dataset(dataset_dict: DatasetDict,
         
         if augment and split == "train":  # only augment the training set
             augment_dataset = partial(augment_dataset_fct, sample_rate=feature_extractor.sampling_rate)
-            dataset_dict[split] = dataset_dict[split].map(augment_dataset)
+            dataset_dict[split] = dataset_dict[split].map(augment_dataset, num_proc=DEFAULT_NUM_PROC)
         
         # Apply Whisper's normalization to the labels:
         # This operation must be done before the dataset is prepared as the
@@ -120,12 +119,15 @@ def preprocess_dataset(dataset_dict: DatasetDict,
             batch[DEFAULT_LABEL_STR_COL] = whisper_norm(batch[DEFAULT_LABEL_STR_COL])
             return batch
 
-        dataset_dict[split] = dataset_dict[split].map(normalize_fct)
+        dataset_dict[split] = dataset_dict[split].map(normalize_fct, num_proc=DEFAULT_NUM_PROC)
         
         prepare_dataset = partial(prepare_dataset_fct,
                                   tokenizer=tokenizer,
                                   feature_extractor=feature_extractor)
-        dataset_dict[split] = dataset_dict[split].filter(filter_empty_strings, input_columns=[DEFAULT_LABEL_STR_COL])\
-                                                 .map(prepare_dataset)
+        
+        dataset_dict[split] = dataset_dict[split].map(prepare_dataset, num_proc=DEFAULT_NUM_PROC)
+        # --- Deprecated (we assume that the dataset is already filtered) ---
+        # dataset_dict[split] = dataset_dict[split].filter(filter_empty_strings, input_columns=[DEFAULT_LABEL_STR_COL])\
+        #                                          .map(prepare_dataset, num_proc=DEFAULT_NUM_PROC)
 
     return dataset_dict

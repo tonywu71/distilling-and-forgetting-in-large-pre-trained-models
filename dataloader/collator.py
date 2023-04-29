@@ -15,15 +15,35 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
         """
         Split inputs and labels since they have to be of different lengths and need different padding methods.
+        
+        We expect `features` to be as such:
+        [
+            {
+                "input_ids": [101, 2023, 3185, 2000, 1055, 2342, 1996, 16615, 102],
+                "attention_mask": [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                "labels": [2023, 3185, 2000, 1055, 2342, 1996, 16615, 102]
+            },
+            {
+                "input_ids": [101, 2054, 2023, 3185, 2000, 1055, 2342, 1996, 16615, 102],
+                "attention_mask": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                "labels": [2054, 2023, 3185, 2000, 1055, 2342, 1996, 16615, 102]
+            },
+            ...
+        ]
+        
+        The DataCollator will then return a batch of the following form:
+        {
+            "input_features": [...],
+            DEFAULT_LABEL_TOKENIZED_COL: [...]
+        }
         """
+        
+        # Get the input features and apply padding:
         input_features = [{"input_features": feature["input_features"]} for feature in features]
         batch = self.processor.feature_extractor.pad(input_features, return_tensors="pt")  # type: ignore
 
-        # Get the tokenized label sequences:
-        label_features = [
-            {"input_ids": self.processor.tokenizer.truncate_sequences(feature[DEFAULT_LABEL_TOKENIZED_COL])[0]} for feature in features]  # type: ignore
-        
-        # Pad the labels to max length:
+        # Get the tokenized label sequences and apply padding:
+        label_features = [{"input_ids": feature["labels"]} for feature in features]
         labels_batch = self.processor.tokenizer.pad(label_features, return_tensors="pt")  # type: ignore
 
         # Replace padding with correct token for correct loss computation:

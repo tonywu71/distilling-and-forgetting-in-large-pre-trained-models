@@ -6,6 +6,7 @@ DEFAULT_ENV_CONFIG_FILEPATH = "configs/env_config.yaml"
 
 # ------ wandb ------
 WANDB_PROJECT = "distilling-and-forgetting-in-large-pre-trained-models"
+DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP = 16
 
 
 # ------ Constants ------
