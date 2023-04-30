@@ -119,9 +119,12 @@ def main(pretrained_model_name_or_path: str,
     # Save the results:
     results = pd.Series(wer_results, index=list(esb_datasets.keys()), name="WER (%)")
     results.index.name = "Dataset"
+    
+    # Compute the average:
+    results["Average"] = results.mean()
+    
     print("Results:")
     print(results)
-    
     print()
     
     if filename is None:
