@@ -1,5 +1,7 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 from datasets import load_dataset, Audio
+
+from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL
 
 
 class ESB_Datasets:
@@ -8,7 +10,9 @@ class ESB_Datasets:
     See https://arxiv.org/abs/2210.13352 for more details.
     """
     
-    def __init__(self, no_auth_datasets_only: bool=False) -> None:
+    def __init__(self, subset: Optional[List[str]]=None, no_auth_datasets_only: bool=False) -> None:
+        self.subset = subset
+        
         self.librispeech_clean = load_dataset("librispeech_asr", "all", split="test.clean", streaming=True)
         self.librispeech_other = load_dataset("librispeech_asr", "all", split="test.other", streaming=True)
         self.voxpopuli = load_dataset("facebook/voxpopuli", "en", split="test", streaming=True)
@@ -37,6 +41,10 @@ class ESB_Datasets:
                 "SPGISpeech": self.spgispeech
         })
         
+        if self.subset:
+            assert all([k in self.str2dataset for k in self.subset]), f"`subset` must be a subset of {list(self.str2dataset.keys())}."
+            self.str2dataset = {k: v for k, v in self.str2dataset.items() if k in self.subset}
+        
         self.filter_sequences = [
             "ignore time segment in scoring",  # can be found in TEDLIUM for example
             ""
@@ -62,19 +70,19 @@ class ESB_Datasets:
             # Resample:
             dataset = dataset.cast_column("audio", Audio(sampling_rate=sampling_rate))
 
-            # Mormalize references
+            # Normalize references
             if normalize_fct:
                 dataset = dataset.map(normalize_fct)
 
             # Remove any empty references:
-            dataset = dataset.filter(self.is_target_text_in_range, input_columns=["norm_text"])
+            dataset = dataset.filter(self.is_target_text_in_range, input_columns=[DEFAULT_LABEL_STR_COL])
             
             # Update dataset
             self.str2dataset[dataset_name] = dataset
 
         self.preprocessed = True
         return
-        
+    
     
     def __getitem__(self, dataset_name):
         return self.str2dataset[dataset_name]
@@ -88,7 +96,8 @@ class ESB_Datasets:
         return self.str2dataset.items()
     
     
-    def get_text(self, sample: dict) -> str:
+    @staticmethod
+    def get_text(sample: dict) -> str:
         """
         Get the correct transcription column from the ESB datasets.
         """
@@ -100,6 +109,8 @@ class ESB_Datasets:
             return sample["normalized_text"]
         elif "transcript" in sample:
             return sample["transcript"]
+        elif DEFAULT_LABEL_TOKENIZED_COL in sample:
+            return sample[DEFAULT_LABEL_TOKENIZED_COL]
         else:
             raise ValueError(f"Sample: {sample.keys()} has no transcript.")
 

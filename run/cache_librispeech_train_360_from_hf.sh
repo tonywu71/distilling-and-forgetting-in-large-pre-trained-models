@@ -9,27 +9,21 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_esb
+#SBATCH -J cache_librispeech_360_from_hf
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A MLMI-tw581-SL2-CPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
-#! How many (MPI) tasks will there be in total?
-#! Note probably this should not exceed the total number of GPUs in use.
-#SBATCH --ntasks=1
-#! Specify the number of GPUs per node (between 1 and 4; must be 4 if nodes>1).
-#! Note that the job submission script will enforce no more than 32 cpus per GPU.
-#SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=00:10:00
+#SBATCH --time=04:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
 #! interrupted by node failure or system downtime):
 ##SBATCH --no-requeue
 
-#! Do not change:
-#SBATCH -p ampere
+#! Do not change (CPU-only partition):
+#SBATCH -p skylake,cclake
 #! ############################################################
 
 
@@ -41,7 +35,7 @@ LOG=$DIRPATH_EXP/$SLURM_JOB_ID.log
 ERR=$DIRPATH_EXP/$SLURM_JOB_ID.err
 
 
-echo -e "JobID: $JOBID\n======" > $LOG
+echo -e "JobID: $SLURM_JOB_ID\n======" > $LOG
 echo "Time: `date`" >> $LOG
 echo "Running on master node: `hostname`" >> $LOG
 echo "python `which python`": >> $LOG
@@ -51,10 +45,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper_on_esb.py openai/whisper-tiny.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py openai/whisper-base.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py openai/whisper-small.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py openai/whisper-medium.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
+python scripts/cache_dataset_from_hf.py librispeech_asr --name clean --split train.360 >> $LOG 2> $ERR
 
 #! #############################################
 

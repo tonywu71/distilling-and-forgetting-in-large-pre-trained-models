@@ -9,8 +9,8 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_esb
-#! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
+#SBATCH -J eval_whisper_on_esb-finetuned
+#! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
@@ -51,10 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper_on_esb.py openai/whisper-tiny.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py openai/whisper-base.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py openai/whisper-small.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py openai/whisper-medium.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
+python scripts/eval_whisper_on_esb.py checkpoints/librispeech-backup/checkpoint-4250 --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
 
 #! #############################################
 
