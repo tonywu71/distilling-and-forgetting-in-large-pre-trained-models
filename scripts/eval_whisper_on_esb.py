@@ -22,12 +22,23 @@ import evaluate
 
 import wandb
 
-from dataloader.esb import ESB_Datasets
-
-from normalization.whisper_normalization import get_whisper_normalizer
 from dataloader.dataloader import gen_from_dataset
+from dataloader.esb import ESB_Datasets
+from normalization.whisper_normalization import get_whisper_normalizer
+
 from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_OUTPUT_DIR, WANDB_PROJECT
 
+
+def extract_model_name_from_path(filepath: str) -> str:
+    """Extract the model name from a path."""
+    path = Path(filepath)
+    
+    if "checkpoint-" in path.parts:
+        filename = f"{path.parent.stem}-{path.stem}.csv"
+    else:
+        filename = f"{path.stem}.csv"
+    
+    return filename
 
 
 def main(pretrained_model_name_or_path: str,
@@ -119,13 +130,16 @@ def main(pretrained_model_name_or_path: str,
     # Save the results:
     results = pd.Series(wer_results, index=list(esb_datasets.keys()), name="WER (%)")
     results.index.name = "Dataset"
+    
+    # Compute the average:
+    results["Average"] = results.mean()
+    
     print("Results:")
     print(results)
-    
     print()
     
     if filename is None:
-        filename = Path(pretrained_model_name_or_path).stem + ".csv"
+        filename = extract_model_name_from_path(pretrained_model_name_or_path) + ".csv"
     
     filepath = DEFAULT_OUTPUT_DIR / filename
     filepath.parent.mkdir(exist_ok=True, parents=True)
