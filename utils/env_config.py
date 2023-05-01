@@ -15,6 +15,7 @@ class EnvConfig:
     HF_MODULES_CACHE: str
     
     # ------ Weight&Biases ------
+    WANDB_PROJECT: str
     WANDB_CACHE_DIR: str
     
     # ------ Other ------

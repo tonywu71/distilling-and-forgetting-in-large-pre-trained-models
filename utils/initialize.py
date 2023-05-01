@@ -21,6 +21,7 @@ def initialize_env():
     os.environ["HF_MODULES_CACHE"] = env_config.HF_MODULES_CACHE
     
     # WandB:
+    os.environ["WANDB_PROJECT"] = env_config.WANDB_PROJECT
     os.environ["WANDB_CACHE_DIR"] = env_config.WANDB_CACHE_DIR
     
     # Other:
