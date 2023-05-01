@@ -1,6 +1,6 @@
 # Distilling and Forgetting in Large Pre-Trained Models 
 
-Tony Wu (tw581@cam.ac.uk)
+Tony Wu, tw581@cam.ac.uk
 
 
 
