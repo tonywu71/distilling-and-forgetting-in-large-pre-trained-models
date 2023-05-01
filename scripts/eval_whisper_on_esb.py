@@ -26,7 +26,7 @@ from dataloader.dataloader import gen_from_dataset
 from dataloader.esb import ESB_Datasets
 from normalization.whisper_normalization import get_whisper_normalizer
 
-from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_OUTPUT_DIR, WANDB_PROJECT
+from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_OUTPUT_DIR
 
 
 def extract_model_name_from_path(filepath: str) -> str:
@@ -61,7 +61,7 @@ def main(pretrained_model_name_or_path: str,
     }
     
     wandb.login()
-    wandb.init(project=WANDB_PROJECT,
+    wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="eval_esb",
                name=f"eval_esb-{Path(pretrained_model_name_or_path).stem}",
                config=config)
