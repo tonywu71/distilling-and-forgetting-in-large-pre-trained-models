@@ -18,3 +18,4 @@ logging_steps: 10
 save_steps: 100
 num_train_epochs: 10
 early_stopping_patience: 3
+log_preds_to_wandb: True

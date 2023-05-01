@@ -53,9 +53,7 @@ def main(config_filepath: str):
                config=asdict(config))
     
     
-    # ----------------------   Setup   ----------------------
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    
+    # ----------------------   Setup   ----------------------    
     print("\n-----------------------\n")
     
     # Print environment variables:
@@ -126,7 +124,7 @@ def main(config_filepath: str):
     #       always generate the target sentence and the separator token before starting the
     #       decoding process.
     print(f"Loading pretrained model `{config.pretrained_model_name_or_path}`...")
-    model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path).to(device)  # type: ignore
+    model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path)
     model.config.forced_decoder_ids = None  # type: ignore
     model.config.suppress_tokens = []  # type: ignore
     model.config.use_cache = False  # type: ignore
@@ -171,8 +169,11 @@ def main(config_filepath: str):
     # Define callbacks:
     callbacks: List[TrainerCallback] = []
     
-    # TODO: WIP
-    # callbacks.append(WandbCustomCallback(config=config, n_batches=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
+    if config.log_preds_to_wandb:
+        callbacks.append(WandbCustomCallback(config=config,
+                                            processor=processor,
+                                            eval_dataset=dataset_dict["test"],  # type: ignore
+                                            n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
     
     if config.early_stopping_patience != -1:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))

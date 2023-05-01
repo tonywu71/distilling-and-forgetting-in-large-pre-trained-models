@@ -41,7 +41,7 @@ def augment_dataset_fct(batch, sample_rate: int):
 
 
 def normalize_sentence(sentence: str) -> str:
-    """Normalize a sentence for transcription."""
+    """DEPRECATED. Normalize a sentence for transcription."""
     transcription = sentence
     
     if transcription.startswith('"') and transcription.endswith('"'):
@@ -57,9 +57,9 @@ def normalize_sentence(sentence: str) -> str:
     return transcription
 
 
-def prepare_dataset_fct(dataset: dict,
+def prepare_dataset_fct(dataset: DatasetDict,
                         tokenizer: WhisperTokenizer,
-                        feature_extractor: WhisperFeatureExtractor) -> dict:
+                        feature_extractor: WhisperFeatureExtractor) -> DatasetDict:
     """
     Utility to create features for a dataset.
     """    
@@ -70,18 +70,14 @@ def prepare_dataset_fct(dataset: dict,
     dataset["input_features"] = feature_extractor(
         audio["array"], sampling_rate=feature_extractor.sampling_rate).input_features[0]  # drop batch dimension
     
-    # --- Deprecated ---
-    # Normalize the transcription:
-    # sentences = normalize_sentence(dataset[DEFAULT_LABEL_STR_COL])
-    
     # Encode from target text to label ids:
-    dataset[DEFAULT_LABEL_TOKENIZED_COL] = tokenizer(dataset[DEFAULT_LABEL_STR_COL]).input_ids
+    dataset[DEFAULT_LABEL_TOKENIZED_COL] = tokenizer(dataset[DEFAULT_LABEL_STR_COL]).input_ids  # type: ignore
     
     return dataset
 
 
 def filter_empty_strings(sentence) -> bool:
-    """Filter nulls and short transcripts from dataset."""
+    """DEPRECATED. Filter nulls and short transcripts from dataset."""
     if len(sentence) < 2:
         return False
     else:
@@ -126,8 +122,5 @@ def preprocess_dataset(dataset_dict: DatasetDict,
                                   feature_extractor=feature_extractor)
         
         dataset_dict[split] = dataset_dict[split].map(prepare_dataset, num_proc=DEFAULT_NUM_PROC)
-        # --- Deprecated (we assume that the dataset is already filtered) ---
-        # dataset_dict[split] = dataset_dict[split].filter(filter_empty_strings, input_columns=[DEFAULT_LABEL_STR_COL])\
-        #                                          .map(prepare_dataset, num_proc=DEFAULT_NUM_PROC)
 
     return dataset_dict

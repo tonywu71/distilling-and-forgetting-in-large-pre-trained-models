@@ -23,15 +23,11 @@ import evaluate
 import wandb
 
 from dataloader.esb import ESB_Datasets
-from normalization.whisper_normalization import get_whisper_normalizer
 
+from normalization.whisper_normalization import get_whisper_normalizer
+from dataloader.dataloader import gen_from_dataset
 from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_OUTPUT_DIR, WANDB_PROJECT
 
-
-def gen_from_dataset(dataset):
-    """Yield the audio and reference from the dataset."""
-    for i, item in enumerate(dataset):
-        yield {**item["audio"], "reference": item[DEFAULT_LABEL_STR_COL]}
 
 
 def main(pretrained_model_name_or_path: str,

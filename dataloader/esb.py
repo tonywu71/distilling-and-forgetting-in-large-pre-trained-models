@@ -75,7 +75,7 @@ class ESB_Datasets:
                 dataset = dataset.map(normalize_fct)
 
             # Remove any empty references:
-            dataset = dataset.filter(self.is_target_text_in_range, input_columns=[DEFAULT_LABEL_STR_COL])
+            dataset = dataset.filter(self.is_target_text_empty, input_columns=[DEFAULT_LABEL_STR_COL])
             
             # Update dataset
             self.str2dataset[dataset_name] = dataset
@@ -115,6 +115,6 @@ class ESB_Datasets:
             raise ValueError(f"Sample: {sample.keys()} has no transcript.")
 
     
-    def is_target_text_in_range(self, ref: str) -> bool:
+    def is_target_text_empty(self, ref: str) -> bool:
         ref = ref.strip()
         return ref not in self.filter_sequences

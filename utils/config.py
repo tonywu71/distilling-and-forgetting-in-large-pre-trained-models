@@ -28,6 +28,7 @@ class Config:
     logging_steps: int
     num_train_epochs: int
     early_stopping_patience: int
+    log_preds_to_wandb: bool = True
 
 
 def load_yaml_config(config_file: str) -> Config:

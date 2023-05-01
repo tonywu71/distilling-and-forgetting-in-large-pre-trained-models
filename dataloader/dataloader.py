@@ -1,6 +1,9 @@
 from functools import partial
+from typing import Iterable
 from datasets import DatasetDict
+
 from dataloader.dataloader_custom import load_librispeech, load_librispeech_dummy
+from utils.constants import DEFAULT_LABEL_STR_COL
 
 
 STR_TO_LOAD_FCT = {
@@ -17,3 +20,9 @@ def load_dataset_dict(dataset_name: str, **kwargs) -> DatasetDict:
     else:
         raise ValueError(f"Dataset {dataset_name} not supported")
     return dataset_dict
+
+
+def gen_from_dataset(dataset) -> Iterable[dict]:
+    """Yield the audio and reference from the dataset."""
+    for i, item in enumerate(dataset):
+        yield {**item["audio"], "reference": item[DEFAULT_LABEL_STR_COL]}
