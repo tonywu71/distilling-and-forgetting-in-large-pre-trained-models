@@ -35,10 +35,12 @@ class WandbCustomCallback(WandbCallback):
                  config: Config,
                  processor: WhisperProcessor,
                  eval_dataset: Dataset,
-                 n_samples: int):
+                 n_samples: int,
+                 log_raw_str: bool=False):
         super().__init__()
         self.config = config
         self.processor = processor
+        self.log_raw_str = log_raw_str
         
         # Convert to iterable dataset to be able to take samples:
         self.eval_dataset = eval_dataset
@@ -89,28 +91,25 @@ class WandbCustomCallback(WandbCallback):
             # in the data collator to ignore padded tokens correctly during decoding:
             label_ids[label_ids==PADDING_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
             
-            
             # Decode the predictions:
-            curr_pred_str_raw = self.processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=False, normalize=True)[0]  # type: ignore
-            curr_pred_str_raw = "".join(curr_pred_str_raw)
-            
             curr_pred_str = self.processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=True, normalize=True)[0]  # type: ignore
             curr_pred_str = "".join(curr_pred_str)
-            
-            records["pred_str_raw"].append(curr_pred_str_raw)
             records["pred_str"].append(curr_pred_str)
             
-            
             # Decode the labels:
-            curr_label_str_raw = self.processor.tokenizer.batch_decode(label_ids, skip_special_tokens=False, normalize=False)[0]  # type: ignore
-            curr_label_str_raw = "".join(curr_label_str_raw)
-            
             curr_label_str = self.processor.tokenizer.batch_decode(label_ids, skip_special_tokens=True, normalize=True)[0]  # type: ignore
             curr_label_str = "".join(curr_label_str)
-            
-            records["label_str_raw"].append(curr_label_str_raw)
             records["label_str"].append(curr_label_str)
             
+            # Decode the predictions and labels without removing special tokens:
+            if self.log_raw_str:
+                curr_pred_str_raw = self.processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=False, normalize=True)[0]  # type: ignore
+                curr_pred_str_raw = "".join(curr_pred_str_raw)
+                records["pred_str_raw"].append(curr_pred_str_raw)
+                
+                curr_label_str_raw = self.processor.tokenizer.batch_decode(label_ids, skip_special_tokens=False, normalize=False)[0]  # type: ignore
+                curr_label_str_raw = "".join(curr_label_str_raw)
+                records["label_str_raw"].append(curr_label_str_raw)
             
             # Compute the WER:
             records["wer"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_str]))  # type: ignore
