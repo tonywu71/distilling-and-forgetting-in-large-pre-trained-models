@@ -183,7 +183,7 @@ def main(config_filepath: str):
         args=training_args,
         model=model,  # type: ignore
         train_dataset=dataset_dict["train"],  # type: ignore
-        eval_dataset=dataset_dict["test"],  # type: ignore
+        eval_dataset=dataset_dict["eval"],  # type: ignore
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
         tokenizer=processor,  # type: ignore

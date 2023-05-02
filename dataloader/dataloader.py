@@ -19,6 +19,10 @@ def load_dataset_dict(dataset_name: str, **kwargs) -> DatasetDict:
         dataset_dict = STR_TO_LOAD_FCT[dataset_name](**kwargs)
     else:
         raise ValueError(f"Dataset {dataset_name} not supported")
+    
+    for split in ["train", "eval", "test"]:
+        assert split in dataset_dict, f"Split {split} not found in dataset {dataset_name}"
+    
     return dataset_dict
 
 
