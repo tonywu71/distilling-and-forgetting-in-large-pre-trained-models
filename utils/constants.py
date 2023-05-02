@@ -2,6 +2,7 @@ from pathlib import Path
 
 # ------ Config ------
 DEFAULT_ENV_CONFIG_FILEPATH = "configs/env_config.yaml"
+CHECKPOINTS_DIRNAME = "checkpoints"
 
 
 # ------ wandb ------

@@ -26,27 +26,31 @@ from dataloader.dataloader import gen_from_dataset
 from dataloader.esb import ESB_Datasets
 from normalization.whisper_normalization import get_whisper_normalizer
 
-from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_OUTPUT_DIR, WANDB_PROJECT
+from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_OUTPUT_DIR, WANDB_PROJECT, CHECKPOINTS_DIRNAME
 
 
-def extract_model_name_from_path(filepath: str) -> str:
-    """Extract the model name from a path."""
-    path = Path(filepath)
+def extract_savepath_from_model_filepath(model_filepath: str) -> Path:
+    """
+    Extract the model savepath from a model path.
+    Used for `eval_whisper_on_esb.py`.
+    """
+    path = Path(model_filepath)
     
-    if "checkpoint-" in path.parts:
-        filename = f"{path.parent.stem}-{path.stem}.csv"
-    else:
-        filename = f"{path.stem}.csv"
+    if CHECKPOINTS_DIRNAME in path.parts:  # if the path is a checkpoint...
+        # Example: test/checkpoints/whisper_small/librispeech_100h/checkpoint-200 -> whisper_small/librispeech_100h/checkpoint-200.csv
+        savepath = DEFAULT_OUTPUT_DIR / path.relative_to(CHECKPOINTS_DIRNAME).with_suffix(".csv")
+    else:  # if the path is a model name from the HuggingFace Hub...
+        savepath = (DEFAULT_OUTPUT_DIR / path.name.replace(".", "-")).with_suffix(".csv")  # e.g. "openai/whisper-tiny.en" -> "whisper-tiny-en.csv"
     
-    return filename
+    return savepath
 
 
 def main(pretrained_model_name_or_path: str,
          subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB benchmark to evaluate on."),
          n_samples: int=typer.Option(128, help="Number of samples to evaluate on."),
          batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
-         filename: Optional[str]=typer.Option(
-             None, help="Filename of the output CSV file. Leave to `None` to use the stem of `pretrained_model_name_or_path` as the file name.")) -> None:
+         savepath: Optional[str]=typer.Option(
+             None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
     """
     Evaluate the whisper model on the ESB benchmark.
     Note that only greedy decoding is supported for now.
@@ -138,13 +142,12 @@ def main(pretrained_model_name_or_path: str,
     print(results)
     print()
     
-    if filename is None:
-        filename = extract_model_name_from_path(pretrained_model_name_or_path) + ".csv"
+    if savepath is None:
+        savepath = str(extract_savepath_from_model_filepath(pretrained_model_name_or_path))
     
-    filepath = DEFAULT_OUTPUT_DIR / filename
-    filepath.parent.mkdir(exist_ok=True, parents=True)
-    results.to_csv(f"{filepath}")
-    print(f"Results saved to `{filepath}`.")
+    Path(savepath).parent.mkdir(exist_ok=True, parents=True)
+    results.to_csv(f"{savepath}")
+    print(f"Results saved to `{savepath}`.")
     
     barplot = wandb.plot.bar(wandb.Table(dataframe=results.to_frame().reset_index()),  # type: ignore
                              label=results.index.name,
