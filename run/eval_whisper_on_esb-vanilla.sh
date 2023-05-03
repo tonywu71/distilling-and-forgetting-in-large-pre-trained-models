@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_esb-reference
+#SBATCH -J eval_whisper_on_esb-vanilla
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -52,11 +52,13 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 # python scripts/eval_whisper_on_esb.py openai/whisper-tiny >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py openai/whisper-tiny --subset "LibriSpeech Clean">> $LOG 2> $ERR
+# python scripts/eval_whisper_on_esb.py openai/whisper-tiny.en >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_esb.py openai/whisper-tiny --subset librispeech_clean --subset librispeech_other >> $LOG 2> $ERR
 # python scripts/eval_whisper_on_esb.py openai/whisper-base >> $LOG 2> $ERR
 # python scripts/eval_whisper_on_esb.py openai/whisper-small >> $LOG 2> $ERR
+python scripts/eval_whisper_on_esb.py openai/whisper-small.en >> $LOG 2> $ERR
 # python scripts/eval_whisper_on_esb.py openai/whisper-medium >> $LOG 2> $ERR
-python scripts/eval_whisper_on_esb.py openai/whisper-large-v2 >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_esb.py openai/whisper-large-v2 >> $LOG 2> $ERR
 
 #! #############################################
 

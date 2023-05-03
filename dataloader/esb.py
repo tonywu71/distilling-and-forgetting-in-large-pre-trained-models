@@ -1,62 +1,79 @@
 from typing import Callable, Optional, List
-from datasets import load_dataset, Audio
-
-from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL
+from datasets import load_dataset
 
 
 class ESB_Datasets:
     """
     Class that encompasses the End-to-end Speech Benchmark (ESB)
-    See https://arxiv.org/abs/2210.13352 for more details.
+    See for more details:
+    - https://arxiv.org/abs/2210.13352 
+    - https://huggingface.co/datasets/esb/datasets
+    - https://huggingface.co/datasets/esb/diagnostic-dataset
     """
     
-    def __init__(self, subset: Optional[List[str]]=None, no_auth_datasets_only: bool=False) -> None:
-        self.subset = subset
+    def __init__(self,
+                 streaming: bool=False,
+                 load_diagnostic: bool=False,
+                 subset: Optional[List[str]]=None) -> None:
         
-        self.librispeech_clean = load_dataset("librispeech_asr", "all", split="test.clean", streaming=True)
-        self.librispeech_other = load_dataset("librispeech_asr", "all", split="test.other", streaming=True)
-        self.voxpopuli = load_dataset("facebook/voxpopuli", "en", split="test", streaming=True)
-        self.tedlium = load_dataset("LIUM/tedlium", "release3", split="test", streaming=True)
-        self.earnings22 = load_dataset("anton-l/earnings22_baseline_5_gram", split="test", streaming=True)
-        self.ami = load_dataset("edinburghcstr/ami", "ihm", split="test", streaming=True)
-        
-        if not no_auth_datasets_only:
-            self.common_voice = load_dataset("mozilla-foundation/common_voice_11_0", "en", revision="streaming", split="test", streaming=True, use_auth_token=True)
-            self.gigaspeech = load_dataset("speechcolab/gigaspeech", "xs", split="test", streaming=True, use_auth_token=True)
-            self.spgispeech = load_dataset("kensho/spgispeech", "S", split="test", streaming=True, use_auth_token=True)
-    
-        self.str2dataset = {
-            "LibriSpeech Clean": self.librispeech_clean,
-            "LibriSpeech Other": self.librispeech_other,
-            "VoxPopuli": self.voxpopuli,
-            "TEDLIUM": self.tedlium,
-            "Earnings-22": self.earnings22,
-            "AMI": self.ami
-        }
-        
-        if not no_auth_datasets_only:
-            self.str2dataset.update({
-                "Common Voice": self.common_voice,
-                "GigaSpeech": self.gigaspeech,
-                "SPGISpeech": self.spgispeech
-        })
-        
-        if self.subset:
-            assert all([k in self.str2dataset for k in self.subset]), f"`subset` must be a subset of {list(self.str2dataset.keys())}."
-            self.str2dataset = {k: v for k, v in self.str2dataset.items() if k in self.subset}
-        
-        self.filter_sequences = [
-            "ignore time segment in scoring",  # can be found in TEDLIUM for example
-            ""
+        self.available_datasets = [
+            "librispeech",
+            "common_voice",
+            "voxpopuli",
+            "tedlium",
+            "gigaspeech",
+            "spgispeech",
+            "earnings22",
+            "ami"
         ]
         
+        self.streaming = streaming
+        self.load_diagnostic = load_diagnostic
+        self.subset = subset
+        
+        dataset_path = "esb/datasets" if not load_diagnostic else "esb/diagnostic-dataset"
+        
+        if not self.subset:
+            self.subset = self.available_datasets  # if no subset is specified, use all datasets
+        else:
+            assert all([k in self.str2dataset for k in self.available_datasets]), f"`subset` must be a subset of {list(self.str2dataset.keys())}."
+        
+        self.str2dataset = {}
+        
+        if not self.load_diagnostic:  # If load default ESB dataset...
+            for dataset_name in self.available_datasets:
+                if dataset_name in self.subset:
+                    if dataset_name == "librispeech":
+                        self.str2dataset["librispeech_clean"] = load_dataset(path=dataset_path,
+                                                                                name=dataset_name,
+                                                                                split="test.clean",
+                                                                                streaming=self.streaming,
+                                                                                use_auth_token=True)
+                        self.str2dataset["librispeech_clean"] = load_dataset(path=dataset_path,
+                                                                                name=dataset_name,
+                                                                                split="test.other",
+                                                                                streaming=self.streaming,
+                                                                                use_auth_token=True)
+                    else:
+                        self.str2dataset[dataset_name] = load_dataset(path=dataset_path,
+                                                                        name=dataset_name,
+                                                                        split="test",
+                                                                        streaming=self.streaming,
+                                                                        use_auth_token=True)
+        
+        else:  # If load diagnostic dataset...
+            for dataset_name in self.available_datasets:
+                self.str2dataset[dataset_name] = load_dataset(path=dataset_path,
+                                                              name=dataset_name,
+                                                              split="clean",
+                                                              streaming=self.streaming,
+                                                              use_auth_token=True)
+            
         self.preprocessed = False
     
         
     def preprocess_datasets(self,
-                            sampling_rate: int,
-                            normalize_fct: Optional[Callable]=None,
-                            n_samples: Optional[int]=None) -> None:
+                            normalize_fct: Optional[Callable]=None) -> None:
         """
         Preprocess the datasets.
         """
@@ -64,23 +81,18 @@ class ESB_Datasets:
         
         # Loop over all the datasets in the ESB benchmark:
         for dataset_name, dataset in self.str2dataset.items():
-            if n_samples:
-                dataset = dataset.take(n_samples)  # type: ignore
-
-            # Resample:
-            dataset = dataset.cast_column("audio", Audio(sampling_rate=sampling_rate))
-
-            # Normalize references
+            if self.load_diagnostic:
+                dataset = dataset.rename_column("norm_transcript", "text")
+            
+            # Normalize references (especially important for Whisper):
             if normalize_fct:
                 dataset = dataset.map(normalize_fct)
-
-            # Remove any empty references:
-            dataset = dataset.filter(self.is_target_text_empty, input_columns=[DEFAULT_LABEL_STR_COL])
             
-            # Update dataset
+            # Update dataset:
             self.str2dataset[dataset_name] = dataset
 
         self.preprocessed = True
+        
         return
     
     
@@ -94,27 +106,3 @@ class ESB_Datasets:
     
     def items(self):
         return self.str2dataset.items()
-    
-    
-    @staticmethod
-    def get_text(sample: dict) -> str:
-        """
-        Get the correct transcription column from the ESB datasets.
-        """
-        if "text" in sample:
-            return sample["text"]
-        elif "sentence" in sample:
-            return sample["sentence"]
-        elif "normalized_text" in sample:
-            return sample["normalized_text"]
-        elif "transcript" in sample:
-            return sample["transcript"]
-        elif DEFAULT_LABEL_TOKENIZED_COL in sample:
-            return sample[DEFAULT_LABEL_TOKENIZED_COL]
-        else:
-            raise ValueError(f"Sample: {sample.keys()} has no transcript.")
-
-    
-    def is_target_text_empty(self, ref: str) -> bool:
-        ref = ref.strip()
-        return ref not in self.filter_sequences

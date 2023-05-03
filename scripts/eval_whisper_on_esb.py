@@ -46,8 +46,9 @@ def extract_savepath_from_model_filepath(model_filepath: str) -> Path:
 
 
 def main(pretrained_model_name_or_path: str,
+         streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
+         load_diagnostic: bool=typer.Option(True, help="Whether to load the diagnostic dataset. Defaults to `True`."),
          subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB benchmark to evaluate on."),
-         n_samples: int=typer.Option(128, help="Number of samples to evaluate on."),
          batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
@@ -59,24 +60,25 @@ def main(pretrained_model_name_or_path: str,
     # -----------------------   W&B   -----------------------
     config = {
         "pretrained_model_name_or_path": pretrained_model_name_or_path,
+        "streaming": streaming,
+        "load_diagnostic": load_diagnostic,
         "subset": subset,
-        "n_samples": n_samples,
         "batch_size": batch_size
     }
     
     wandb.login()
     wandb.init(project=WANDB_PROJECT,
                job_type="eval_esb",
-               name=f"eval_esb-{Path(pretrained_model_name_or_path).stem}",
+               name=f"eval_esb-{extract_savepath_from_model_filepath(pretrained_model_name_or_path).stem}",
                config=config)
     
-    # Sanity checks:
-    assert batch_size <= n_samples, "Batch size must be smaller than the number of samples."
     if subset:
         print(f"Subset(s) of ESB: {subset}")
     
     # Load dataset:
-    esb_datasets = ESB_Datasets(subset=subset)
+    esb_datasets = ESB_Datasets(streaming=streaming,
+                                load_diagnostic=load_diagnostic,
+                                subset=subset)
     print(f"Loaded datasets: {list(esb_datasets.keys())}")
     
     
@@ -95,12 +97,11 @@ def main(pretrained_model_name_or_path: str,
     whisper_norm = get_whisper_normalizer(whisper_asr.tokenizer)  # type: ignore
     
     def normalize_fct(batch):
-        batch[DEFAULT_LABEL_STR_COL] = whisper_norm(esb_datasets.get_text(batch))
+        batch[DEFAULT_LABEL_STR_COL] = whisper_norm(batch["text"])
         return batch
 
     esb_datasets.preprocess_datasets(sampling_rate=whisper_asr.feature_extractor.sampling_rate,  # type: ignore
-                                     normalize_fct=normalize_fct,
-                                     n_samples=n_samples)
+                                     normalize_fct=normalize_fct)
     
     
     # Load metric:
@@ -119,15 +120,15 @@ def main(pretrained_model_name_or_path: str,
         references = []
         
         for out in whisper_asr(gen_from_dataset(dataset), batch_size=batch_size):  # type: ignore
+            if not out["reference"][0].strip():  # type: ignore
+                continue  # skip empty references to avoid error in WER computation
             predictions.append(whisper_norm(out["text"]))  # type: ignore
             references.append(out["reference"][0])  # type: ignore
-        
-        assert predictions, "Empty batch. Try to run with a higher value of `n_samples`."
         
         # Compute the WER in percent:
         wer = wer_metric.compute(references=references, predictions=predictions)
         wer = round(100 * wer, ndigits=3)  # type: ignore
-
+        
         wer_results.append(wer)
     
     
