@@ -1,5 +1,5 @@
 from functools import partial
-import string
+from typing import Any, Dict
 from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift
 
 from transformers import WhisperFeatureExtractor, WhisperTokenizer
@@ -11,6 +11,10 @@ from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL
 
 DEFAULT_NUM_PROC = 8  # see https://docs.hpc.cam.ac.uk/hpc/user-guide/a100.html#hardware
 
+# Both in seconds:
+MIN_INPUT_LENGTH = 0.0
+MAX_INPUT_LENGTH = 30.0
+
 
 # Audio augmentation object to map over the dataset:
 AUGMENT_WAVEFORM = Compose([
@@ -18,12 +22,6 @@ AUGMENT_WAVEFORM = Compose([
     TimeStretch(min_rate=0.8, max_rate=1.25, p=0.3, leave_length_unchanged=False),
     PitchShift(min_semitones=-4, max_semitones=4, p=0.3)
 ])
-
-
-def extract_audio(dataset: Dataset, sampling_rate: int, audio_column: str="audio") -> Dataset:
-    """Extract audio from dataset."""
-    dataset = dataset.cast_column(audio_column, Audio(sampling_rate=sampling_rate))
-    return dataset
 
 
 def augment_dataset_fct(batch, sample_rate: int):
@@ -40,48 +38,30 @@ def augment_dataset_fct(batch, sample_rate: int):
     return batch
 
 
-def normalize_sentence(sentence: str) -> str:
-    """DEPRECATED. Normalize a sentence for transcription."""
-    transcription = sentence
-    
-    if transcription.startswith('"') and transcription.endswith('"'):
-        # Remove trailing quotation marks as they do not affect the transcription:
-        transcription = transcription[1:-1]
-    
-    if transcription[-1] not in [".", "?", "!"]:
-        # Append a full-stop to sentences that do not end in punctuation:
-        transcription = transcription + "."
-    
-    transcription = transcription[:-1].translate(str.maketrans('', '', string.punctuation)) + transcription[-1]
-    
-    return transcription
 
-
-def prepare_dataset_fct(dataset: DatasetDict,
+def prepare_dataset_fct(batch: Dict[str, Any],
                         tokenizer: WhisperTokenizer,
-                        feature_extractor: WhisperFeatureExtractor) -> DatasetDict:
+                        feature_extractor: WhisperFeatureExtractor) -> Dict[str, Any]:
     """
     Utility to create features for a dataset.
     """    
-    audio = dataset["audio"]
+    audio = batch["audio"]
     
     # Extract features from audio (including log-Mel input features):
     # Note: the sampling rate arg is redundant but required to dismiss warnings.
-    dataset["input_features"] = feature_extractor(
-        audio["array"], sampling_rate=feature_extractor.sampling_rate).input_features[0]  # drop batch dimension
+    batch["input_features"] = feature_extractor(audio["array"],
+                                                sampling_rate=feature_extractor.sampling_rate).input_features[0]  # drop batch dimension
     
     # Encode from target text to label ids:
-    dataset[DEFAULT_LABEL_TOKENIZED_COL] = tokenizer(dataset[DEFAULT_LABEL_STR_COL]).input_ids  # type: ignore
+    batch[DEFAULT_LABEL_TOKENIZED_COL] = tokenizer(batch[DEFAULT_LABEL_STR_COL]).input_ids  # type: ignore
     
-    return dataset
+    return batch
 
 
-def filter_empty_strings(sentence) -> bool:
-    """DEPRECATED. Filter nulls and short transcripts from dataset."""
-    if len(sentence) < 2:
-        return False
-    else:
-        return True
+def is_in_length_range(audio: Dict[str, Any], untokenized_text_label: list) -> bool:
+    # Compute input length of audio sample in seconds:
+    input_length = len(audio["array"]) / audio["sampling_rate"]  # type: ignore
+    return MIN_INPUT_LENGTH < input_length < MAX_INPUT_LENGTH and 0 < len(untokenized_text_label)
 
 
 def preprocess_dataset(dataset_dict: DatasetDict,
@@ -93,16 +73,15 @@ def preprocess_dataset(dataset_dict: DatasetDict,
     - Extract audio from the dataset
     - Augment the dataset (optional)
     - Normalize the labels
-    - Filter empty and short sentences
     - Prepare the dataset (extract features and tokenize labels)
+    - Filter the dataset (remove ampty samples and samples that are too long)
     """
     
     for split in dataset_dict:
-        dataset_dict[split] = extract_audio(dataset_dict[split],
-                                            sampling_rate=feature_extractor.sampling_rate,
-                                            audio_column="audio")
+        dataset_dict[split] = dataset_dict[split].cast_column("audio", Audio(sampling_rate=feature_extractor.sampling_rate))
         
         if augment and split == "train":  # only augment the training set
+            print("Augmenting the training set...")
             augment_dataset = partial(augment_dataset_fct, sample_rate=feature_extractor.sampling_rate)
             dataset_dict[split] = dataset_dict[split].map(augment_dataset, num_proc=DEFAULT_NUM_PROC)
         
@@ -114,13 +93,22 @@ def preprocess_dataset(dataset_dict: DatasetDict,
         def normalize_fct(batch):
             batch[DEFAULT_LABEL_STR_COL] = whisper_norm(batch[DEFAULT_LABEL_STR_COL])
             return batch
-
+        
+        print("Normalizing the labels...")
         dataset_dict[split] = dataset_dict[split].map(normalize_fct, num_proc=DEFAULT_NUM_PROC)
         
         prepare_dataset = partial(prepare_dataset_fct,
                                   tokenizer=tokenizer,
                                   feature_extractor=feature_extractor)
-        
+                
+        print("Preparing the dataset...")
         dataset_dict[split] = dataset_dict[split].map(prepare_dataset, num_proc=DEFAULT_NUM_PROC)
-
+        
+        print("Filtering the dataset...")
+        dataset_dict[split] = dataset_dict[split].filter(
+            is_in_length_range,
+            input_columns=["audio", DEFAULT_LABEL_STR_COL],
+            num_proc=DEFAULT_NUM_PROC
+        )
+    
     return dataset_dict

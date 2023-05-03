@@ -19,15 +19,11 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         We expect `features` to be as such:
         [
             {
-                "input_ids": [101, 2023, 3185, 2000, 1055, 2342, 1996, 16615, 102],
-                "attention_mask": [1, 1, 1, 1, 1, 1, 1, 1, 1],
-                "labels": [2023, 3185, 2000, 1055, 2342, 1996, 16615, 102]
+                "input_features": [...],
+                "labels": [...],
+                "input_ids": [...]
             },
-            {
-                "input_ids": [101, 2054, 2023, 3185, 2000, 1055, 2342, 1996, 16615, 102],
-                "attention_mask": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                "labels": [2054, 2023, 3185, 2000, 1055, 2342, 1996, 16615, 102]
-            },
+            
             ...
         ]
         

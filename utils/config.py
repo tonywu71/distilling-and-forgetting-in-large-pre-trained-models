@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 import yaml
 
 
@@ -9,10 +10,11 @@ class Config:
     Config class for the Whisper experiments
     """
     experiment_name: str
-    lang_name: str
-    lang_id: str
+    lang_name: Optional[str]
+    task: str
     pretrained_model_name_or_path: str
     model_dir: str
+    freeze_encoder: bool
     batch_size: int
     gradient_accumulation_steps: int
     gradient_checkpointing: bool

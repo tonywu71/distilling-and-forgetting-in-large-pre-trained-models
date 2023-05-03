@@ -1,14 +1,15 @@
-experiment_name: whisper_small-librispeech_100h
+experiment_name: whisper_small_en-librispeech_100h
 lang_name: english
-lang_id: en
+task: transcribe
 pretrained_model_name_or_path: openai/whisper-small.en
-model_dir: ./checkpoints/whisper_small-librispeech_100h/
+model_dir: ./checkpoints/whisper_small_en-librispeech_100h/
+freeze_encoder: True
 batch_size: 16
 gradient_accumulation_steps: 2
 gradient_checkpointing: True
 data_augmentation: False
 dataset_name: librispeech_100h
-force_reprocess_dataset: False
+force_reprocess_dataset: True  # TEMP
 optim: adamw_torch
 learning_rate: 1e-5
 warmup_steps: 256
@@ -16,6 +17,6 @@ eval_steps: 200
 generation_num_beams: 1
 logging_steps: 100
 save_steps: 200
-num_train_epochs: 10
-early_stopping_patience: 3
+num_train_epochs: 2
+early_stopping_patience: -1
 log_preds_to_wandb: True

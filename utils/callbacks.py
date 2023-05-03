@@ -49,6 +49,10 @@ class WandbCustomCallback(WandbCallback):
         
         self.n_samples = n_samples
         self.wer_metric = evaluate.load("wer")
+        
+        # Save records as a class attribute. Doing so will allow to keep appending rows at each step,
+        # and finally to relog the wandb tabel at the end of each step:
+        self.records = defaultdict(list)
     
     
     def on_log(self,
@@ -60,9 +64,7 @@ class WandbCustomCallback(WandbCallback):
                **kwargs):
         
         super().on_log(args, state, control, model, logs, **kwargs)
-        
-        records = defaultdict(list)
-        
+                
         # Iterate through the first n samples:
         for idx, data in enumerate(self.eval_dataset):
             if idx >= self.n_samples:
@@ -70,7 +72,7 @@ class WandbCustomCallback(WandbCallback):
             
             # Log the original audio (should be done before call to DataCollator):
             audio = wandb.Audio(data["audio"]["array"], sample_rate=data["audio"]["sampling_rate"].item())  # type: ignore
-            records["audio"].append(audio)
+            self.records["audio"].append(audio)
             
             # Collate the data into batches of size 1:
             data = self.data_collator([data])  # type: ignore
@@ -91,14 +93,14 @@ class WandbCustomCallback(WandbCallback):
             
             
             # Decode the predictions:
-            curr_pred_str_raw = self.processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=False, normalize=True)[0]  # type: ignore
+            curr_pred_str_raw = self.processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=False, normalize=False)[0]  # type: ignore
             curr_pred_str_raw = "".join(curr_pred_str_raw)
             
             curr_pred_str = self.processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=True, normalize=True)[0]  # type: ignore
             curr_pred_str = "".join(curr_pred_str)
             
-            records["pred_str_raw"].append(curr_pred_str_raw)
-            records["pred_str"].append(curr_pred_str)
+            self.records["pred_str_raw"].append(curr_pred_str_raw)
+            self.records["pred_str"].append(curr_pred_str)
             
             
             # Decode the labels:
@@ -108,24 +110,24 @@ class WandbCustomCallback(WandbCallback):
             curr_label_str = self.processor.tokenizer.batch_decode(label_ids, skip_special_tokens=True, normalize=True)[0]  # type: ignore
             curr_label_str = "".join(curr_label_str)
             
-            records["label_str_raw"].append(curr_label_str_raw)
-            records["label_str"].append(curr_label_str)
+            self.records["label_str_raw"].append(curr_label_str_raw)
+            self.records["label_str"].append(curr_label_str)
             
             
             # Compute the WER:
-            records["wer"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_str]))  # type: ignore
+            self.records["wer"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_str]))  # type: ignore
             
             # Add boolean flag to indicate whether the prediction is correct:
-            records["is_correct"].append(curr_label_str == curr_pred_str)
+            self.records["is_correct"].append(curr_label_str == curr_pred_str)
             
             # Add information about the current training state:
-            records["epoch"].append(state.epoch)
-            records["step"].append(state.global_step)
+            self.records["epoch"].append(state.epoch)
+            self.records["step"].append(state.global_step)
         
         
         # Create a dataframe from the records:
-        df = pd.DataFrame(records)
-        df["wer"] = df["wer"].round(2)
+        df = pd.DataFrame(self.records)
+        df["wer"] = df["wer"].round(decimals=3)
         
         
         # Create a new wandb table:

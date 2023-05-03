@@ -73,7 +73,7 @@ def main(config_filepath: str):
     processor = WhisperProcessor.from_pretrained(
         config.pretrained_model_name_or_path,
         language=config.lang_name,
-        task="transcribe"
+        task=config.task
     )
 
     # Create the data collator that will be used to prepare the data for training:
@@ -102,9 +102,9 @@ def main(config_filepath: str):
         
         print(f"Preprocessing dataset `{config.dataset_name}`...")
         dataset_dict = preprocess_dataset(dataset_dict,  # type: ignore
-                                        tokenizer=processor.tokenizer,  # type: ignore
-                                        feature_extractor=processor.feature_extractor,  # type: ignore
-                                        augment=config.data_augmentation)
+                                          tokenizer=processor.tokenizer,  # type: ignore
+                                          feature_extractor=processor.feature_extractor,  # type: ignore
+                                          augment=config.data_augmentation)
         
         # Note: The pytorch tensor conversation will be done in the DataCollator.
         
@@ -123,11 +123,19 @@ def main(config_filepath: str):
     #       containing the target sentence and the separator token. This tells the model to
     #       always generate the target sentence and the separator token before starting the
     #       decoding process.
+    
     print(f"Loading pretrained model `{config.pretrained_model_name_or_path}`...")
+    
     model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path)
-    model.config.forced_decoder_ids = None  # type: ignore
+    
+    # Freeze the encoder and/or decoder if specified in the config:
+    if config.freeze_encoder:
+        model.freeze_encoder()  # type: ignore
+    
+    model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
     model.config.suppress_tokens = []  # type: ignore
-    model.config.use_cache = False  # type: ignore
+    if config.gradient_checkpointing:
+        model.config.use_cache = False  # type: ignore
     
     # Prepare training:
     Path(config.model_dir).mkdir(parents=True, exist_ok=True)
