@@ -6,7 +6,6 @@ CHECKPOINTS_DIRNAME = "checkpoints"
 
 
 # ------ wandb ------
-WANDB_PROJECT = "distilling-and-forgetting-in-large-pre-trained-models"
 DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP = 8
 
 

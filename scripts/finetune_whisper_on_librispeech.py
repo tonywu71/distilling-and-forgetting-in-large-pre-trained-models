@@ -34,7 +34,7 @@ from dataloader.preprocessing import preprocess_dataset
 from evaluation.metrics import compute_wer_fct
 from utils.callbacks import WandbCustomCallback
 from utils.config import load_yaml_config
-from utils.constants import DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP, GEN_MAX_LENGTH, WANDB_PROJECT
+from utils.constants import DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP, GEN_MAX_LENGTH
 
 
 def main(config_filepath: str):
@@ -47,7 +47,7 @@ def main(config_filepath: str):
     
     # -----------------------   W&B   -----------------------
     wandb.login()
-    wandb.init(project=WANDB_PROJECT,
+    wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="finetuning",
                name=config.experiment_name,
                config=asdict(config))

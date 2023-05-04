@@ -3,6 +3,8 @@ TRANSFORMERS_CACHE: /home/tw581/rds/hpc-work/cache/huggingface/transformers
 HF_DATASETS_CACHE: /home/tw581/rds/hpc-work/cache/huggingface/datasets
 HF_MODULES_CACHE: /home/tw581/rds/hpc-work/cache/huggingface/modules
 
+WANDB_PROJECT: distilling-and-forgetting-in-large-pre-trained-models
 WANDB_CACHE_DIR: /home/tw581/rds/hpc-work/cache/wandb
+
 
 PREPROCESSED_DATASETS_DIR: /home/tw581/rds/hpc-work/preprocessed_datasets/

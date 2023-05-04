@@ -67,7 +67,7 @@ def main(pretrained_model_name_or_path: str,
     }
     
     wandb.login()
-    wandb.init(project=WANDB_PROJECT,
+    wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="eval_esb",
                name=f"eval_esb-{extract_savepath_from_model_filepath(pretrained_model_name_or_path).stem}",
                config=config)
