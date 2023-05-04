@@ -24,7 +24,7 @@ def load_librispeech_dummy() -> DatasetDict:
     
     dataset_dict = {}
     dataset_dict["train"] = load_dataset("hf-internal-testing/librispeech_asr_dummy", name="clean", split="validation")
-    dataset_dict["eval"] = load_dataset("hf-internal-testing/librispeech_asr_dummy", name="clean", split="validation")
+    dataset_dict["val"] = load_dataset("hf-internal-testing/librispeech_asr_dummy", name="clean", split="validation")
     dataset_dict["test"] = load_dataset("hf-internal-testing/librispeech_asr_dummy", name="clean", split="validation")
     dataset_dict = DatasetDict(dataset_dict)
     
@@ -40,7 +40,7 @@ def load_librispeech(train_split: str="train.100") -> DatasetDict:
     
     dataset_dict = {}
     dataset_dict["train"] = load_dataset("librispeech_asr", name="clean", split=train_split)
-    dataset_dict["eval"] = load_dataset("librispeech_asr", name="clean", split="validation")
+    dataset_dict["val"] = load_dataset("librispeech_asr", name="clean", split="validation")
     dataset_dict["test"] = load_dataset("librispeech_asr", name="clean", split="test")
     dataset_dict = DatasetDict(dataset_dict)
     
