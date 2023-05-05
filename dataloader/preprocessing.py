@@ -3,13 +3,11 @@ from typing import Any, Dict
 from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift
 
 from transformers import WhisperFeatureExtractor, WhisperTokenizer
-from datasets import Audio, Dataset, DatasetDict
+from datasets import Audio, DatasetDict
 from normalization.whisper_normalization import get_whisper_normalizer
 
-from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL
+from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL, DEFAULT_NUM_PROC
 
-
-DEFAULT_NUM_PROC = 8  # see https://docs.hpc.cam.ac.uk/hpc/user-guide/a100.html#hardware
 
 # Both in seconds:
 MIN_INPUT_LENGTH = 0.0

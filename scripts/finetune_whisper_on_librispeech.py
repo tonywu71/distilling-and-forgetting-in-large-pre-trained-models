@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from typing import List
 import shutil
+from datetime import datetime
 
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
@@ -43,6 +44,16 @@ def main(config_filepath: str):
     """
     # --------------------   Load config   --------------------
     config = load_yaml_config(config_filepath)
+    
+    
+    # If a previous run has its checkpoints saved in the same directory, raise an error:
+    if Path(config.model_dir).is_dir() and not os.listdir(config.model_dir):
+        # Get the current date and time
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        old_model_dir = Path(config.model_dir)
+        new_model_dir = old_model_dir.with_name(f"{old_model_dir.name}-{timestamp}")
+        print (f"Model directory `{old_model_dir}` is not empty. A timestamp will be added to the model directory: `{new_model_dir}`.")
+        config.model_dir = new_model_dir.as_posix()
     
     
     # -----------------------   W&B   -----------------------
@@ -128,14 +139,28 @@ def main(config_filepath: str):
     
     model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path)
     
+    
     # Freeze the encoder and/or decoder if specified in the config:
+    assert not (config.freeze_encoder and config.freeze_decoder), \
+        "Freezing both the encoder and the decoder would result in a model with " + \
+        "no trainable parameters. Please set either `freeze_encoder` or `freeze_decoder` to `False`."
+        
     if config.freeze_encoder:
+        print("Freezing encoder...")
         model.freeze_encoder()  # type: ignore
+    if config.freeze_decoder:
+        print("Freezing decoder...")
+        decoder = model.get_decoder()  # type: ignore
+        for param in decoder.parameters():
+            param.requires_grad = False
+        decoder._requires_grad = False  # type: ignore
+    
     
     model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
     model.config.suppress_tokens = []  # type: ignore
     if config.gradient_checkpointing:
         model.config.use_cache = False  # type: ignore
+    
     
     # Prepare training:
     Path(config.model_dir).mkdir(parents=True, exist_ok=True)
@@ -159,7 +184,7 @@ def main(config_filepath: str):
         logging_steps=config.eval_steps,
         save_strategy="steps",
         save_steps=config.save_steps,
-        save_total_limit=config.early_stopping_patience,
+        save_total_limit=config.save_total_limit,
         predict_with_generate=True,
         generation_max_length=GEN_MAX_LENGTH,
         load_best_model_at_end=True,
@@ -179,9 +204,9 @@ def main(config_filepath: str):
     
     if config.log_preds_to_wandb:
         callbacks.append(WandbCustomCallback(config=config,
-                                            processor=processor,
-                                            eval_dataset=dataset_dict["test"],  # type: ignore
-                                            n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
+                                             processor=processor,
+                                             eval_dataset=dataset_dict["test"],  # type: ignore
+                                             n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
     
     if config.early_stopping_patience != -1:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))

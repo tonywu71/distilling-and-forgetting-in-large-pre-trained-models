@@ -1,4 +1,9 @@
 # -------------------------------------   HPC-related   -------------------------------------
+clean-wandb-cache:
+	rm -rf wandb/*
+
+
+# -------------------------------------   HPC-related   -------------------------------------
 request-cpu-node:
 	sintr -A MLMI-tw581-SL2-CPU -p icelake -N1 -n1 -t 1:00:00 --qos=INTR
 

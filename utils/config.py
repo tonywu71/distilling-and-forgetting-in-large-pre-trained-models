@@ -15,6 +15,7 @@ class Config:
     pretrained_model_name_or_path: str
     model_dir: str
     freeze_encoder: bool
+    freeze_decoder: bool
     batch_size: int
     gradient_accumulation_steps: int
     gradient_checkpointing: bool
@@ -27,6 +28,7 @@ class Config:
     eval_steps: int
     generation_num_beams: int
     save_steps: int
+    save_total_limit: Optional[int]
     logging_steps: int
     num_train_epochs: int
     early_stopping_patience: int

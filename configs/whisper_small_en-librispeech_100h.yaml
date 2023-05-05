@@ -4,6 +4,7 @@ task: transcribe
 pretrained_model_name_or_path: openai/whisper-small.en
 model_dir: ./checkpoints/whisper_small_en-librispeech_100h/
 freeze_encoder: True
+freeze_decoder: False
 batch_size: 16
 gradient_accumulation_steps: 2
 gradient_checkpointing: True
@@ -17,6 +18,7 @@ eval_steps: 200
 generation_num_beams: 1
 logging_steps: 100
 save_steps: 200
+save_total_limit: 2
 num_train_epochs: 2
-early_stopping_patience: -1
+early_stopping_patience: 3
 log_preds_to_wandb: True
