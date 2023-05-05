@@ -9,17 +9,11 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J finetune_whisper_on_librispeech
+#SBATCH -J cache_mls
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A MLMI-tw581-SL2-CPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
-#! How many (MPI) tasks will there be in total?
-#! Note probably this should not exceed the total number of GPUs in use.
-#SBATCH --ntasks=1
-#! Specify the number of GPUs per node (between 1 and 4; must be 4 if nodes>1).
-#! Note that the job submission script will enforce no more than 32 cpus per GPU.
-#SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
 #SBATCH --time=04:00:00
 #! What types of email messages do you wish to receive?
@@ -28,8 +22,8 @@
 #! interrupted by node failure or system downtime):
 ##SBATCH --no-requeue
 
-#! Do not change:
-#SBATCH -p ampere
+#! Do not change (CPU-only partition):
+#SBATCH -p skylake,cclake
 #! ############################################################
 
 
@@ -50,9 +44,13 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 #! ####                    MAIN                    ###########
 #! ###########################################################
+languages=("dutch" "french" "german" "italina" "polish" "portuguese" "spanish")
 
-python scripts/finetune_whisper_on_librispeech.py configs/whisper_tiny-librispeech_100h.yaml >> $LOG 2> $ERR
-# python scripts/finetune_whisper_on_librispeech.py configs/whisper_small_en-librispeech_100h.yaml >> $LOG 2> $ERR
+for language in "${languages[@]}"
+do
+    echo "Caching $language..."
+    python scripts/cache_dataset_from_hf.py "facebook/multilingual_librispeech" --name $language --split test >> $LOG 2> $ERR
+done
 
 #! #############################################
 

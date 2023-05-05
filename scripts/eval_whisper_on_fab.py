@@ -16,16 +16,16 @@ from typing import List, Optional
 
 import wandb
 
-from dataloader.datasets.esb_dataset import ESBDataset
+from dataloader.datasets.fab_dataset import FABDataset
 from evaluation.eval_whisper_on_dataset import eval_whisper_on_dataset
-
 from utils.file_io import extract_savepath_from_model_filepath
 
 
 
-def main(pretrained_model_name_or_path: str,
+def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to the pretrained model or its name in the HuggingFace Hub."),
+         language: str=typer.Option("english", help="Language of the model."),
          streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
-         load_diagnostic: bool=typer.Option(False, help="Whether to load the diagnostic dataset. Defaults to `True`."),
+         load_diagnostic: bool=typer.Option(True, help="Whether to load the diagnostic dataset. Defaults to `True`."),
          subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB benchmark to evaluate on."),
          batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
@@ -36,14 +36,13 @@ def main(pretrained_model_name_or_path: str,
     """
     
     # Set up the parameters:
-    language = "english"
     task = "transcribe"
     
     config = {
         "pretrained_model_name_or_path": pretrained_model_name_or_path,
         "language": language,
         "task": task,
-        "dataset": "esb",
+        "dataset": "fab",
         "streaming": streaming,
         "load_diagnostic": load_diagnostic,
         "subset": subset,
@@ -58,7 +57,7 @@ def main(pretrained_model_name_or_path: str,
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
-               name=f"eval_esb-{extract_savepath_from_model_filepath(pretrained_model_name_or_path).stem}",
+               name=f"eval_fab-{extract_savepath_from_model_filepath(pretrained_model_name_or_path).stem}",
                config=config)
     
     
@@ -66,19 +65,15 @@ def main(pretrained_model_name_or_path: str,
     if subset:
         print(f"Subset(s) of ESB: {subset}")
         
-    esb_dataset = ESBDataset(streaming=streaming,
-                             load_diagnostic=load_diagnostic,
-                             subset=subset)
-    print(f"Loaded datasets: {list(esb_dataset.keys())}")
-    
-    
-
+    fab_dataset = FABDataset(streaming=streaming, subset=subset)
+    print(f"Loaded datasets: {list(fab_dataset.keys())}")
     
     
     # Evaluate:
     print("Evaluating...")
+    # TODO: Figure out how to handle the multilingual case.
     results = eval_whisper_on_dataset(pretrained_model_name_or_path=pretrained_model_name_or_path,
-                                      ds_group=esb_dataset,
+                                      ds_group=fab_dataset,
                                       batch_size=batch_size,
                                       language=language,
                                       task=task)

@@ -9,9 +9,9 @@ initialize_env()
 from datasets import load_dataset
 
 
-def main(path: str,
-         name: str=typer.Option(default=None),
-         split: str=typer.Option(default=None)):
+def main(path: str=typer.Argument(..., help="Path to the dataset."),
+         name: str=typer.Option(default=None, help="Name of the dataset."),
+         split: str=typer.Option(default=None, help="Split of the dataset.")):
     """
     Cache a dataset from HuggingFace Datasets.
     """
