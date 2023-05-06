@@ -55,7 +55,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
-               name=f"eval_fab-{extract_savepath_from_model_filepath(pretrained_model_name_or_path).stem}",
+               name=f"eval_fab-{extract_savepath_from_model_filepath(pretrained_model_name_or_path)}",
                config=config)
     
     
@@ -85,7 +85,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     
     # Save results:
     if savepath is None:
-        savepath = str(extract_savepath_from_model_filepath(pretrained_model_name_or_path))
+        savepath = extract_savepath_from_model_filepath(pretrained_model_name_or_path).with_suffix(".csv").as_posix()
     
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     results.to_csv(f"{savepath}")
