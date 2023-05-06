@@ -1,10 +1,10 @@
-experiment_name: whisper_tiny-librispeech_dummy-freeze_decoder
+experiment_name: whisper_tiny-librispeech_dummy
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny.en
 model_dir: ./checkpoints/librispeech_dummy/
-freeze_encoder: False
-freeze_decoder: True
+freeze_encoder: True
+freeze_decoder: False
 batch_size: 4
 gradient_accumulation_steps: 1
 gradient_checkpointing: False

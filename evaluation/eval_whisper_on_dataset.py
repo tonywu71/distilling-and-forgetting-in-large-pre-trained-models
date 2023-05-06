@@ -20,7 +20,6 @@ from dataloader.dataloader import gen_from_dataset
 from dataloader.datasets.base_dataset_group import BaseDatasetGroup
 from normalization.whisper_normalization import get_whisper_normalizer
 
-from utils.constants import DEFAULT_LABEL_STR_COL
 
 
 def eval_whisper_on_dataset(pretrained_model_name_or_path: str,
@@ -43,9 +42,8 @@ def eval_whisper_on_dataset(pretrained_model_name_or_path: str,
     whisper_norm = get_whisper_normalizer(tokenizer)
     
     def normalize_fct(batch):
-        batch[DEFAULT_LABEL_STR_COL] = whisper_norm(batch["text"])
+        batch["text"] = whisper_norm(batch["text"])
         return batch
-    
     
     # Preprocess the datasets:
     ds_group.preprocess_datasets(normalize_fct=normalize_fct)

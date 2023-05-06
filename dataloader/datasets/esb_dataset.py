@@ -41,31 +41,48 @@ class ESBDataset(BaseDatasetGroup):
             for dataset_name in self.available_datasets:
                 if dataset_name in self.subset:  # type: ignore
                     if dataset_name == "librispeech":
-                        self.str2dataset["librispeech_clean"] = load_dataset(path=self.dataset_path,
-                                                                             name=dataset_name,
-                                                                             split="test.clean",
+                        # Load the 2 test splits of LibriSpeech from the original HF dataset as
+                        # `esb/datasets` does not provide the text annotations for the test set:
+                        self.str2dataset["librispeech_clean"] = load_dataset(path="librispeech_asr",
+                                                                             name="clean",
+                                                                             split="test",
                                                                              streaming=self.streaming,
                                                                              use_auth_token=True)
-                        self.str2dataset["librispeech_other"] = load_dataset(path=self.dataset_path,
-                                                                             name=dataset_name,
-                                                                             split="test.other",
+                        self.str2dataset["librispeech_other"] = load_dataset(path="librispeech_asr",
+                                                                             name="other",
+                                                                             split="test",
                                                                              streaming=self.streaming,
                                                                              use_auth_token=True)
                     else:
+                        # For all other datasets, load the validation splits:
                         self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
                                                                       name=dataset_name,
-                                                                      split="test",
+                                                                      split="validation",
                                                                       streaming=self.streaming,
                                                                       use_auth_token=True)
         
         else:  # If load diagnostic dataset...
             for dataset_name in self.available_datasets:
                 if dataset_name in self.subset:  # type: ignore
-                    self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
-                                                                name=dataset_name,
-                                                                split="clean",
-                                                                streaming=self.streaming,
-                                                                use_auth_token=True)
+                    if dataset_name == "librispeech":
+                        # Load the 2 splits of LibriSpeech from the original HF test dataset
+                        # because LibriSpeech is our main dataset of interest (used for fine-tuning):
+                        self.str2dataset["librispeech_clean"] = load_dataset(path="librispeech_asr",
+                                                                             name="clean",
+                                                                             split="test",
+                                                                             streaming=self.streaming,
+                                                                             use_auth_token=True)
+                        self.str2dataset["librispeech_other"] = load_dataset(path="librispeech_asr",
+                                                                             name="other",
+                                                                             split="test",
+                                                                             streaming=self.streaming,
+                                                                             use_auth_token=True)
+                    else:
+                        self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
+                                                                      name=dataset_name,
+                                                                      split="clean",
+                                                                      streaming=self.streaming,
+                                                                      use_auth_token=True)
     
         
     def preprocess_datasets(self,

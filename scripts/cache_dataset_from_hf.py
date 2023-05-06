@@ -21,7 +21,7 @@ def main(path: str=typer.Argument(..., help="Path to the dataset."),
     if split:
         print(f"Split: {split}...")
     
-    dataset = load_dataset(path=path, name=name, split=split)
+    dataset = load_dataset(path=path, name=name, split=split, use_auth_token=True)
     
     print("Done.")
     

@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=04:00:00
+#SBATCH --time=01:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/finetune_whisper_on_librispeech.py configs/whisper_tiny-librispeech_dummy.yaml >> $LOG 2> $ERR
+python scripts/finetune_whisper_on_librispeech.py configs/benchmarks/evaluation/whisper_tiny-librispeech_100h-benchmark.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

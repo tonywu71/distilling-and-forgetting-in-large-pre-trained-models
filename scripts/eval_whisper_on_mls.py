@@ -25,7 +25,7 @@ from utils.file_io import extract_savepath_from_model_filepath
 
 def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to the pretrained model or its name in the HuggingFace Hub."),
          streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
-         subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB benchmark to evaluate on."),
+         subset: Optional[List[str]]=typer.Option(None, help="Subset of the MLS dataset to evaluate on."),
          batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:

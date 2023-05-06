@@ -205,7 +205,7 @@ def main(config_filepath: str):
     if config.log_preds_to_wandb:
         callbacks.append(WandbCustomCallback(config=config,
                                              processor=processor,
-                                             eval_dataset=dataset_dict["test"],  # type: ignore
+                                             eval_dataset=dataset_dict["val"],  # type: ignore
                                              n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
     
     if config.early_stopping_patience != -1:
@@ -216,7 +216,7 @@ def main(config_filepath: str):
         args=training_args,
         model=model,  # type: ignore
         train_dataset=dataset_dict["train"],  # type: ignore
-        eval_dataset=dataset_dict["eval"],  # type: ignore
+        eval_dataset=dataset_dict["val"],  # type: ignore
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
         tokenizer=processor,  # type: ignore

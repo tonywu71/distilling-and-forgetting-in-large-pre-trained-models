@@ -26,7 +26,7 @@ from utils.file_io import extract_savepath_from_model_filepath
 def main(pretrained_model_name_or_path: str,
          streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
          load_diagnostic: bool=typer.Option(False, help="Whether to load the diagnostic dataset. Defaults to `True`."),
-         subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB benchmark to evaluate on."),
+         subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB dataset to evaluate on."),
          batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
@@ -70,9 +70,6 @@ def main(pretrained_model_name_or_path: str,
                              load_diagnostic=load_diagnostic,
                              subset=subset)
     print(f"Loaded datasets: {list(esb_dataset.keys())}")
-    
-    
-
     
     
     # Evaluate:

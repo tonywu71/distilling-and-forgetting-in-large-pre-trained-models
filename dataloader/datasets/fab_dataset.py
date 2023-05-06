@@ -12,10 +12,8 @@ class FABDataset(BaseDatasetGroup):
     
     def __init__(self,
                  streaming: bool=False,
-                 load_diagnostic: bool=False,
                  subset: Optional[List[str]]=None) -> None:
         
-        self.dataset_path = "esb/datasets" if not load_diagnostic else "esb/diagnostic-dataset"
         self.available_datasets = [
             "librispeech_en_clean",
             "librispeech_en_other",
@@ -36,26 +34,26 @@ class FABDataset(BaseDatasetGroup):
     
     def _prepare_str2dataset(self) -> None:
         self.str2dataset = {
-            "librispeech_clean": load_dataset(path="esb/datasets",
-                                              name="librispeech",
-                                              split="test.clean",
+            "librispeech_clean": load_dataset(path="librispeech_asr",
+                                              name="clean",
+                                              split="test",
                                               streaming=self.streaming,
                                               use_auth_token=True),
-            "librispeech_other": load_dataset(path="esb/datasets",
-                                              name="librispeech",
-                                              split="test.other",
+            "librispeech_other": load_dataset(path="librispeech_asr",
+                                              name="other",
+                                              split="test",
                                               streaming=self.streaming,
                                               use_auth_token=True),
-            "tedlium": load_dataset(path="esb/datasets",
+            "tedlium": load_dataset(path="esb/diagnostic-dataset",
                                     name="tedlium",
-                                    split="test",
+                                    split="clean",
                                     streaming=self.streaming,
                                     use_auth_token=True),
-            "librispeech_fr_clean": load_dataset(path="facebook/multilingual_librispeech",
-                                                 name="french",
-                                                 split="test",
-                                                 streaming=self.streaming,
-                                                 use_auth_token=True)
+            "librispeech_fr": load_dataset(path="facebook/multilingual_librispeech",
+                                           name="french",
+                                           split="test",
+                                           streaming=self.streaming,
+                                           use_auth_token=True)
         }
     
     
@@ -70,7 +68,7 @@ class FABDataset(BaseDatasetGroup):
         for dataset_name, dataset in self.str2dataset.items():
             # Normalize references (especially important for Whisper):
             if normalize_fct:
-                dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)
+                dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)  # type: ignore
             # Update dataset:
             self.str2dataset[dataset_name] = dataset
 

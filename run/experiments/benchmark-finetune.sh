@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J finetune_whisper_on_librispeech
+#SBATCH -J benchmark-finetune
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/finetune_whisper_on_librispeech.py configs/generic_models/whisper_tiny-librispeech_100h.yaml >> $LOG 2> $ERR
+python scripts/finetune_whisper_on_librispeech.py configs/experimemts/benchmarks/finetune_benchmark.yaml >> $LOG 2> $ERR
 
 #! #############################################
 
