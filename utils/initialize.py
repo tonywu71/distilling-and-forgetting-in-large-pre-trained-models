@@ -1,6 +1,19 @@
 import os
+import sys
+import wandb
+
 from utils.env_config import load_yaml_env_config
 from utils.constants import DEFAULT_ENV_CONFIG_FILEPATH
+
+
+class Logger(object):
+    def __init__(self):
+        self.terminal = sys.stdout
+        self.log = wandb.log
+    
+    def write(self, message):
+        self.terminal.write(message)
+        self.log({'output': message.rstrip()})
 
 
 def initialize_env():
@@ -10,6 +23,9 @@ def initialize_env():
     By default, the environment variables are loaded from the file `configs/env_config.yaml`.
     One can also specify the path to the config file using the environment variable `ENV_CONFIG_FILEPATH`.
     """
+    
+    # Redirect the standard output stream to WandB:
+    sys.stdout = Logger()
     
     env_config_filepath = os.environ.get("ENV_CONFIG_FILEPATH", DEFAULT_ENV_CONFIG_FILEPATH)
     env_config = load_yaml_env_config(env_config_filepath)
