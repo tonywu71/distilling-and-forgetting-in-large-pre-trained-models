@@ -49,11 +49,12 @@ def main(config_filepath: str):
     # If a previous run has its checkpoints saved in the same directory, raise an error:
     if Path(config.model_dir).is_dir() and not os.listdir(config.model_dir):
         # Get the current date and time
+        print (f"Model directory `{config.model_dir}` is not empty. A timestamp will be added to the model directory.")
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         old_model_dir = Path(config.model_dir)
-        new_model_dir = old_model_dir.with_name(f"{old_model_dir.name}-{timestamp}")
-        print (f"Model directory `{old_model_dir}` is not empty. A timestamp will be added to the model directory: `{new_model_dir}`.")
+        new_model_dir = old_model_dir.with_name(f"{old_model_dir.name}-{timestamp}/")
         config.model_dir = new_model_dir.as_posix()
+        print (f"New model directory: `{config.model_dir}`.")
     
     
     # -----------------------   W&B   -----------------------

@@ -43,8 +43,17 @@ def load_yaml_config(config_file: str) -> Config:
     with open(config_file, "r") as f:
         config_dict = yaml.safe_load(f)
     
+    # Sanity checks:
+    assert config_dict["save_total_limit"] is None or config_dict["save_total_limit"] >= 2, \
+        "The save_total_limit must be at least 2, or None."
+    
     # Convert types:
     config_dict["learning_rate"] = float(config_dict["learning_rate"])
+    
+    # Fix paths:
+    if config_dict["model_dir"] and not config_dict["model_dir"].endswith("/"):
+        # The model_dir must end with a slash:
+        config_dict["model_dir"] = config_dict["model_dir"] + "/"
     
     # Set defaults:
     if config_dict["early_stopping_patience"] is None:
