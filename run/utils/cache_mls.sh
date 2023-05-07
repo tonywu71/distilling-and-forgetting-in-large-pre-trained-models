@@ -15,7 +15,7 @@
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How much wallclock time will be required?
-#SBATCH --time=04:00:00
+#SBATCH --time=05:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -44,13 +44,8 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 #! ####                    MAIN                    ###########
 #! ###########################################################
-languages=("dutch" "french" "german" "italina" "polish" "portuguese" "spanish")
 
-for language in "${languages[@]}"
-do
-    echo "Caching $language..."
-    python scripts/cache_dataset_from_hf.py "facebook/multilingual_librispeech" --name $language --split test >> $LOG 2> $ERR
-done
+python scripts/cache_mls.py >> $LOG 2> $ERR
 
 #! #############################################
 

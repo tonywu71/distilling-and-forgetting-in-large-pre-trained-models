@@ -9,8 +9,8 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_mls-finetuned
-#! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
+#SBATCH -J eval_whisper_on_fab-finetuned
+#! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper_on_mls.py checkpoints/whisper_tiny-librispeech_clean_100h/checkpoint-4000 >> $LOG 2> $ERR
+python scripts/eval_whisper_on_fab.py checkpoints/whisper_tiny-librispeech_clean_100h/checkpoint-4000 >> $LOG 2> $ERR
 
 #! #############################################
 

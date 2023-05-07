@@ -15,7 +15,7 @@
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How much wallclock time will be required?
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -46,7 +46,9 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 # python scripts/cache_dataset_from_hf.py librispeech_asr --name clean --split train.360 >> $LOG 2> $ERR
+# python scripts/cache_dataset_from_hf.py librispeech_asr --name clean --split validation >> $LOG 2> $ERR
 # python scripts/cache_dataset_from_hf.py librispeech_asr --name clean --split test >> $LOG 2> $ERR
+# python scripts/cache_dataset_from_hf.py librispeech_asr --name other --split validation >> $LOG 2> $ERR
 # python scripts/cache_dataset_from_hf.py librispeech_asr --name other --split test >> $LOG 2> $ERR
 
 #! #############################################

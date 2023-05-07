@@ -95,7 +95,8 @@ def main(config_filepath: str):
     assert Path(os.environ["PREPROCESSED_DATASETS_DIR"]).exists(), \
         f"Preprocessed datasets directory `{os.environ['PREPROCESSED_DATASETS_DIR']}` not found."
     
-    dataset_dir = str(Path(os.environ["PREPROCESSED_DATASETS_DIR"]) / config.dataset_name)
+    tokenizer_name = config.finetuned_from.replace("/", "-").replace(".", "-")
+    dataset_dir = str(Path(os.environ["PREPROCESSED_DATASETS_DIR"]) / config.dataset_name / tokenizer_name)
     
     if not config.force_reprocess_dataset and Path(dataset_dir).exists():
         print(f"Previously proprocessed dataset found at `{dataset_dir}`. Loading from disk...")
@@ -209,8 +210,7 @@ def main(config_filepath: str):
                                              n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
     
     if config.early_stopping_patience != -1:
-        callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))
-    
+        callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore
     
     trainer = Seq2SeqTrainer(
         args=training_args,

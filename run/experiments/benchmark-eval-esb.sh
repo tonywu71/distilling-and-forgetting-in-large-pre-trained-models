@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J benchmark-eval
+#SBATCH -J benchmark-eval-esb
 #! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,9 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper_on_esb.py checkpoints/experiments/compare_freezing/freeze_encoder --subset librispeech >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py checkpoints/experiments/compare_freezing/freeze_decoder --subset librispeech >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py checkpoints/experiments/compare_freezing/no_frozen_layer --subset librispeech >> $LOG 2> $ERR
+python scripts/eval_whisper_on_esb.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark/checkpoint-2500 >> $LOG 2> $ERR
 
 #! #############################################
 

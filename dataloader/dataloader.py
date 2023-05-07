@@ -7,8 +7,8 @@ from utils.constants import DEFAULT_LABEL_STR_COL
 
 
 STR_TO_LOAD_FCT = {
-    "librispeech_100h": partial(load_librispeech, train_split="train.100"),
-    "librispeech_360h": partial(load_librispeech, train_split="train.360"),
+    "librispeech_clean_100h": partial(load_librispeech, train_split="train.100"),
+    "librispeech_clean_360h": partial(load_librispeech, train_split="train.360"),
     "librispeech_dummy": load_librispeech_dummy
 }
 

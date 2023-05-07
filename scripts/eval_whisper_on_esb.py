@@ -94,7 +94,7 @@ def main(pretrained_model_name_or_path: str,
     
     # Save results:
     if savepath is None:
-        savepath = extract_savepath(pretrained_model_name_or_path)
+        savepath = extract_savepath(pretrained_model_name_or_path) + "-esb.csv"
     
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     results.to_csv(f"{savepath}")

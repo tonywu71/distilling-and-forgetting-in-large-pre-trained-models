@@ -55,7 +55,7 @@ The repository contains two important directories:
 If the machine you are working on has a CUDA GPU, you can run the repository scripts directly from the `scripts` folder, e.g.:
 
 ```bash
-python scripts/finetune_whisper_on_librispeech.py configs/whisper_small-librispeech_100h.yaml
+python scripts/finetune_whisper_on_librispeech.py configs/whisper_small-librispeech_clean_100h.yaml
 ```
 
 In general, it is recommended to submit SLURM jobs from the `run` folder:

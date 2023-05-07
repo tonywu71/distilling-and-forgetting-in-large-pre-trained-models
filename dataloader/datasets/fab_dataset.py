@@ -17,7 +17,7 @@ class FABDataset(BaseDatasetGroup):
             "librispeech_en_clean",
             "librispeech_en_other",
             "tedlium",
-            "librispeech_fr_clean",
+            "librispeech_fr",
         ]
         
         self.is_multilingual = True
@@ -25,7 +25,7 @@ class FABDataset(BaseDatasetGroup):
             "librispeech_en_clean": "en",
             "librispeech_en_other": "en",
             "tedlium": "en",
-            "librispeech_fr_clean": "fr"
+            "librispeech_fr": "fr"
         }
         
         super().__init__(streaming=streaming, subset=subset)

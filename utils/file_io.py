@@ -31,8 +31,8 @@ def extract_savepath(model_filepath: str) -> str:
     path = Path(model_filepath)
     
     if CHECKPOINTS_DIRNAME in path.parts:  # if the path is a checkpoint...
-        savepath = DEFAULT_OUTPUT_DIR / path.relative_to(CHECKPOINTS_DIRNAME).as_posix()
+        savepath = (DEFAULT_OUTPUT_DIR / path.relative_to(CHECKPOINTS_DIRNAME)).as_posix()
     else:  # if the path is a model name from the HuggingFace Hub...
-        savepath = (DEFAULT_OUTPUT_DIR / path.name).as_posix().replace(".", "-")
+        savepath = (DEFAULT_OUTPUT_DIR / path.name.replace(".", "-")).as_posix()
     
     return savepath
