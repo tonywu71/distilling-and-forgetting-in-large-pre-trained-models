@@ -86,7 +86,7 @@ def preprocess_dataset(dataset_dict: DatasetDict,
         # Apply Whisper's normalization to the labels:
         # This operation must be done before the dataset is prepared as the
         # tokenizer should be applied to the normalized text.
-        whisper_norm = get_whisper_normalizer(tokenizer)
+        whisper_norm = get_whisper_normalizer(language=tokenizer.language)
         
         def normalize_fct(batch):
             batch[DEFAULT_LABEL_STR_COL] = whisper_norm(batch[DEFAULT_LABEL_STR_COL])

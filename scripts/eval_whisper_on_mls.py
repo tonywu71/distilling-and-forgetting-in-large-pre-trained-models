@@ -19,7 +19,7 @@ import wandb
 
 from dataloader.datasets.mls_dataset import MLSDataset
 from evaluation.eval_whisper_on_dataset import eval_whisper_on_dataset
-from utils.file_io import extract_savepath_from_model_filepath
+from utils.file_io import extract_experiment_name, extract_savepath
 
 
 
@@ -30,7 +30,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
          savepath: Optional[str]=typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
     """
-    Evaluate the whisper model on the ESB benchmark.
+    Evaluate the whisper model on the MLS benchmark.
     Note that only greedy decoding is supported for now.
     """
     
@@ -54,16 +54,21 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
-               name=f"eval_mls-{extract_savepath_from_model_filepath(pretrained_model_name_or_path)}",
+               name=f"eval_mls-{extract_experiment_name(pretrained_model_name_or_path)}",
                config=config)
     
     
     # Load dataset:
     if subset:
-        print(f"Subset(s) of ESB: {subset}")
+        print(f"Subset(s) of MLS: {subset}")
         
     mls_dataset = MLSDataset(streaming=streaming, subset=subset)
     print(f"Loaded datasets: {list(mls_dataset.keys())}")
+    
+    
+    # Preprocess:
+    print("Preprocessing datasets...")
+    mls_dataset.preprocess_datasets(normalize=True)
     
     
     # Evaluate:
@@ -71,7 +76,6 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     results = eval_whisper_on_dataset(pretrained_model_name_or_path=pretrained_model_name_or_path,
                                       ds_group=mls_dataset,
                                       batch_size=batch_size,
-                                      language=None,
                                       task=task)
     
     print("Results:")
@@ -83,7 +87,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     
     # Save results:
     if savepath is None:
-        savepath = extract_savepath_from_model_filepath(pretrained_model_name_or_path).with_suffix(".csv").as_posix()
+        savepath = extract_savepath(pretrained_model_name_or_path)
     
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     results.to_csv(f"{savepath}")

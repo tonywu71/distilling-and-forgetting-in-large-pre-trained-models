@@ -1,6 +1,8 @@
-from typing import Optional, List, Callable, Dict
+from typing import Optional, List, Dict
 from abc import ABC, abstractmethod
 
+from normalization.whisper_normalization import get_whisper_normalizer
+from utils.constants import DEFAULT_NUM_PROC
 
 class BaseDatasetGroup(ABC):
     """
@@ -10,6 +12,7 @@ class BaseDatasetGroup(ABC):
     # Must be set in the child class before calling `super().__init__()`:
     available_datasets: List[str] = []
     is_multilingual: bool = False
+    language: Optional[str] = None
     ds_name_to_lang: Dict[str, str] = {}
     
     
@@ -29,11 +32,12 @@ class BaseDatasetGroup(ABC):
         # Fill `self.str2dataset` depending on the datasets to load:
         self._prepare_str2dataset()
         
-        self.preprocessed = False
+        self.is_preprocessed = False
         if self.is_multilingual:
             assert hasattr(self, "ds_name_to_lang"), "If `is_multilingual` is True, `ds_name_to_lang` must be set in the child class before calling `super().__init__()`."
             assert set(self.available_datasets) == set(self.ds_name_to_lang.keys()), "`ds_name_to_lang` must have the same keys as `self.available_datasets`."
-    
+        else:
+            assert self.language is not None, "If `is_multilingual` is False, `language` must be set in the child class before calling `super().__init__()`."
     
     @abstractmethod
     def _prepare_str2dataset(self) -> None:
@@ -43,13 +47,45 @@ class BaseDatasetGroup(ABC):
         pass
     
     
-    @abstractmethod
-    def preprocess_datasets(self, normalize_fct: Optional[Callable]=None, **kwargs) -> None:
+    def preprocess_datasets(self, normalize: bool=True) -> None:
         """
         Preprocess the datasets.
         """
-        assert not self.preprocessed, "Datasets have already been preprocessed."
-        pass
+        assert not self.is_preprocessed, "Datasets have already been preprocessed."
+        
+        if not self.is_multilingual:
+            # Load normalizer before the loop to avoid loading it multiple times:
+            whisper_norm = get_whisper_normalizer(language=self.language)
+            
+            def normalize_fct(batch):
+                batch["text"] = whisper_norm(batch["text"])
+                return batch
+        
+            # Loop over all the datasets:
+            for dataset_name, dataset in self.str2dataset.items():
+                if normalize:
+                    dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)  # type: ignore
+                
+                # Update dataset:
+                self.str2dataset[dataset_name] = dataset
+        
+        else:  # If multilingual...
+            # Loop over all the datasets:
+            for dataset_name, dataset in self.str2dataset.items():
+                
+                # Load normalizer depending on the language:
+                whisper_norm = get_whisper_normalizer(language=self.ds_name_to_lang[dataset_name])
+                def normalize_fct(batch):
+                    batch["text"] = whisper_norm(batch["text"])
+                    return batch
+                
+                dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)  # type: ignore
+                
+                # Update dataset:
+                self.str2dataset[dataset_name] = dataset
+
+        self.is_preprocessed = True
+        return
     
     
     def __getitem__(self, dataset_name: str):

@@ -18,19 +18,18 @@ import wandb
 
 from dataloader.datasets.fab_dataset import FABDataset
 from evaluation.eval_whisper_on_dataset import eval_whisper_on_dataset
-from utils.file_io import extract_savepath_from_model_filepath
+from utils.file_io import extract_experiment_name, extract_savepath
 
 
 
 def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to the pretrained model or its name in the HuggingFace Hub."),
-         language: str=typer.Option("english", help="Language of the model."),
          streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
          subset: Optional[List[str]]=typer.Option(None, help="Subset of the FAB dataset to evaluate on."),
          batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
     """
-    Evaluate the whisper model on the ESB benchmark.
+    Evaluate the whisper model on the FAB benchmark.
     Note that only greedy decoding is supported for now.
     """
     
@@ -39,7 +38,6 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     
     config = {
         "pretrained_model_name_or_path": pretrained_model_name_or_path,
-        "language": language,
         "task": task,
         "dataset": "fab",
         "streaming": streaming,
@@ -55,25 +53,28 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
-               name=f"eval_fab-{extract_savepath_from_model_filepath(pretrained_model_name_or_path)}",
+               name=f"eval_fab-{extract_experiment_name(pretrained_model_name_or_path)}",
                config=config)
     
     
     # Load dataset:
     if subset:
-        print(f"Subset(s) of ESB: {subset}")
+        print(f"Subset(s) of FAB: {subset}")
         
     fab_dataset = FABDataset(streaming=streaming, subset=subset)
     print(f"Loaded datasets: {list(fab_dataset.keys())}")
     
     
+    # Preprocess:
+    print("Preprocessing datasets...")
+    fab_dataset.preprocess_datasets(normalize=True)
+    
+    
     # Evaluate:
     print("Evaluating...")
-    # TODO: Figure out how to handle the multilingual case.
     results = eval_whisper_on_dataset(pretrained_model_name_or_path=pretrained_model_name_or_path,
                                       ds_group=fab_dataset,
                                       batch_size=batch_size,
-                                      language=language,
                                       task=task)
     
     print("Results:")
@@ -85,7 +86,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     
     # Save results:
     if savepath is None:
-        savepath = extract_savepath_from_model_filepath(pretrained_model_name_or_path).with_suffix(".csv").as_posix()
+        savepath = extract_savepath(pretrained_model_name_or_path)
     
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     results.to_csv(f"{savepath}")

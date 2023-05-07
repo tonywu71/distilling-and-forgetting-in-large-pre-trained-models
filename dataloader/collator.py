@@ -49,7 +49,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         # discard it as it will get appended later anyway:
         if (labels[:, 0] == self.processor.tokenizer.bos_token_id).all().cpu().item():  # type: ignore
             labels = labels[:, 1:]
-
+        
         batch[DEFAULT_LABEL_TOKENIZED_COL] = labels
 
         return batch

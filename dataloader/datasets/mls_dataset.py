@@ -1,8 +1,7 @@
-from typing import Callable, Optional, List
+from typing import Optional, List
 from datasets import load_dataset
 
 from dataloader.datasets.base_dataset_group import BaseDatasetGroup
-from utils.constants import DEFAULT_NUM_PROC
 
 
 class MLSDataset(BaseDatasetGroup):
@@ -22,7 +21,7 @@ class MLSDataset(BaseDatasetGroup):
             "dutch",
             "french",
             "german",
-            "italina",
+            "italian",
             "polish",
             "portuguese",
             "spanish"
@@ -33,7 +32,7 @@ class MLSDataset(BaseDatasetGroup):
             "dutch": "dutch",
             "french": "french",
             "german": "german",
-            "italina": "italina",
+            "italian": "italian",
             "polish": "polish",
             "portuguese": "portuguese",
             "spanish": "spanish"
@@ -50,21 +49,3 @@ class MLSDataset(BaseDatasetGroup):
                                                               split="test",
                                                               streaming=self.streaming,
                                                               use_auth_token=True)
-    
-        
-    def preprocess_datasets(self, normalize_fct: Optional[Callable]=None) -> None:
-        """
-        Preprocess the datasets.
-        """
-        assert not self.preprocessed, "Datasets have already been preprocessed."
-        
-        # Loop over all the datasets in the ESB benchmark:
-        for dataset_name, dataset in self.str2dataset.items():
-            # Normalize references (especially important for Whisper):
-            if normalize_fct:
-                dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)
-            # Update dataset:
-            self.str2dataset[dataset_name] = dataset
-
-        self.preprocessed = True
-        return

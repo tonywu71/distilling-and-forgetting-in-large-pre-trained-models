@@ -9,6 +9,12 @@ def compute_wer_fct(pred, processor: WhisperProcessor, normalize: bool=True) -> 
     """
     Compute the WER metric in percent for the given predictions and labels.
     Note: Setting `normalize` to `True` (default) will use the Whisper text normalizer.
+    
+    IMPORTANT: Due to a bug in the HuggingFace implementation of the Whisper, using
+    `batch_decode` with `normalize=True` will always use the English normalizer even
+    if the language is not English -> see https://github.com/huggingface/transformers/pull/20707
+    For the moment, this is not a problem as we are always fine-tuning on English data, and
+    the evaluation script doesn't use `batch_decode`.
     """
     
     wer_metric = evaluate.load("wer")

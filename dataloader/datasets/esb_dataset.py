@@ -1,8 +1,7 @@
-from typing import Callable, Optional, List
+from typing import Optional, List
 from datasets import load_dataset
 
 from dataloader.datasets.base_dataset_group import BaseDatasetGroup
-from utils.constants import DEFAULT_NUM_PROC
 
 
 class ESBDataset(BaseDatasetGroup):
@@ -31,6 +30,7 @@ class ESBDataset(BaseDatasetGroup):
             "ami"
         ]
         self.is_multilingual = False
+        self.language = "english"
         self.load_diagnostic = load_diagnostic
         
         super().__init__(streaming=streaming, subset=subset)
@@ -82,26 +82,5 @@ class ESBDataset(BaseDatasetGroup):
                                                                       name=dataset_name,
                                                                       split="clean",
                                                                       streaming=self.streaming,
-                                                                      use_auth_token=True)
-    
-        
-    def preprocess_datasets(self,
-                            normalize_fct: Optional[Callable]=None) -> None:
-        """
-        Preprocess the datasets.
-        """
-        assert not self.preprocessed, "Datasets have already been preprocessed."
-        
-        # Loop over all the datasets in the ESB benchmark:
-        for dataset_name, dataset in self.str2dataset.items():
-            if self.load_diagnostic:
-                dataset = dataset.rename_column("norm_transcript", "text")
-            
-            # Normalize references (especially important for Whisper):
-            if normalize_fct:
-                dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)
-            # Update dataset:
-            self.str2dataset[dataset_name] = dataset
-
-        self.preprocessed = True
-        return
+                                                                      use_auth_token=True
+                                                                      ).rename_column("norm_transcript", "text")

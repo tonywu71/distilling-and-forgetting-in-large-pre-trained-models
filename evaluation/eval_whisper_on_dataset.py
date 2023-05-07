@@ -11,7 +11,6 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from transformers import (pipeline,
-                          WhisperTokenizer,
                           WhisperProcessor,
                           WhisperForConditionalGeneration)
 import evaluate
@@ -25,28 +24,15 @@ from normalization.whisper_normalization import get_whisper_normalizer
 def eval_whisper_on_dataset(pretrained_model_name_or_path: str,
                             ds_group: BaseDatasetGroup,
                             batch_size: int,
-                            language: Optional[str]=None,
                             task: str="transcribe") -> pd.Series:
     
+    assert ds_group.is_preprocessed, "The dataset group must be preprocessed."
+    
     if ds_group.is_multilingual:
-        assert language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."
+        assert ds_group.language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."
     
     # Load model:
     model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path)
-    
-    
-    # Get normalizer:
-    tokenizer = WhisperTokenizer.from_pretrained(pretrained_model_name_or_path,
-                                                 language=language,
-                                                 task=task)
-    whisper_norm = get_whisper_normalizer(tokenizer)
-    
-    def normalize_fct(batch):
-        batch["text"] = whisper_norm(batch["text"])
-        return batch
-    
-    # Preprocess the datasets:
-    ds_group.preprocess_datasets(normalize_fct=normalize_fct)
     
     
     # Load metric:
@@ -61,13 +47,17 @@ def eval_whisper_on_dataset(pretrained_model_name_or_path: str,
         tbar.set_description(f"Processing {dataset_name}...")
         
         if not ds_group.is_multilingual:
-            processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path,
-                                                         language=language,
-                                                         task=task)
+            language = ds_group.language
         else:
-            processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path,
-                                                         language=ds_group.ds_name_to_lang[dataset_name],
-                                                         task=task)
+            language = ds_group.ds_name_to_lang[dataset_name]
+        
+        whisper_norm = get_whisper_normalizer(language=language)
+        
+        processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path,
+                                                     language=language,
+                                                     task=task)
+        
+        model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=language, task=task)  # type: ignore
         
         whisper_asr = pipeline(task="automatic-speech-recognition",
                                model=model,
@@ -75,7 +65,7 @@ def eval_whisper_on_dataset(pretrained_model_name_or_path: str,
                                feature_extractor=processor.feature_extractor,  # type: ignore
                                device=0  # use 1st GPU for Whisper
         )
-        
+    
         # Create placeholders for the predictions and references:
         predictions = []
         references = []
@@ -97,7 +87,7 @@ def eval_whisper_on_dataset(pretrained_model_name_or_path: str,
     results = pd.Series(wer_results, index=list(ds_group.keys()), name="WER (%)")
     results.index.name = "Dataset"
     
-    # Compute the average:
+    # Compute the average WER:
     results["Average"] = results.mean()
     
     return results
