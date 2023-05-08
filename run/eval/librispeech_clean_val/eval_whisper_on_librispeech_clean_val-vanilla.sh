@@ -9,8 +9,8 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J benchmark-eval-esb
-#! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
+#SBATCH -J eval_whisper_on_librispeech_clean_val-vanilla
+#! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
@@ -51,9 +51,14 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper_on_esb.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-no_freeze/checkpoint-2500 >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_decoder/checkpoint-3000 >> $LOG 2> $ERR
+python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-tiny >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-tiny.en >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-tiny --subset librispeech_clean --subset librispeech_other >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-base >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-small >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-small.en >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-medium >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-large-v2 >> $LOG 2> $ERR
 
 #! #############################################
 

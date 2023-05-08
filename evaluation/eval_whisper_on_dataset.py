@@ -5,8 +5,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
 
-from typing import Optional
-
 import pandas as pd
 from tqdm.auto import tqdm
 
@@ -78,7 +76,7 @@ def eval_whisper_on_dataset(pretrained_model_name_or_path: str,
         
         # Compute the WER in percent:
         wer = wer_metric.compute(references=references, predictions=predictions)
-        wer = round(100 * wer, ndigits=3)  # type: ignore
+        wer = 100 * wer  # type: ignore
         
         wer_results.append(wer)
     
@@ -89,5 +87,8 @@ def eval_whisper_on_dataset(pretrained_model_name_or_path: str,
     
     # Compute the average WER:
     results["Average"] = results.mean()
+    
+    # Round the results:
+    results = results.round(2)
     
     return results

@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J benchmark-eval-esb
+#SBATCH -J forgetting_and_overtraining-eval-fab
 #! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,9 +51,13 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper_on_esb.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-no_freeze/checkpoint-2500 >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_decoder/checkpoint-3000 >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_fab.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-500 >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_fab.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-1000 >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_fab.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-1500 >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_fab.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-2000 >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_fab.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-2500 >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_fab.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3000 >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_fab.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 >> $LOG 2> $ERR
 
 #! #############################################
 

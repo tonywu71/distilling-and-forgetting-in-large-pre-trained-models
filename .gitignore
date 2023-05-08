@@ -1,6 +1,7 @@
 # Custom
 checkpoints/*
 outputs/**/*.csv
+outputs/**/*.png
 wandb/
 .DS_Store
 *.out

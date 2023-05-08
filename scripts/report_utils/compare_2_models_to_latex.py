@@ -12,6 +12,7 @@ def main(filepath_1: str=typer.Argument(..., help="Path to first CSV file."),
          filepath_2: str=typer.Argument(..., help="Path to second CSV file.")):
     """
     Script that takes 2 CSV outputs from `eval_whisper_on_esb.py` and outputs a comparison table in LaTeX.
+    
     To be used for LaTeX table generation in reports.
     """
     
@@ -25,10 +26,9 @@ def main(filepath_1: str=typer.Argument(..., help="Path to first CSV file."),
     df_2.index = [model_2]  # type: ignore
     
     df = pd.concat([df_1, df_2], axis=0).T
-    df["RER (%)"] = (df[model_2] - df[model_1]) / df[model_1] * 100
-    df["RER (%)"] = df["RER (%)"].round(1)
+    df["RER (%)"] = (df[model_1] - df[model_2]) / df[model_1] * 100
     
-    output = df.to_latex(column_format="l|cc|c")
+    output = df.round(2).to_latex(column_format="l|cc|c")
     
     print("```latex")
     print(output + "```")

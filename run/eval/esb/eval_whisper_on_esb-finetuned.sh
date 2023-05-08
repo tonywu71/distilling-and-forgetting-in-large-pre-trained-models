@@ -51,7 +51,9 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper_on_esb.py checkpoints/whisper_tiny-librispeech_clean_100h/checkpoint-4000 >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_esb.py checkpoints/experiments/compare_freezing/freeze_encoder/checkpoint-800 >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_esb.py checkpoints/experiments/compare_freezing/freeze_decoder/checkpoint-800 >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_esb.py checkpoints/experiments/compare_freezing/no_frozen_layer/checkpoint-800 >> $LOG 2> $ERR
 
 #! #############################################
 
