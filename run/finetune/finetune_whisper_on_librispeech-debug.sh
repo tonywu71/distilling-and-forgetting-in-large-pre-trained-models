@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J finetune_whisper_on_librispeech
+#SBATCH -J finetune_whisper_on_librispeech-debug
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=04:00:00
+#SBATCH --time=01:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,8 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/finetune_whisper_on_librispeech.py configs/librispeech-base-2.yaml >> $LOG 2> $ERR
-python scripts/finetune_whisper_on_librispeech.py configs/whisper_small-librispeech_100h.yaml >> $LOG 2> $ERR
+python scripts/finetune_whisper_on_librispeech.py configs/benchmarks/evaluation/whisper_tiny-librispeech_clean_100h-benchmark.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

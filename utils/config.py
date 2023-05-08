@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 import yaml
 
 
@@ -9,10 +10,13 @@ class Config:
     Config class for the Whisper experiments
     """
     experiment_name: str
-    lang_name: str
-    lang_id: str
+    lang_name: Optional[str]
+    task: str
     pretrained_model_name_or_path: str
+    finetuned_from: str
     model_dir: str
+    freeze_encoder: bool
+    freeze_decoder: bool
     batch_size: int
     gradient_accumulation_steps: int
     gradient_checkpointing: bool
@@ -25,9 +29,10 @@ class Config:
     eval_steps: int
     generation_num_beams: int
     save_steps: int
+    save_total_limit: Optional[int]
     logging_steps: int
     num_train_epochs: int
-    early_stopping_patience: int
+    early_stopping_patience: Optional[int]
     log_preds_to_wandb: bool = True
 
 
@@ -38,7 +43,20 @@ def load_yaml_config(config_file: str) -> Config:
     with open(config_file, "r") as f:
         config_dict = yaml.safe_load(f)
     
+    # Sanity checks:
+    assert config_dict["save_total_limit"] is None or config_dict["save_total_limit"] >= 2, \
+        "The save_total_limit must be at least 2, or None."
+    
     # Convert types:
     config_dict["learning_rate"] = float(config_dict["learning_rate"])
+    
+    # Fix paths:
+    if config_dict["model_dir"] and not config_dict["model_dir"].endswith("/"):
+        # The model_dir must end with a slash:
+        config_dict["model_dir"] = config_dict["model_dir"] + "/"
+    
+    # Set defaults:
+    if config_dict["early_stopping_patience"] is None:
+        config_dict["early_stopping_patience"] = -1
     
     return Config(**config_dict)

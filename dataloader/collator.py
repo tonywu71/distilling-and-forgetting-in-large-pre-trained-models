@@ -19,15 +19,11 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         We expect `features` to be as such:
         [
             {
-                "input_ids": [101, 2023, 3185, 2000, 1055, 2342, 1996, 16615, 102],
-                "attention_mask": [1, 1, 1, 1, 1, 1, 1, 1, 1],
-                "labels": [2023, 3185, 2000, 1055, 2342, 1996, 16615, 102]
+                "input_features": [...],
+                "labels": [...],
+                "input_ids": [...]
             },
-            {
-                "input_ids": [101, 2054, 2023, 3185, 2000, 1055, 2342, 1996, 16615, 102],
-                "attention_mask": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                "labels": [2054, 2023, 3185, 2000, 1055, 2342, 1996, 16615, 102]
-            },
+            
             ...
         ]
         
@@ -53,7 +49,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         # discard it as it will get appended later anyway:
         if (labels[:, 0] == self.processor.tokenizer.bos_token_id).all().cpu().item():  # type: ignore
             labels = labels[:, 1:]
-
+        
         batch[DEFAULT_LABEL_TOKENIZED_COL] = labels
 
         return batch

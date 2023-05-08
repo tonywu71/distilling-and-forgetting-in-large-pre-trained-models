@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_esb-reference
+#SBATCH -J compare_freezing-finetune
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=00:10:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -41,7 +41,7 @@ LOG=$DIRPATH_EXP/$SLURM_JOB_ID.log
 ERR=$DIRPATH_EXP/$SLURM_JOB_ID.err
 
 
-echo -e "JobID: $JOBID\n======" > $LOG
+echo -e "JobID: $SLURM_JOB_ID\n======" > $LOG
 echo "Time: `date`" >> $LOG
 echo "Running on master node: `hostname`" >> $LOG
 echo "python `which python`": >> $LOG
@@ -51,10 +51,9 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper_on_esb.py openai/whisper-tiny.en >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py openai/whisper-base.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py openai/whisper-small.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_esb.py openai/whisper-medium.en --subset 'LibriSpeech Clean' --subset 'LibriSpeech Other' >> $LOG 2> $ERR
+# python scripts/finetune_whisper_on_librispeech.py configs/experimemts/compare_freezing/freeze_encoder.yaml >> $LOG 2> $ERR
+# python scripts/finetune_whisper_on_librispeech.py configs/experimemts/compare_freezing/freeze_decoder.yaml >> $LOG 2> $ERR
+# python scripts/finetune_whisper_on_librispeech.py configs/experimemts/compare_freezing/no_frozen_layer.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

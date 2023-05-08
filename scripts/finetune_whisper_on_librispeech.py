@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from typing import List
 import shutil
+from datetime import datetime
 
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
@@ -45,6 +46,17 @@ def main(config_filepath: str):
     config = load_yaml_config(config_filepath)
     
     
+    # If a previous run has its checkpoints saved in the same directory, raise an error:
+    if Path(config.model_dir).is_dir() and not os.listdir(config.model_dir):
+        # Get the current date and time
+        print (f"Model directory `{config.model_dir}` is not empty. A timestamp will be added to the model directory.")
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        old_model_dir = Path(config.model_dir)
+        new_model_dir = old_model_dir.with_name(f"{old_model_dir.name}-{timestamp}/")
+        config.model_dir = new_model_dir.as_posix()
+        print (f"New model directory: `{config.model_dir}`.")
+    
+    
     # -----------------------   W&B   -----------------------
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
@@ -73,7 +85,7 @@ def main(config_filepath: str):
     processor = WhisperProcessor.from_pretrained(
         config.pretrained_model_name_or_path,
         language=config.lang_name,
-        task="transcribe"
+        task=config.task
     )
 
     # Create the data collator that will be used to prepare the data for training:
@@ -84,7 +96,8 @@ def main(config_filepath: str):
     assert Path(os.environ["PREPROCESSED_DATASETS_DIR"]).exists(), \
         f"Preprocessed datasets directory `{os.environ['PREPROCESSED_DATASETS_DIR']}` not found."
     
-    dataset_dir = str(Path(os.environ["PREPROCESSED_DATASETS_DIR"]) / config.dataset_name)
+    tokenizer_name = config.finetuned_from.replace("/", "-").replace(".", "-")
+    dataset_dir = str(Path(os.environ["PREPROCESSED_DATASETS_DIR"]) / config.dataset_name / tokenizer_name)
     
     if not config.force_reprocess_dataset and Path(dataset_dir).exists():
         print(f"Previously proprocessed dataset found at `{dataset_dir}`. Loading from disk...")
@@ -102,9 +115,9 @@ def main(config_filepath: str):
         
         print(f"Preprocessing dataset `{config.dataset_name}`...")
         dataset_dict = preprocess_dataset(dataset_dict,  # type: ignore
-                                        tokenizer=processor.tokenizer,  # type: ignore
-                                        feature_extractor=processor.feature_extractor,  # type: ignore
-                                        augment=config.data_augmentation)
+                                          tokenizer=processor.tokenizer,  # type: ignore
+                                          feature_extractor=processor.feature_extractor,  # type: ignore
+                                          augment=config.data_augmentation)
         
         # Note: The pytorch tensor conversation will be done in the DataCollator.
         
@@ -123,11 +136,33 @@ def main(config_filepath: str):
     #       containing the target sentence and the separator token. This tells the model to
     #       always generate the target sentence and the separator token before starting the
     #       decoding process.
+    
     print(f"Loading pretrained model `{config.pretrained_model_name_or_path}`...")
+    
     model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path)
-    model.config.forced_decoder_ids = None  # type: ignore
+    
+    
+    # Freeze the encoder and/or decoder if specified in the config:
+    assert not (config.freeze_encoder and config.freeze_decoder), \
+        "Freezing both the encoder and the decoder would result in a model with " + \
+        "no trainable parameters. Please set either `freeze_encoder` or `freeze_decoder` to `False`."
+        
+    if config.freeze_encoder:
+        print("Freezing encoder...")
+        model.freeze_encoder()  # type: ignore
+    if config.freeze_decoder:
+        print("Freezing decoder...")
+        decoder = model.get_decoder()  # type: ignore
+        for param in decoder.parameters():
+            param.requires_grad = False
+        decoder._requires_grad = False  # type: ignore
+    
+    
+    model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
     model.config.suppress_tokens = []  # type: ignore
-    model.config.use_cache = False  # type: ignore
+    if config.gradient_checkpointing:
+        model.config.use_cache = False  # type: ignore
+    
     
     # Prepare training:
     Path(config.model_dir).mkdir(parents=True, exist_ok=True)
@@ -151,7 +186,7 @@ def main(config_filepath: str):
         logging_steps=config.eval_steps,
         save_strategy="steps",
         save_steps=config.save_steps,
-        save_total_limit=config.early_stopping_patience,
+        save_total_limit=config.save_total_limit,
         predict_with_generate=True,
         generation_max_length=GEN_MAX_LENGTH,
         load_best_model_at_end=True,
@@ -171,19 +206,18 @@ def main(config_filepath: str):
     
     if config.log_preds_to_wandb:
         callbacks.append(WandbCustomCallback(config=config,
-                                            processor=processor,
-                                            eval_dataset=dataset_dict["test"],  # type: ignore
-                                            n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
+                                             processor=processor,
+                                             eval_dataset=dataset_dict["val"],  # type: ignore
+                                             n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
     
     if config.early_stopping_patience != -1:
-        callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))
-    
+        callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore
     
     trainer = Seq2SeqTrainer(
         args=training_args,
         model=model,  # type: ignore
         train_dataset=dataset_dict["train"],  # type: ignore
-        eval_dataset=dataset_dict["test"],  # type: ignore
+        eval_dataset=dataset_dict["val"],  # type: ignore
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
         tokenizer=processor,  # type: ignore
