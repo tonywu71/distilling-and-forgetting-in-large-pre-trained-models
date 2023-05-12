@@ -4,7 +4,7 @@ import typer
 
 import os, sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."

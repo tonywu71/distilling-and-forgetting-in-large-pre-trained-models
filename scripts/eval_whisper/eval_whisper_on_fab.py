@@ -4,7 +4,7 @@ import typer
 
 import os, sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
@@ -16,37 +16,31 @@ from typing import List, Optional
 
 import wandb
 
-from dataloader.datasets.esb_dataset import ESBDataset
+from dataloader.datasets.fab_dataset import FABDataset
 from evaluation.eval_whisper_on_dataset import eval_whisper_on_dataset
-
 from utils.file_io import extract_experiment_name, extract_savepath
 
 
-def main(pretrained_model_name_or_path: str,
+
+def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to the pretrained model or its name in the HuggingFace Hub."),
          streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
-         load_full: bool=typer.Option(False, help="Whether to load the full ESB dataset (non diagnostic)."),
-         subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB dataset to evaluate on."),
+         subset: Optional[List[str]]=typer.Option(None, help="Subset of the FAB dataset to evaluate on."),
          batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
     """
-    Evaluate the whisper model on the ESB benchmark (diagnostic by default).
+    Evaluate the whisper model on the FAB benchmark.
     Note that only greedy decoding is supported for now.
     """
     
-    load_diagnostic = not load_full
-    
     # Set up the parameters:
-    language = "english"
     task = "transcribe"
     
     config = {
         "pretrained_model_name_or_path": pretrained_model_name_or_path,
-        "language": language,
         "task": task,
-        "dataset": "esb",
+        "dataset": "fab",
         "streaming": streaming,
-        "load_diagnostic": load_diagnostic,
         "subset": subset,
         "batch_size": batch_size,
     }
@@ -59,29 +53,27 @@ def main(pretrained_model_name_or_path: str,
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
-               name=f"eval_esb-{extract_experiment_name(pretrained_model_name_or_path)}",
+               name=f"eval_fab-{extract_experiment_name(pretrained_model_name_or_path)}",
                config=config)
     
     
     # Load dataset:
     if subset:
-        print(f"Subset(s) of ESB: {subset}")
+        print(f"Subset(s) of FAB: {subset}")
         
-    esb_dataset = ESBDataset(streaming=streaming,
-                             load_diagnostic=load_diagnostic,
-                             subset=subset)
-    print(f"Loaded datasets: {list(esb_dataset.keys())}")
+    fab_dataset = FABDataset(streaming=streaming, subset=subset)
+    print(f"Loaded datasets: {list(fab_dataset.keys())}")
     
     
     # Preprocess:
     print("Preprocessing datasets...")
-    esb_dataset.preprocess_datasets(normalize=True)
+    fab_dataset.preprocess_datasets(normalize=True)
     
     
     # Evaluate:
     print("Evaluating...")
     results = eval_whisper_on_dataset(pretrained_model_name_or_path=pretrained_model_name_or_path,
-                                      ds_group=esb_dataset,
+                                      ds_group=fab_dataset,
                                       batch_size=batch_size,
                                       task=task)
     
@@ -94,7 +86,7 @@ def main(pretrained_model_name_or_path: str,
     
     # Save results:
     if savepath is None:
-        savepath = extract_savepath(pretrained_model_name_or_path) + "-esb.csv"
+        savepath = extract_savepath(pretrained_model_name_or_path)  + "-fab.csv"
     
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     results.to_csv(f"{savepath}")

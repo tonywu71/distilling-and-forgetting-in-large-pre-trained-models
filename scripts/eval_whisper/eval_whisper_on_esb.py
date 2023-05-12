@@ -4,7 +4,7 @@ import typer
 
 import os, sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
@@ -16,32 +16,37 @@ from typing import List, Optional
 
 import wandb
 
-
-from dataloader.datasets.mls_dataset import MLSDataset
+from dataloader.datasets.esb_dataset import ESBDataset
 from evaluation.eval_whisper_on_dataset import eval_whisper_on_dataset
+
 from utils.file_io import extract_experiment_name, extract_savepath
 
 
-
-def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to the pretrained model or its name in the HuggingFace Hub."),
+def main(pretrained_model_name_or_path: str,
          streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
-         subset: Optional[List[str]]=typer.Option(None, help="Subset of the MLS dataset to evaluate on."),
+         load_full: bool=typer.Option(False, help="Whether to load the full ESB dataset (non diagnostic)."),
+         subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB dataset to evaluate on."),
          batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
     """
-    Evaluate the whisper model on the MLS benchmark.
+    Evaluate the whisper model on the ESB benchmark (diagnostic by default).
     Note that only greedy decoding is supported for now.
     """
     
+    load_diagnostic = not load_full
+    
     # Set up the parameters:
+    language = "english"
     task = "transcribe"
     
     config = {
         "pretrained_model_name_or_path": pretrained_model_name_or_path,
+        "language": language,
         "task": task,
-        "dataset": "mls",
+        "dataset": "esb",
         "streaming": streaming,
+        "load_diagnostic": load_diagnostic,
         "subset": subset,
         "batch_size": batch_size,
     }
@@ -54,27 +59,29 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
-               name=f"eval_mls-{extract_experiment_name(pretrained_model_name_or_path)}",
+               name=f"eval_esb-{extract_experiment_name(pretrained_model_name_or_path)}",
                config=config)
     
     
     # Load dataset:
     if subset:
-        print(f"Subset(s) of MLS: {subset}")
+        print(f"Subset(s) of ESB: {subset}")
         
-    mls_dataset = MLSDataset(streaming=streaming, subset=subset)
-    print(f"Loaded datasets: {list(mls_dataset.keys())}")
+    esb_dataset = ESBDataset(streaming=streaming,
+                             load_diagnostic=load_diagnostic,
+                             subset=subset)
+    print(f"Loaded datasets: {list(esb_dataset.keys())}")
     
     
     # Preprocess:
     print("Preprocessing datasets...")
-    mls_dataset.preprocess_datasets(normalize=True)
+    esb_dataset.preprocess_datasets(normalize=True)
     
     
     # Evaluate:
     print("Evaluating...")
     results = eval_whisper_on_dataset(pretrained_model_name_or_path=pretrained_model_name_or_path,
-                                      ds_group=mls_dataset,
+                                      ds_group=esb_dataset,
                                       batch_size=batch_size,
                                       task=task)
     
@@ -87,7 +94,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     
     # Save results:
     if savepath is None:
-        savepath = extract_savepath(pretrained_model_name_or_path) + "-mls.csv"
+        savepath = extract_savepath(pretrained_model_name_or_path) + "-esb.csv"
     
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     results.to_csv(f"{savepath}")
