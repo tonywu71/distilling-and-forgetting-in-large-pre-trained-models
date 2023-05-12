@@ -45,11 +45,11 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/cache_dataset_from_hf.py librispeech_asr --name clean --split train.360 >> $LOG 2> $ERR
-# python scripts/cache_dataset_from_hf.py librispeech_asr --name clean --split validation >> $LOG 2> $ERR
-# python scripts/cache_dataset_from_hf.py librispeech_asr --name clean --split test >> $LOG 2> $ERR
-# python scripts/cache_dataset_from_hf.py librispeech_asr --name other --split validation >> $LOG 2> $ERR
-# python scripts/cache_dataset_from_hf.py librispeech_asr --name other --split test >> $LOG 2> $ERR
+# python scripts/cache_datasets/cache_dataset_from_hf.py librispeech_asr --name clean --split train.360 >> $LOG 2> $ERR
+# python scripts/cache_datasets/cache_dataset_from_hf.py librispeech_asr --name clean --split validation >> $LOG 2> $ERR
+# python scripts/cache_datasets/cache_dataset_from_hf.py librispeech_asr --name clean --split test >> $LOG 2> $ERR
+# python scripts/cache_datasets/cache_dataset_from_hf.py librispeech_asr --name other --split validation >> $LOG 2> $ERR
+# python scripts/cache_datasets/cache_dataset_from_hf.py librispeech_asr --name other --split test >> $LOG 2> $ERR
 
 #! #############################################
 
