@@ -51,14 +51,14 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-tiny >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-tiny.en >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-tiny --subset librispeech_clean --subset librispeech_other >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-base >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-small >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-small.en >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-medium >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_librispeech_clean_val.py openai/whisper-large-v2 >> $LOG 2> $ERR
+python scripts/eval_whisper/eval_whisper_on_librispeech_clean_val.py openai/whisper-tiny >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_librispeech_clean_val.py openai/whisper-tiny.en >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_librispeech_clean_val.py openai/whisper-tiny --subset librispeech_clean --subset librispeech_other >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_librispeech_clean_val.py openai/whisper-base >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_librispeech_clean_val.py openai/whisper-small >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_librispeech_clean_val.py openai/whisper-small.en >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_librispeech_clean_val.py openai/whisper-medium >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_librispeech_clean_val.py openai/whisper-large-v2 >> $LOG 2> $ERR
 
 #! #############################################
 
