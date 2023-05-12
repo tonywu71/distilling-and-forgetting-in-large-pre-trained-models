@@ -45,7 +45,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/cache_fab.py >> $LOG 2> $ERR
+python scripts/cache_datasets/cache_fab.py >> $LOG 2> $ERR
 
 #! #############################################
 
