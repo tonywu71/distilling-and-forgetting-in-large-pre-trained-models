@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from dataclasses import asdict
 import pandas as pd
 
-from utils.config import load_yaml_config
+from utils.finetune_config import FinetuneConfig
 
 
 def main(config_file: str=typer.Argument(..., help="Path to model config file (.yaml)")):
@@ -14,7 +14,7 @@ def main(config_file: str=typer.Argument(..., help="Path to model config file (.
     Script to convert a YAML config file to a LaTeX table.
     To be used for LaTeX table generation in reports.
     """
-    config = load_yaml_config(config_file)
+    config = FinetuneConfig.from_yaml(config_file)
 
     ser = pd.Series(asdict(config), name="Value")
     ser.index.name = "Hyperparameter"

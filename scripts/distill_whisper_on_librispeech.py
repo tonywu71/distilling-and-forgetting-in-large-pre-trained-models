@@ -22,8 +22,6 @@ from pprint import pprint
 from datasets import load_from_disk
 from transformers import (WhisperForConditionalGeneration,
                           WhisperProcessor,
-                          Seq2SeqTrainingArguments,
-                          Seq2SeqTrainer,
                           EarlyStoppingCallback,
                           TrainerCallback)
 
@@ -33,19 +31,23 @@ from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.dataloader import load_dataset_dict
 from dataloader.preprocessing import preprocess_dataset
 from evaluation.metrics import compute_wer_fct
+from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
 from utils.callbacks import WandbCustomCallback
-from utils.finetune_config import FinetuneConfig
+from utils.distill_config import DistilConfig
+from utils.sanity_checks import distillation_sanity_check
 from utils.constants import DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP, GEN_MAX_LENGTH
+
 
 
 def main(config_filepath: str):
     """
-    Fine-tune the Whisper model on the LibriSpeech dataset.
+    Distill the Whisper model on the LibriSpeech dataset.
     """
     # --------------------   Load config   --------------------
-    config = FinetuneConfig.from_yaml(config_filepath)
+    config = DistilConfig.from_yaml(config_filepath)
+    distillation_sanity_check(config)
     
-    
+    # ==============================   TO FACTORIZE   ==============================
     # If a previous run has its checkpoints saved in the same directory, raise an error:
     if Path(config.model_dir).is_dir() and not os.listdir(config.model_dir):
         # Get the current date and time
@@ -55,12 +57,13 @@ def main(config_filepath: str):
         new_model_dir = old_model_dir.with_name(f"{old_model_dir.name}-{timestamp}/")
         config.model_dir = new_model_dir.as_posix()
         print (f"New model directory: `{config.model_dir}`.")
+    # =============================================================================
     
     
     # -----------------------   W&B   -----------------------
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
-               job_type="finetuning",
+               job_type="distillation",
                name=config.experiment_name,
                config=asdict(config))
     
@@ -80,18 +83,18 @@ def main(config_filepath: str):
     
     
     # ----------------------   Main   ----------------------
-
+    
     # Load processor (contains both tokenizer and feature extractor)
     processor = WhisperProcessor.from_pretrained(
-        config.pretrained_model_name_or_path,
+        config.teacher_model_name_or_path,
         language=config.lang_name,
         task=config.task
     )
-
+    
     # Create the data collator that will be used to prepare the data for training:
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
 
-    
+    # ==============================   TO FACTORIZE   ==============================
     # Load the dataset and preprocess it:
     assert Path(os.environ["PREPROCESSED_DATASETS_DIR"]).exists(), \
         f"Preprocessed datasets directory `{os.environ['PREPROCESSED_DATASETS_DIR']}` not found."
@@ -128,23 +131,27 @@ def main(config_filepath: str):
     
     print("\n-----------------------\n")
     
-    
-    # Initialize the model from a pretrained checkpoint:
-    print(f"Loading pretrained model `{config.pretrained_model_name_or_path}`...")
-    model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path)
+    # =============================================================================
     
     
-    # Freeze the encoder and/or decoder if specified in the config:
+    # Initialize the models from pretrained checkpoints:
+    print(f"Loading teacher model `{config.teacher_model_name_or_path}`...")
+    teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path)
+    print(f"Loading student model `{config.student_model_name_or_path}`...")
+    student_model = WhisperForConditionalGeneration.from_pretrained(config.student_model_name_or_path)
+    
+    
+    # Freeze the student's encoder and/or decoder if specified in the config:
     assert not (config.freeze_encoder and config.freeze_decoder), \
         "Freezing both the encoder and the decoder would result in a model with " + \
         "no trainable parameters. Please set either `freeze_encoder` or `freeze_decoder` to `False`."
         
     if config.freeze_encoder:
-        print("Freezing encoder...")
-        model.freeze_encoder()  # type: ignore
+        print("Freezing the student's encoder...")
+        student_model.freeze_encoder()  # type: ignore
     if config.freeze_decoder:
-        print("Freezing decoder...")
-        decoder = model.get_decoder()  # type: ignore
+        print("Freezing the student's decoder...")
+        decoder = student_model.get_decoder()  # type: ignore
         for param in decoder.parameters():
             param.requires_grad = False
         decoder._requires_grad = False  # type: ignore
@@ -156,16 +163,18 @@ def main(config_filepath: str):
     #       containing the target sentence and the separator token. This tells the model to
     #       always generate the target sentence and the separator token before starting the
     #       decoding process.
-    model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
-    model.config.suppress_tokens = []  # type: ignore
-    if config.gradient_checkpointing:
-        model.config.use_cache = False  # type: ignore
+    # TODO: Check if need to use enumerate to correctly propagate the changes (like with Pandas).
+    for model in [teacher_model, student_model]:
+        model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+        model.config.suppress_tokens = []  # type: ignore
+        if config.gradient_checkpointing:
+            model.config.use_cache = False  # type: ignore
     
     
     # Prepare training:
     Path(config.model_dir).mkdir(parents=True, exist_ok=True)
     
-    training_args = Seq2SeqTrainingArguments(
+    training_args = DistillationTrainingArguments(
         output_dir=config.model_dir,
         per_device_train_batch_size=config.batch_size,
         per_device_eval_batch_size=config.batch_size,
@@ -211,9 +220,10 @@ def main(config_filepath: str):
     if config.early_stopping_patience != -1:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore
     
-    trainer = Seq2SeqTrainer(
+    trainer = DistillationTrainer(
         args=training_args,
         model=model,  # type: ignore
+        teacher_model=teacher_model,  # type: ignore
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["val"],  # type: ignore
         data_collator=data_collator,
