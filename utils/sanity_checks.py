@@ -1,5 +1,5 @@
 from transformers import WhisperTokenizer
-from utils.distill_config import DistilConfig
+from utils.distil_config import DistilConfig
 
 
 def distillation_sanity_check(config: DistilConfig) -> None:

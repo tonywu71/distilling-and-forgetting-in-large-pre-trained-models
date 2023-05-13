@@ -7,13 +7,21 @@ import yaml
 @dataclass
 class FinetuneConfig:
     """
-    Config class for the Whisper experiments
+    Config class for the Whisper experiments.
+    
+    Notes:
+    - `is_tokenizer_multilingual` is used to identify the saved/loaded preprocessed datasets
+      as there are two different tokenizers (one for English and one for multilingual) and no
+      way to know which one was used to preprocess the dataset if a dir checkpoint is provided.
+    - `smart_load` is used to load/save the preprocessed dataset from
+      `os.environ["PREPROCESSED_DATASETS_DIR"]` to save computation time. Set to False to
+      disable this feature.
     """
     experiment_name: str
     lang_name: Optional[str]
     task: str
     pretrained_model_name_or_path: str
-    finetuned_from: str
+    is_tokenizer_multilingual: bool
     model_dir: str
     freeze_encoder: bool
     freeze_decoder: bool
@@ -33,6 +41,7 @@ class FinetuneConfig:
     logging_steps: int
     num_train_epochs: int
     early_stopping_patience: Optional[int]
+    smart_load: bool = True
     log_preds_to_wandb: bool = True
     
     
