@@ -25,7 +25,6 @@ def main(pretrained_model_name_or_path: str,
          streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
          load_full: bool=typer.Option(False, help="Whether to load the full ESB dataset (non diagnostic)."),
          subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB dataset to evaluate on."),
-         batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
     """
@@ -46,8 +45,7 @@ def main(pretrained_model_name_or_path: str,
         "dataset": "esb",
         "streaming": streaming,
         "load_diagnostic": load_diagnostic,
-        "subset": subset,
-        "batch_size": batch_size,
+        "subset": subset
     }
     
     print("Parameters:")
@@ -81,7 +79,6 @@ def main(pretrained_model_name_or_path: str,
     print("Evaluating...")
     results = eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path=pretrained_model_name_or_path,
                                                   ds_group=esb_dataset,
-                                                  batch_size=batch_size,
                                                   task=task)
     
     print("Results:")

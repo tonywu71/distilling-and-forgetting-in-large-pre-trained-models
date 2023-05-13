@@ -10,12 +10,11 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from transformers import WhisperProcessor
-from evaluate import logging
 
 from dataloader.datasets.base_dataset_group import BaseDatasetGroup
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
-from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL
+from utils.constants import DEFAULT_LABEL_TOKENIZED_COL
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -23,7 +22,6 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
                                         ds_group: BaseDatasetGroup,
-                                        batch_size: int,  # TODO: Add support for batch_size > 1
                                         task: str="transcribe") -> pd.Series:
     
     assert ds_group.is_preprocessed, "The dataset group must be preprocessed."
@@ -55,21 +53,6 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
         
         # Set the forced decoder ids:
         model_zero_cross_attention.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=language, task=task)  # type: ignore
-        
-        # TODO: Replace `pipeline` with a 
-        # whisper_asr = pipeline(task="automatic-speech-recognition",
-        #                        model=model,
-        #                        tokenizer=processor.tokenizer,  # type: ignore
-        #                        feature_extractor=processor.feature_extractor,  # type: ignore
-        #                        device=0  # use 1st GPU for Whisper
-        # )
-        
-        # for start_index in logging.tqdm(range(0, len(dataset), batch_size)):
-        #     end_index = min(start_index + batch_size, len(dataset))
-        #     encoded_batch = dataset[start_index:end_index]
-        #     # Collate the data into batches:
-        #     data = self.data_collator(encoded_batch)  # type: ignore
-        
         
         # Placeholders for per-example perplexities:
         perplexities_curr_dataset = []
@@ -110,6 +93,7 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
         
         # Add to the list of perplexities:
         perplexity_results.append(np.mean(perplexities_curr_dataset))
+    
     
     # Save the results:
     results = pd.Series(perplexity_results, index=list(ds_group.keys()), name="Perplexity")
