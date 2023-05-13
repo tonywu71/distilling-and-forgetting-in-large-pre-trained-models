@@ -37,11 +37,11 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         # Get the input features and apply padding:
         input_features = [{"input_features": feature["input_features"]} for feature in features]
         batch = self.processor.feature_extractor.pad(input_features, return_tensors="pt")  # type: ignore
-
+        
         # Get the tokenized label sequences and apply padding:
-        label_features = [{"input_ids": feature["labels"]} for feature in features]
+        label_features = [{"input_ids": feature[DEFAULT_LABEL_TOKENIZED_COL]} for feature in features]
         labels_batch = self.processor.tokenizer.pad(label_features, return_tensors="pt")  # type: ignore
-
+        
         # Replace padding with correct token for correct loss computation:
         labels = labels_batch["input_ids"].masked_fill(labels_batch.attention_mask.ne(1), PADDING_IDX)
 

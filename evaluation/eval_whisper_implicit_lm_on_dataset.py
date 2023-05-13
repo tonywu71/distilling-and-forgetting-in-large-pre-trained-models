@@ -2,6 +2,7 @@ import os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import numpy as np
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
 
@@ -12,8 +13,9 @@ from transformers import WhisperProcessor
 from evaluate import logging
 
 from dataloader.datasets.base_dataset_group import BaseDatasetGroup
+from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
-from utils.constants import DEFAULT_LABEL_TOKENIZED_COL
+from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -30,8 +32,7 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
         assert ds_group.language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."
     
     # Load model:
-    model_zero_cross_attention = WhisperForConditionalGenerationZeroCrossAttention.from_pretrained(pretrained_model_name_or_path)
-    
+    model_zero_cross_attention = WhisperForConditionalGenerationZeroCrossAttention.from_pretrained(pretrained_model_name_or_path).to(device)  # type: ignore
     
     # Loop over the datasets:
     perplexity_results = []
@@ -49,6 +50,10 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
                                                      language=language,
                                                      task=task)
         
+        # Load data collator:
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
+        
+        # Set the forced decoder ids:
         model_zero_cross_attention.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=language, task=task)  # type: ignore
         
         # TODO: Replace `pipeline` with a 
@@ -65,21 +70,31 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
         #     # Collate the data into batches:
         #     data = self.data_collator(encoded_batch)  # type: ignore
         
+        
+        # Placeholders for per-example perplexities:
+        perplexities_curr_dataset = []
+        
         for data in dataset:
+            data = {
+                "input_features": processor.feature_extractor(data["audio"]["array"],  # type: ignore
+                                                              sampling_rate=processor.feature_extractor.sampling_rate).input_features[0],  # drop batch dimension  # type: ignore
+                DEFAULT_LABEL_TOKENIZED_COL: processor.tokenizer(data[DEFAULT_LABEL_STR_COL]).input_ids  # type: ignore
+            }
+            
             # Collate the data into batches of size 1:
-            data = self.data_collator([data])  # type: ignore
+            data = data_collator([data])  # type: ignore
             
             # Note that we need to move the data to the device manually (which is not the case with Trainer):
             input_features = data["input_features"].to(device)
             tokenized_seq = data[DEFAULT_LABEL_TOKENIZED_COL].to(device)
             
             # Shift inputs for next-word prediction:
-            decoder_input_ids = tokenized_seq[:, 1:]
-            shifted_left_decoder_input_ids = tokenized_seq[:, :-1]
+            decoder_input_ids = tokenized_seq[:, :-1]
+            shifted_left_decoder_input_ids = tokenized_seq[:, 1:]
 
             # One-step generation:
             output = model_zero_cross_attention.forward(input_features=input_features,  # type: ignore
-                                                        decoder_input_ids=decoder_input_ids)
+                                                        decoder_input_ids=decoder_input_ids)  # type: ignore
 
             # Convert logits to log-probabilities:
             log_prob_all = torch.nn.functional.log_softmax(output.logits, dim=-1)  # type: ignore
@@ -91,11 +106,13 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
             perplexity = torch.exp(-log_prob.mean()).item()
             
             # Add to the list of perplexities:
-            perplexity_results.append(perplexity)
-    
+            perplexities_curr_dataset.append(perplexity)
+        
+        # Add to the list of perplexities:
+        perplexity_results.append(np.mean(perplexities_curr_dataset))
     
     # Save the results:
-    results = pd.Series(perplexity_results, index=list(ds_group.keys()), name="WER (%)")
+    results = pd.Series(perplexity_results, index=list(ds_group.keys()), name="Perplexity")
     results.index.name = "Dataset"
     
     # Compute the average WER:
