@@ -1,0 +1,25 @@
+experiment_name: whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder
+lang_name: english
+task: transcribe
+pretrained_model_name_or_path: openai/whisper-tiny
+finetuned_from: openai/whisper-tiny
+model_dir: ./checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/
+freeze_encoder: True
+freeze_decoder: False
+batch_size: 16
+gradient_accumulation_steps: 2
+gradient_checkpointing: True
+data_augmentation: False
+dataset_name: librispeech_clean_100h
+force_reprocess_dataset: False
+optim: adamw_torch
+learning_rate: 1e-5
+warmup_steps: 100
+eval_steps: 500
+generation_num_beams: 5
+logging_steps: 250
+save_steps: 500
+save_total_limit:
+num_train_epochs: 5
+early_stopping_patience: 3
+log_preds_to_wandb: True

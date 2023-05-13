@@ -19,7 +19,8 @@ import evaluate
 import wandb
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from utils.config import Config
+from utils.finetune_config import FinetuneConfig
+from utils.distill_config import DistilConfig
 from utils.constants import DEFAULT_LABEL_STR_COL, GEN_MAX_LENGTH, PADDING_IDX, DEFAULT_LABEL_TOKENIZED_COL
 
 
@@ -32,7 +33,7 @@ class WandbCustomCallback(WandbCallback):
     """
     
     def __init__(self,
-                 config: Config,
+                 config: FinetuneConfig,
                  processor: WhisperProcessor,
                  eval_dataset: Dataset,
                  n_samples: int,
