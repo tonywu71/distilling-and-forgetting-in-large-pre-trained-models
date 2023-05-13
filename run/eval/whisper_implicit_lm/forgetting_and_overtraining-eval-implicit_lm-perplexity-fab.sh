@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_implicit_lm_on_esb
+#SBATCH -J forgetting_and_overtraining-eval-implicit_lm-fab
 #! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -29,7 +29,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change:
-#SBATCH -p ampere
+#SBATCH -p pascal
 #! ############################################################
 
 
@@ -51,10 +51,13 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny.en  >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny  >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500  >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny --subset tedlium  >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-500 >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-1000 >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-1500 >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-2000 >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-2500 >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3000 >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 >> $LOG 2> $ERR
 
 #! #############################################
 
