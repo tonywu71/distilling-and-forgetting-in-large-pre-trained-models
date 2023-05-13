@@ -2,7 +2,7 @@ experiment_name: whisper_tiny-librispeech_dummy
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
-finetuned_from: openai/whisper-tiny
+is_tokenizer_multilingual: True
 model_dir: ./checkpoints/finetuning/librispeech_dummy/
 freeze_encoder: True
 freeze_decoder: False
@@ -22,4 +22,5 @@ save_steps: 100
 save_total_limit: 2
 num_train_epochs: 1
 early_stopping_patience: -1
+smart_load: True
 log_preds_to_wandb: True

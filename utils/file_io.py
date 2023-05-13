@@ -1,5 +1,31 @@
+import os
 from pathlib import Path
+from datetime import datetime
+
+from utils.finetune_config import FinetuneConfig
+from utils.distil_config import DistilConfig
 from utils.constants import DEFAULT_OUTPUT_DIR, CHECKPOINTS_DIRNAME
+
+
+
+def fix_model_dir_conflicts(config: FinetuneConfig | DistilConfig) -> None:
+    """
+    If `config.model_dir` is an existing directory, a timestamp will be added to the model directory
+    to avoid overwriting previous models.
+    
+    This method changes the value of `config.model_dir` in-place.
+    """
+    
+    if Path(config.model_dir).is_dir() and not os.listdir(config.model_dir):
+        # Get the current date and time
+        print (f"Model directory `{config.model_dir}` is not empty. A timestamp will be added to the model directory.")
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        old_model_dir = Path(config.model_dir)
+        new_model_dir = old_model_dir.with_name(f"{old_model_dir.name}-{timestamp}/")
+        config.model_dir = new_model_dir.as_posix()
+        print (f"New model directory: `{config.model_dir}`.")
+    
+    return
 
 
 def extract_experiment_name(model_filepath: str) -> str:

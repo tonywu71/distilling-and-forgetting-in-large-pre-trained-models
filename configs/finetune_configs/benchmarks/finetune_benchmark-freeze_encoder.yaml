@@ -2,7 +2,7 @@ experiment_name: whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
-finetuned_from: openai/whisper-tiny
+is_tokenizer_multilingual: True
 model_dir: ./checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/
 freeze_encoder: True
 freeze_decoder: False
