@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_implicit_lm_on_esb
+#SBATCH -J eval_whisper_implicit_lm_on_fab
 #! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,9 +51,8 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny.en  >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny  >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny --subset tedlium  >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py openai/whisper-tiny  >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500  >> $LOG 2> $ERR
 
 #! #############################################
 
