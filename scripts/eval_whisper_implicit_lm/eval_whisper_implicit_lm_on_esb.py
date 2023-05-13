@@ -16,31 +16,37 @@ from typing import List, Optional
 
 import wandb
 
-from dataloader.datasets.fab_dataset import FABDataset
-from evaluation.eval_whisper_on_dataset import eval_whisper_on_dataset
+from dataloader.datasets.esb_dataset import ESBDataset
+from evaluation.eval_whisper_implicit_lm_on_dataset import eval_whisper_implicit_lm_on_dataset
+
 from utils.file_io import extract_experiment_name, extract_savepath
 
 
-
-def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to the pretrained model or its name in the HuggingFace Hub."),
+def main(pretrained_model_name_or_path: str,
          streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
-         subset: Optional[List[str]]=typer.Option(None, help="Subset of the FAB dataset to evaluate on."),
+         load_full: bool=typer.Option(False, help="Whether to load the full ESB dataset (non diagnostic)."),
+         subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB dataset to evaluate on."),
          batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
     """
-    Evaluate the whisper model on the FAB benchmark.
+    Evaluate the whisper model on the ESB benchmark (diagnostic by default).
     Note that only greedy decoding is supported for now.
     """
     
+    load_diagnostic = not load_full
+    
     # Set up the parameters:
+    language = "english"
     task = "transcribe"
     
     config = {
         "pretrained_model_name_or_path": pretrained_model_name_or_path,
+        "language": language,
         "task": task,
-        "dataset": "fab",
+        "dataset": "esb",
         "streaming": streaming,
+        "load_diagnostic": load_diagnostic,
         "subset": subset,
         "batch_size": batch_size,
     }
@@ -53,29 +59,31 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
-               name=f"eval_fab-{extract_experiment_name(pretrained_model_name_or_path)}",
+               name=f"eval_esb-{extract_experiment_name(pretrained_model_name_or_path)}",
                config=config)
     
     
     # Load dataset:
     if subset:
-        print(f"Subset(s) of FAB: {subset}")
+        print(f"Subset(s) of ESB: {subset}")
         
-    fab_dataset = FABDataset(streaming=streaming, subset=subset)
-    print(f"Loaded datasets: {list(fab_dataset.keys())}")
+    esb_dataset = ESBDataset(streaming=streaming,
+                             load_diagnostic=load_diagnostic,
+                             subset=subset)
+    print(f"Loaded datasets: {list(esb_dataset.keys())}")
     
     
     # Preprocess:
     print("Preprocessing datasets...")
-    fab_dataset.preprocess_datasets(normalize=True)
+    esb_dataset.preprocess_datasets(normalize=True)
     
     
     # Evaluate:
     print("Evaluating...")
-    results = eval_whisper_on_dataset(pretrained_model_name_or_path=pretrained_model_name_or_path,
-                                      ds_group=fab_dataset,
-                                      batch_size=batch_size,
-                                      task=task)
+    results = eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path=pretrained_model_name_or_path,
+                                                  ds_group=esb_dataset,
+                                                  batch_size=batch_size,
+                                                  task=task)
     
     print("Results:")
     print(results)
@@ -86,7 +94,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     
     # Save results:
     if savepath is None:
-        savepath = extract_savepath(pretrained_model_name_or_path)  + "-fab.csv"
+        savepath = extract_savepath(pretrained_model_name_or_path) + "-implicit_lm" + "-esb.csv"
     
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     results.to_csv(f"{savepath}")
@@ -97,8 +105,8 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     barplot = wandb.plot.bar(wandb.Table(dataframe=results.to_frame().reset_index()),  # type: ignore
                              label=results.index.name,
                              value=str(results.name),
-                             title="Per dataset WER (%)")
-    wandb.log({"wer_for_dataset_group": barplot})
+                             title="Per dataset perplexity (%)")
+    wandb.log({"perplexity_for_dataset_group": barplot})
     wandb.finish()
     
     return

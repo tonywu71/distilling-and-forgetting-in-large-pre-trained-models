@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from undecorated import undecorated
 from types import MethodType
 
@@ -112,6 +111,8 @@ class SequenceDistillationTrainer(Trainer):
         
         Reference: Kim et al., “Sequence-Level Knowledge Distillation.”, 2016, http://arxiv.org/abs/1606.07947.
         """
+        raise NotImplementedError("Sequence-level distillation is not yet implemented.")
+
         inputs = inputs.to(device)
         # outputs_student = model(**inputs)
         

@@ -99,7 +99,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
                              label=results.index.name,
                              value=str(results.name),
                              title="Per dataset WER (%)")
-    wandb.log({"wer_for_esb_dataset": barplot})
+    wandb.log({"wer_for_dataset_group": barplot})
     wandb.finish()
     
     return
