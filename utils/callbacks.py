@@ -5,6 +5,7 @@ from collections import defaultdict
 import pandas as pd
 
 import torch
+from torch import Tensor
 
 from transformers import (GenerationMixin,
                           PreTrainedModel,
@@ -42,7 +43,7 @@ class WandbCustomCallback(WandbCallback):
         super().__init__()
         
         self.config = config
-        assert isinstance(self.config, (FinetuneConfig, DistilConfig))
+        assert isinstance(self.config, (FinetuneConfig, DistilConfig)), "config must be either `FinetuneConfig` or `DistilConfig`"
         self.is_distillation = isinstance(config, DistilConfig)
         
         self.processor = processor
@@ -69,11 +70,25 @@ class WandbCustomCallback(WandbCallback):
                                       max_length=GEN_MAX_LENGTH,
                                       num_beams=self.config.generation_num_beams)  # type: ignore
         else:
-            import pdb; pdb.set_trace()
             output = model.forward(**inputs)
             pred_ids = torch.argmax(output.logits, dim=-1)  # type: ignore
         
         return pred_ids
+    
+    
+    def log_audio_to_records(self, data) -> None:
+        audio = wandb.Audio(data["audio"]["array"], sample_rate=data["audio"]["sampling_rate"].item())  # type: ignore
+        self.records["audio"].append(audio)
+        return
+    
+    
+    def log_seq_to_records(self,
+                           tokenized_seq: GenerateOutput | Tensor,
+                           key: str,
+                           is_raw: bool=False) -> None:
+        curr_label_str = self.processor.tokenizer.batch_decode(tokenized_seq, skip_special_tokens=not(is_raw), normalize=not(is_raw))[0]  # type: ignore
+        self.records[key].append("".join(curr_label_str))
+        return
     
     
     def log_records_to_wandb(self) -> None:
@@ -104,8 +119,7 @@ class WandbCustomCallback(WandbCallback):
                 break
             
             # Log the original audio (should be done before call to DataCollator):
-            audio = wandb.Audio(data["audio"]["array"], sample_rate=data["audio"]["sampling_rate"].item())  # type: ignore
-            self.records["audio"].append(audio)
+            self.log_audio_to_records(data)
             
             # Collate the data into batches of size 1:
             data = self.data_collator([data])  # type: ignore
@@ -121,28 +135,18 @@ class WandbCustomCallback(WandbCallback):
             # in the data collator to ignore padded tokens correctly during decoding:
             label_ids[label_ids==PADDING_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
             
-            
             # Decode both the predictions and the labels:
-            curr_label_str = self.processor.tokenizer.batch_decode(label_ids, skip_special_tokens=False, normalize=True)[0]  # type: ignore
-            curr_label_str = "".join(curr_label_str)
-            
-            curr_pred_str = self.processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=True, normalize=True)[0]  # type: ignore
-            curr_pred_str = "".join(curr_pred_str)
-            
-            self.records["label_str"].append(curr_label_str)
-            self.records["pred_str"].append(curr_pred_str)
-            
+            self.log_seq_to_records(label_ids, key="label_str", is_raw=False)
+            self.log_seq_to_records(pred_ids, key="pred_str", is_raw=False)        
             
             # Decode the predictions and labels without removing special tokens:
             if self.log_raw_str:
-                curr_label_str_raw = self.processor.tokenizer.batch_decode(label_ids, skip_special_tokens=False, normalize=False)[0]  # type: ignore
-                curr_label_str_raw = "".join(curr_label_str_raw)
-                self.records["label_str_raw"].append(curr_label_str_raw)
-                
-                curr_pred_str_raw = self.processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=False, normalize=True)[0]  # type: ignore
-                curr_pred_str_raw = "".join(curr_pred_str_raw)
-                self.records["pred_str_raw"].append(curr_pred_str_raw)
+                self.log_seq_to_records(label_ids, key="label_str_raw", is_raw=True)
+                self.log_seq_to_records(pred_ids, key="pred_str_raw", is_raw=True)
             
+            # Retrieve the current label and prediction strings:
+            curr_label_str = self.records["label_str"][-1]
+            curr_pred_str = self.records["pred_str"][-1]
             
             # Compute the WER:
             self.records["wer"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_str]))  # type: ignore
@@ -153,6 +157,7 @@ class WandbCustomCallback(WandbCallback):
             # Add information about the current training state:
             self.records["epoch"].append(state.epoch)
             self.records["step"].append(state.global_step)
+        
         
         # Log the records to wandb:
         self.log_records_to_wandb()
