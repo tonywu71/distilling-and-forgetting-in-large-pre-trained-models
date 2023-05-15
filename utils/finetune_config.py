@@ -43,6 +43,7 @@ class FinetuneConfig:
     early_stopping_patience: Optional[int]
     smart_load: bool = True
     log_preds_to_wandb: bool = True
+    experimental_train_implicit_lm: bool = False
     
     
     @staticmethod

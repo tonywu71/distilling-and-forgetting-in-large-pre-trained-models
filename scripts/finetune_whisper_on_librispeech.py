@@ -31,6 +31,7 @@ import wandb
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.metrics import compute_wer_fct
+from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
 from utils.callbacks import WandbCustomCallback
 from utils.file_io import fix_model_dir_conflicts
 from utils.finetune_config import FinetuneConfig
@@ -103,8 +104,11 @@ def main(config_filepath: str):
     
     # Initialize the model from a pretrained checkpoint:
     print(f"Loading pretrained model `{config.pretrained_model_name_or_path}`...")
-    model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path)
-    
+    if not config.experimental_train_implicit_lm:
+        model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path)
+    else:
+        print("Enforcing the model to have zeroed cross-attention vectors for the encoder self-attention...")
+        model = WhisperForConditionalGenerationZeroCrossAttention.from_pretrained(config.pretrained_model_name_or_path)
     
     # Freeze the encoder and/or decoder if specified in the config:
     assert not (config.freeze_encoder and config.freeze_decoder), \

@@ -106,10 +106,8 @@ class WhisperEncoderZeroCrossAttention(WhisperEncoder):
         if output_hidden_states:
             encoder_states = encoder_states + (hidden_states,)
         
-        hidden_states = torch.zeros_like(hidden_states)
-        # encoder_states = torch.zeros_like(encoder_states)
-        # all_attentions = torch.zeros_like(all_attentions)
-        
+        # =========   Zero out the hidden states   =========
+        hidden_states = torch.zeros_like(hidden_states) 
         
         if not return_dict:
             return tuple(v for v in [hidden_states, encoder_states, all_attentions] if v is not None)
