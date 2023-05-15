@@ -1,9 +1,9 @@
-experiment_name: whisper_tiny-librispeech_dummy
+experiment_name: pretrain_whisper_tiny-implicit_lm-debug
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/finetuning/librispeech_dummy/
+model_dir: ./checkpoints/debug/finetune_whisper_tiny-implicit_lm-debug/
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 4
@@ -24,3 +24,4 @@ num_train_epochs: 1
 early_stopping_patience: -1
 smart_load: True
 log_preds_to_wandb: True
+experimental_train_implicit_lm: False
