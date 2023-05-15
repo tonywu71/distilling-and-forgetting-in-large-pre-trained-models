@@ -8,6 +8,7 @@ from typing import List
 
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
+device = torch.device("cuda:0")
 
 from utils.initialize import initialize_env, print_envs
 initialize_env()
@@ -40,7 +41,7 @@ from utils.constants import DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP, GEN_MAX_LE
 
 def main(config_filepath: str):
     """
-    Distill the Whisper model on the LibriSpeech dataset.
+    Distil the Whisper model on the LibriSpeech dataset.
     """
     # --------------------   Load config   --------------------
     config = DistilConfig.from_yaml(config_filepath)
@@ -104,9 +105,9 @@ def main(config_filepath: str):
     
     # Initialize the models from pretrained checkpoints:
     print(f"Loading teacher model `{config.teacher_model_name_or_path}`...")
-    teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path)
+    teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
     print(f"Loading student model `{config.student_model_name_or_path}`...")
-    student_model = WhisperForConditionalGeneration.from_pretrained(config.student_model_name_or_path)
+    student_model = WhisperForConditionalGeneration.from_pretrained(config.student_model_name_or_path).to(device)  # type: ignore
     
     
     # Freeze the student's encoder and/or decoder if specified in the config:
@@ -155,15 +156,12 @@ def main(config_filepath: str):
         num_train_epochs=config.num_train_epochs,
         evaluation_strategy="steps",
         eval_steps=config.eval_steps,
-        generation_num_beams=config.generation_num_beams,
         logging_strategy="steps",
         logging_first_step=True,
         logging_steps=config.eval_steps,
         save_strategy="steps",
         save_steps=config.save_steps,
         save_total_limit=config.save_total_limit,
-        predict_with_generate=True,
-        generation_max_length=GEN_MAX_LENGTH,
         load_best_model_at_end=True,
         metric_for_best_model="wer",
         greater_is_better=False,  # the lower the WER, the better
@@ -190,7 +188,7 @@ def main(config_filepath: str):
     
     distillation_trainer = DistillationTrainer(
         args=training_args,
-        model=model,  # type: ignore
+        model=student_model,  # type: ignore
         teacher_model=teacher_model,  # type: ignore
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["val"],  # type: ignore

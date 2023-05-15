@@ -19,7 +19,6 @@ class DistilConfig:
     """
     experiment_name: str
     lang_name: str
-    lang_id: str
     task: str
     teacher_model_name_or_path: str
     student_model_name_or_path: str
@@ -37,7 +36,6 @@ class DistilConfig:
     learning_rate: float
     warmup_steps: int
     eval_steps: int
-    generation_num_beams: int
     save_steps: int
     save_total_limit: Optional[int]
     logging_steps: int

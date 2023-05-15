@@ -7,11 +7,12 @@ import pandas as pd
 import torch
 
 from transformers import (GenerationMixin,
-                          GenerationMixin,
+                          PreTrainedModel,
                           WhisperProcessor,
                           TrainingArguments,
                           TrainerState,
                           TrainerControl)
+from transformers.generation.utils import GenerateOutput
 from transformers.integrations import WandbCallback
 from datasets import Dataset
 import evaluate
@@ -39,7 +40,11 @@ class WandbCustomCallback(WandbCallback):
                  n_samples: int,
                  log_raw_str: bool=False):
         super().__init__()
+        
         self.config = config
+        assert isinstance(self.config, (FinetuneConfig, DistilConfig))
+        self.is_distillation = isinstance(config, DistilConfig)
+        
         self.processor = processor
         self.log_raw_str = log_raw_str
         
@@ -58,11 +63,36 @@ class WandbCustomCallback(WandbCallback):
         self.records = defaultdict(list)
     
     
+    def get_predictions(self, model: PreTrainedModel, inputs) -> GenerateOutput | torch.Tensor:
+        if not self.is_distillation:
+            pred_ids = model.generate(inputs,
+                                      max_length=GEN_MAX_LENGTH,
+                                      num_beams=self.config.generation_num_beams)  # type: ignore
+        else:
+            import pdb; pdb.set_trace()
+            output = model.forward(**inputs)
+            pred_ids = torch.argmax(output.logits, dim=-1)  # type: ignore
+        
+        return pred_ids
+    
+    
+    def log_records_to_wandb(self) -> None:
+        # Create a dataframe from the records:
+        df = pd.DataFrame(self.records)
+        df["wer"] = df["wer"].round(decimals=3)
+        
+        # Create a new wandb table:
+        table_preds = self._wandb.Table(dataframe=df)
+        self._wandb.log({"sample_predictions": table_preds})
+        
+        return
+    
+    
     def on_log(self,
                args: TrainingArguments,
                state: TrainerState,
                control: TrainerControl,
-               model: GenerationMixin,
+               model: PreTrainedModel,
                logs: Optional[Dict[str, float]]=None,
                **kwargs):
         
@@ -84,12 +114,9 @@ class WandbCustomCallback(WandbCallback):
             inputs = data["input_features"].to(device)
             label_ids = data[DEFAULT_LABEL_TOKENIZED_COL].to(device)
             
-            
             # Generate the predictions:
-            pred_ids = model.generate(inputs,
-                                      max_length=GEN_MAX_LENGTH,
-                                      num_beams=self.config.generation_num_beams)
-
+            pred_ids = self.get_predictions(model, inputs)
+            
             # Replace the padding index with the pad token id to undo the step we applied
             # in the data collator to ignore padded tokens correctly during decoding:
             label_ids[label_ids==PADDING_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
@@ -127,14 +154,7 @@ class WandbCustomCallback(WandbCallback):
             self.records["epoch"].append(state.epoch)
             self.records["step"].append(state.global_step)
         
-        
-        # Create a dataframe from the records:
-        df = pd.DataFrame(self.records)
-        df["wer"] = df["wer"].round(decimals=3)
-        
-        
-        # Create a new wandb table:
-        table_preds = self._wandb.Table(dataframe=df)
-        self._wandb.log({"sample_predictions": table_preds})
+        # Log the records to wandb:
+        self.log_records_to_wandb()
         
         return

@@ -3,7 +3,7 @@ lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/debug/finetune_whisper_tiny-implicit_lm-debug/
+model_dir: ./checkpoints/implicit_lm_experiment/debug/finetune_whisper_tiny-implicit_lm-debug/
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 4
