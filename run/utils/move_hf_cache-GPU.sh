@@ -9,21 +9,27 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J move_hf_cache
+#SBATCH -J move_hf_cache-GPU
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-CPU
+#SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
+#! How many (MPI) tasks will there be in total?
+#! Note probably this should not exceed the total number of GPUs in use.
+#SBATCH --ntasks=1
+#! Specify the number of GPUs per node (between 1 and 4; must be 4 if nodes>1).
+#! Note that the job submission script will enforce no more than 32 cpus per GPU.
+#SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=04:00:00
+#SBATCH --time=08:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
 #! interrupted by node failure or system downtime):
 ##SBATCH --no-requeue
 
-#! Do not change (CPU-only partition):
-#SBATCH -p skylake,cclake
+#! Do not change:
+#SBATCH -p pascal
 #! ############################################################
 
 
@@ -53,7 +59,7 @@ echo "python `which python`": >> $LOG
 # cp -r /home/tw581/rds/hpc-work/cache/huggingface/datasets /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/
 
 # mv /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface
-rsync -a --update /home/tw581/rds/hpc-work/cache/huggingface/datasets /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/datasets
+rsync -a --update /home/tw581/rds/hpc-work/cache/huggingface/datasets /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/
 
 #! #############################################
 
