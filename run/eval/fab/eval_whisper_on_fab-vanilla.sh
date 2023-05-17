@@ -29,7 +29,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change:
-#SBATCH -p ampere
+#SBATCH -p pascal
 #! ############################################################
 
 
@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper_on_fab.py openai/whisper-tiny >> $LOG 2> $ERR
+# python scripts/eval_whisper_on_fab.py openai/whisper-tiny >> $LOG 2> $ERR
 # python scripts/eval_whisper_on_fab.py openai/whisper-tiny.en >> $LOG 2> $ERR
 # python scripts/eval_whisper_on_fab.py openai/whisper-tiny --subset librispeech_clean --subset librispeech_other >> $LOG 2> $ERR
 # python scripts/eval_whisper_on_fab.py openai/whisper-base >> $LOG 2> $ERR

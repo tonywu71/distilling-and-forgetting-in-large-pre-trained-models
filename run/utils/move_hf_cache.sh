@@ -45,12 +45,14 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# cp -r /home/tw581/rds/hpc-work/cache/huggingface/evaluate /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/
-# cp -r /home/tw581/rds/hpc-work/cache/huggingface/metrics /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/
-# cp -r /home/tw581/rds/hpc-work/cache/huggingface/modules /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/
-# cp -r /home/tw581/rds/hpc-work/cache/huggingface/token /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/
-# cp -r /home/tw581/rds/hpc-work/cache/huggingface/transformers /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/
-# cp -r /home/tw581/rds/hpc-work/cache/huggingface/datasets /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/
+# cp -r /home/tw581/rds/hpc-work/cache/huggingface/evaluate /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/
+# cp -r /home/tw581/rds/hpc-work/cache/huggingface/metrics /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/
+# cp -r /home/tw581/rds/hpc-work/cache/huggingface/modules /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/
+# cp -r /home/tw581/rds/hpc-work/cache/huggingface/token /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/
+# cp -r /home/tw581/rds/hpc-work/cache/huggingface/transformers /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/
+# cp -r /home/tw581/rds/hpc-work/cache/huggingface/datasets /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/
+
+# mv /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface
 
 #! #############################################
 
