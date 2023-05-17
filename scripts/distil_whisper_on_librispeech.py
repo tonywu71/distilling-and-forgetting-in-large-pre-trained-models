@@ -31,7 +31,7 @@ from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.metrics import compute_wer_fct
 from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
-from utils.callbacks import WandbCustomCallback
+from callbacks.distillation_callback import WandbDistillationCallback
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import distillation_sanity_check
@@ -178,10 +178,11 @@ def main(config_filepath: str):
     callbacks: List[TrainerCallback] = []
     
     if config.log_preds_to_wandb:
-        callbacks.append(WandbCustomCallback(config=config,
-                                             processor=processor,
-                                             eval_dataset=dataset_dict["val"],  # type: ignore
-                                             n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
+        callbacks.append(WandbDistillationCallback(config=config,
+                                                   teacher_model=teacher_model,
+                                                   processor=processor,
+                                                   eval_dataset=dataset_dict["val"],  # type: ignore
+                                                   n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
     
     if config.early_stopping_patience != -1:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore

@@ -32,7 +32,7 @@ from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.metrics import compute_wer_fct
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
-from utils.callbacks import WandbCustomCallback
+from callbacks.finetune_callback import WandbFinetuneCallback
 from utils.file_io import fix_model_dir_conflicts
 from utils.finetune_config import FinetuneConfig
 from utils.constants import DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP, GEN_MAX_LENGTH
@@ -179,10 +179,10 @@ def main(config_filepath: str):
     callbacks: List[TrainerCallback] = []
     
     if config.log_preds_to_wandb:
-        callbacks.append(WandbCustomCallback(config=config,
-                                             processor=processor,
-                                             eval_dataset=dataset_dict["val"],  # type: ignore
-                                             n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
+        callbacks.append(WandbFinetuneCallback(config=config,
+                                               processor=processor,
+                                               eval_dataset=dataset_dict["val"],  # type: ignore
+                                               n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
     
     if config.early_stopping_patience != -1:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore
