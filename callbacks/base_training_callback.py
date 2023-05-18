@@ -41,7 +41,7 @@ class BaseWandbTrainingCallback(WandbCallback, ABC):
                  n_samples: int,
                  log_raw_str: bool=False):
         
-        super(WandbCallback, self).__init__()
+        super().__init__()
         
         self.config = config        
         self.processor = processor

@@ -53,7 +53,8 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
                logs: Optional[Dict[str, float]]=None,
                **kwargs):
         
-        super(WandbCallback, self).on_log(args, state, control, model, logs, **kwargs)  # type: ignore
+        # Call `BaseWandbTrainingCallback`'s parent (`WandbCallback`) method `on_log` for basic logging:
+        super(BaseWandbTrainingCallback, self).on_log(args, state, control, model, logs, **kwargs)  # type: ignore
                 
         # Iterate through the first n samples:
         for idx, data in enumerate(self.eval_dataset):
