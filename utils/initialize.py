@@ -17,6 +17,10 @@ def initialize_env():
     
     # HuggingFace:
     os.environ["HF_HOME"] = env_config.HF_HOME
+    
+    if env_config.HUGGING_FACE_HUB_TOKEN is not None:
+        os.environ["HUGGING_FACE_HUB_TOKEN"] = env_config.HUGGING_FACE_HUB_TOKEN
+    
     os.environ["TRANSFORMERS_CACHE"] = env_config.TRANSFORMERS_CACHE
     os.environ["HF_DATASETS_CACHE"] = env_config.HF_DATASETS_CACHE
     os.environ["HF_MODULES_CACHE"] = env_config.HF_MODULES_CACHE
