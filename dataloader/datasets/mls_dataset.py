@@ -19,6 +19,7 @@ class MLSDataset(BaseDatasetGroup):
         self.dataset_path = "facebook/multilingual_librispeech"
         self.available_datasets = [
             "dutch",
+            "english",
             "french",
             "german",
             "italian",
@@ -30,6 +31,7 @@ class MLSDataset(BaseDatasetGroup):
         self.is_multilingual = True
         self.ds_name_to_lang = {
             "dutch": "dutch",
+            "english": "english-basic_normalizer",  # use the multilingual normalizer for fair comparison
             "french": "french",
             "german": "german",
             "italian": "italian",
@@ -38,13 +40,22 @@ class MLSDataset(BaseDatasetGroup):
             "spanish": "spanish"
         }
         
+        assert streaming is False, "Streaming is not supported for MLS dataset."
+        
         super().__init__(streaming=streaming, subset=subset)
     
     
     def _prepare_str2dataset(self) -> None:
         for dataset_name in self.available_datasets:
             if dataset_name in self.subset:  # type: ignore
-                self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
+                if dataset_name == "english":
+                    # Load the 2 test splits of LibriSpeech from the original HF dataset as
+                    # we want a fair comparison with the other datasets:
+                    self.str2dataset[dataset_name] = load_dataset(path="librispeech_asr",
+                                                                  split="test.clean+test.other",
+                                                                  use_auth_token=True)
+                else:
+                    self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
                                                               name=dataset_name,
                                                               split="test",
                                                               streaming=self.streaming,
