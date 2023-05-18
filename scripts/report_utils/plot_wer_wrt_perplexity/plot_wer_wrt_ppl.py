@@ -33,7 +33,7 @@ def main(filepaths: List[str],
     if not regression:
         sns.scatterplot(df, x="WER (%)", y="Perplexity", hue="Model")
     else:
-        sns.lmplot(df, x="WER (%)", y="Perplexity", hue="Model")
+        sns.lmplot(df, x="WER (%)", y="Perplexity", hue="Model", facet_kws=dict(legend_out=False))
     
     # Save figure:
     if filename is None:
