@@ -25,7 +25,18 @@ def post_process_esb(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def post_process_mls(df: pd.DataFrame) -> pd.DataFrame:
-    raise NotImplementedError("Not implemented yet.")
+    COLS_IN_DOMAIN = ["english"]
+    COLS_TO_EXCLUDE = ["Average"]
+    
+    df = df.copy()
+    
+    cols_out_of_domain = df.index.difference(COLS_IN_DOMAIN).difference(COLS_TO_EXCLUDE)
+
+    df.loc["English", :] = df.loc[COLS_IN_DOMAIN, :].mean()
+    df.loc["Other languages", :] = df.loc[cols_out_of_domain, :].mean()
+    
+    return df
+    
 
 
 def main(filepath_1: str=typer.Argument(..., help="Path to first CSV file."),
