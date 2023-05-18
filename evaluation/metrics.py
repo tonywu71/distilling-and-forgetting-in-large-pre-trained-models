@@ -1,11 +1,14 @@
 from typing import Dict
+
+import torch
+
 import evaluate
-from transformers import WhisperProcessor
+from transformers import WhisperProcessor, EvalPrediction
 
 from utils.constants import PADDING_IDX
 
 
-def compute_wer_fct(pred, processor: WhisperProcessor, normalize: bool=True) -> Dict[str, float]:
+def compute_wer_fct(pred: EvalPrediction, processor: WhisperProcessor, normalize: bool=True) -> Dict[str, float]:
     """
     Compute the WER metric in percent for the given predictions and labels.
     Note: Setting `normalize` to `True` (default) will use the Whisper text normalizer.
@@ -38,9 +41,8 @@ def compute_wer_fct(pred, processor: WhisperProcessor, normalize: bool=True) -> 
     return {"wer": wer}
 
 
-def compute_wer_fct_distil(pred, processor: WhisperProcessor, normalize: bool=True) -> Dict[str, float]:
+def compute_wer_fct_distil(pred: EvalPrediction, processor: WhisperProcessor, normalize: bool=True) -> Dict[str, float]:
     """
-    =========  WIP  =========
     Compute the WER metric in percent for the given predictions and labels.
     Note: Setting `normalize` to `True` (default) will use the Whisper text normalizer.
     

@@ -29,7 +29,7 @@ import wandb
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from evaluation.metrics import compute_wer_fct
+from evaluation.metrics import compute_wer_fct_distil
 from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
 from callbacks.distillation_callback import WandbDistillationCallback
 from utils.distil_config import DistilConfig
@@ -169,7 +169,7 @@ def main(config_filepath: str):
     )
     
     # Define the compute_metrics function:
-    compute_wer = partial(compute_wer_fct,
+    compute_wer = partial(compute_wer_fct_distil,
                           processor=processor,
                           normalize=True)
     

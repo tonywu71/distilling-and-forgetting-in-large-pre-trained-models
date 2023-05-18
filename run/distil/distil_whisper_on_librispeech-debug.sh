@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distill_whisper_on_librispeech.py configs/distill_configs/large_v2_to_tiny.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper_on_librispeech.py configs/distill_configs/base_to_tiny-debug.yaml >> $LOG 2> $ERR
 
 #! #############################################
 
