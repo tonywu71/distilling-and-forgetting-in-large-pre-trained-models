@@ -29,7 +29,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change:
-#SBATCH -p ampere
+#SBATCH -p pascal
 #! ############################################################
 
 

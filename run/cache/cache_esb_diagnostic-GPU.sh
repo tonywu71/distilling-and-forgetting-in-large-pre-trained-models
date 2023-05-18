@@ -52,7 +52,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/cache_esb_diagnostic.py >> $LOG 2> $ERR
+python scripts/cache_datasets/cache_esb_diagnostic.py >> $LOG 2> $ERR
 
 #! #############################################
 

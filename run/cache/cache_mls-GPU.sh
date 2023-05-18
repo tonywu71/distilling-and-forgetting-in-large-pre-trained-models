@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/cache_mls.py >> $LOG 2> $ERR
+python scripts/cache_datasets/cache_mls.py >> $LOG 2> $ERR
 
 #! #############################################
 
