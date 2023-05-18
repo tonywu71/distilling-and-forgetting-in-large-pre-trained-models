@@ -40,9 +40,9 @@ def main(filepath: str, is_relative: bool=False):
     
     # Save figure:
     if is_relative:
-        savepath = (DEFAULT_OUTPUT_DIR / "compare_perplexity_multiple_models" / (Path(filepath).stem + "-relative")).with_suffix(".png")
+        savepath = (DEFAULT_OUTPUT_DIR / "report" / "compare_perplexity_multiple_models" / (Path(filepath).stem + "-relative")).with_suffix(".png")
     else:
-        savepath = (DEFAULT_OUTPUT_DIR / "compare_perplexity_multiple_models" / Path(filepath).stem).with_suffix(".png")
+        savepath = (DEFAULT_OUTPUT_DIR / "report" / "compare_perplexity_multiple_models" / Path(filepath).stem).with_suffix(".png")
     savepath.parent.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     plt.savefig(savepath)

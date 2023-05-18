@@ -11,7 +11,7 @@ python scripts/report_utils/compare_multiple_models_to_csv.py \
 
 # Generate plot from previous CSV:
 python scripts/report_utils/plot_forgetting_perplexity_wrt_checkpoints_on_fab.py \
-    outputs/compare_multiple_models/perplexity/perplexity_wrt_checkpoints-fab.csv
+    outputs/report/compare_perplexity_multiple_models/perplexity_wrt_checkpoints-fab.csv
 
 python scripts/report_utils/plot_forgetting_perplexity_wrt_checkpoints_on_fab.py \
-    outputs/compare_perplexity_multiple_models/perplexity_wrt_checkpoints-fab.csv --is-relative
+    outputs/report/compare_perplexity_multiple_models/perplexity_wrt_checkpoints-fab.csv --is-relative
