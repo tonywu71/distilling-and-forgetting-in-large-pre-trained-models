@@ -38,7 +38,7 @@ python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
     outputs/report/plot_wer_wrt_perplexity/wer_and_ppl-tiny_multilingual-vanilla-esb.csv \
     outputs/report/plot_wer_wrt_perplexity/wer_and_ppl-tiny_multilingual-finetuned-esb.csv \
     outputs/report/plot_wer_wrt_perplexity/wer_and_ppl-tiny_english-vanilla-esb.csv \
-    --regression \
+    --kind regression \
     --filename all-esb
 
 
@@ -51,7 +51,7 @@ python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
 python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
     outputs/report/plot_wer_wrt_perplexity/wer_and_ppl-tiny_multilingual-finetuned-esb.csv \
     outputs/report/plot_wer_wrt_perplexity/wer_and_ppl-tiny_multilingual-vanilla-esb.csv \
-    --regression \
+    --kind regression \
     --filename multilingual-esb
 
 
@@ -64,5 +64,5 @@ python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
 # python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
 #     outputs/report/plot_wer_wrt_perplexity/wer_and_ppl-tiny_english-vanilla-esb.csv \
 #     ?? \
-#     --regression \
+#     --kind regression \
 #     --filename english-esb

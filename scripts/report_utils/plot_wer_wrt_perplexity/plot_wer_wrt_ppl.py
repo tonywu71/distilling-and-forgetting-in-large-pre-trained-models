@@ -19,7 +19,8 @@ sns.set_theme(context="paper", style="ticks")
 
 
 def main(filepaths: List[str],
-         regression: bool=typer.Option(False, "--regression", "-r", help="Whether to plot a regression line."),
+         kind: str=typer.Option(None, "--kind", "-k",
+                                help="Kind of plot to generate. Must be one of `None`, `regression`, or `jointplot`."),
          filename: str=typer.Option(None, "--filename", "-f", help="Filename of the plot (without the suffix).")):
     """
     Script that takes a list of CSV outputs from `merge_wer_and_ppl_to_csv.py` and saves
@@ -30,16 +31,18 @@ def main(filepaths: List[str],
     df = pd.concat(list_df, axis=0)
     
     # Plot:
-    if not regression:
+    if kind is None:
         sns.scatterplot(df, x="WER (%)", y="Perplexity", hue="Model")
-    else:
+    elif kind == "regression":
         sns.lmplot(df, x="WER (%)", y="Perplexity", hue="Model", facet_kws=dict(legend_out=False))
+    else:
+        raise ValueError(f"Invalid `kind` value: `{kind}`. Must be one of `None`, `regression`, or `jointplot`.")
     
     # Save figure:
     if filename is None:
         filename = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-    if regression:
-        filename += "-regression"
+    if kind is not None:
+        filename += f"-{kind}"
     savepath = (DEFAULT_OUTPUT_DIR / "report" / "plot_wer_wrt_perplexity" / filename).with_suffix(".png")
     savepath.parent.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
