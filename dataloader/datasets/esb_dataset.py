@@ -42,16 +42,18 @@ class ESBDataset(BaseDatasetGroup):
                 if dataset_name in self.subset:  # type: ignore
                     if dataset_name == "librispeech":
                         # Load the 2 test splits of LibriSpeech from the original HF dataset as
-                        # `esb/datasets` does not provide the text annotations for the test set:
+                        # `esb/datasets` does not provide the text annotations for the test set.
+                        # Important note: `streaming` is set to `False` here as we want to take advantage
+                        # of the fact that the full LibriSpeech dataset has already been cached.
                         self.str2dataset["librispeech_clean"] = load_dataset(path="librispeech_asr",
                                                                              name="clean",
                                                                              split="test",
-                                                                             streaming=self.streaming,
+                                                                             streaming=False,
                                                                              use_auth_token=True)
                         self.str2dataset["librispeech_other"] = load_dataset(path="librispeech_asr",
                                                                              name="other",
                                                                              split="test",
-                                                                             streaming=self.streaming,
+                                                                             streaming=False,
                                                                              use_auth_token=True)
                     else:
                         # For all other datasets, load the validation splits:

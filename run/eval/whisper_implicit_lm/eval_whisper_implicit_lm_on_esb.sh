@@ -29,7 +29,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change:
-#SBATCH -p ampere
+#SBATCH -p pascal
 #! ############################################################
 
 
@@ -55,6 +55,8 @@ echo "python `which python`": >> $LOG
 # python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny  >> $LOG 2> $ERR
 # python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500  >> $LOG 2> $ERR
 # python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny --subset tedlium  >> $LOG 2> $ERR
+
+python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py checkpoints/finetuning/english_model/finetune-whisper_tiny_en-librispeech_clean_100h-freeze_encoder/checkpoint-2500  >> $LOG 2> $ERR
 
 #! #############################################
 

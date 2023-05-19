@@ -1,10 +1,15 @@
-HF_HOME: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface
+HF_HOME: /home/tw581/rds/hpc-work/cache/huggingface/
+# HF_HOME: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface
 
 HUGGING_FACE_HUB_TOKEN: /home/tw581/rds/hpc-work/cache/huggingface/token
 
 TRANSFORMERS_CACHE: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/transformers
-HF_DATASETS_CACHE: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/datasets
+HF_DATASETS_CACHE: /home/tw581/rds/hpc-work/cache/huggingface/datasets
 HF_MODULES_CACHE: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/modules
+
+# TRANSFORMERS_CACHE: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/transformers
+# HF_DATASETS_CACHE: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/datasets
+# HF_MODULES_CACHE: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/modules
 
 WANDB_PROJECT: distilling-and-forgetting-in-large-pre-trained-models
 WANDB_CACHE_DIR: /home/tw581/rds/hpc-work/cache/wandb

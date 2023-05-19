@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datasets import load_dataset
+from datasets import load_dataset, concatenate_datasets
 
 from dataloader.datasets.base_dataset_group import BaseDatasetGroup
 
@@ -40,8 +40,6 @@ class MLSDataset(BaseDatasetGroup):
             "spanish": "spanish"
         }
         
-        assert streaming is False, "Streaming is not supported for MLS dataset."
-        
         super().__init__(streaming=streaming, subset=subset)
     
     
@@ -50,13 +48,24 @@ class MLSDataset(BaseDatasetGroup):
             if dataset_name in self.subset:  # type: ignore
                 if dataset_name == "english":
                     # Load the 2 test splits of LibriSpeech from the original HF dataset as
-                    # we want a fair comparison with the other datasets:
-                    self.str2dataset[dataset_name] = load_dataset(path="librispeech_asr",
-                                                                  split="test.clean+test.other",
-                                                                  use_auth_token=True)
+                    # we want a fair comparison with the other datasets.
+                    # Important note: `streaming` is set to `False` here as we want to take advantage
+                    # of the fact that the full LibriSpeech dataset has already been cached.
+                    librispeech_en_clean = load_dataset(path="librispeech_asr",
+                                                        name="clean",
+                                                        split="test",
+                                                        streaming=False,
+                                                        use_auth_token=True)
+                    librispeech_en_other = load_dataset(path="librispeech_asr",
+                                                        name="other",
+                                                        split="test",
+                                                        streaming=False,
+                                                        use_auth_token=True)
+                    self.str2dataset["english"] = concatenate_datasets([librispeech_en_clean, librispeech_en_other])  # type: ignore
+                    
                 else:
                     self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
-                                                              name=dataset_name,
-                                                              split="test",
-                                                              streaming=self.streaming,
-                                                              use_auth_token=True)
+                                                                  name=dataset_name,
+                                                                  split="test",
+                                                                  streaming=self.streaming,
+                                                                  use_auth_token=True)
