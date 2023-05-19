@@ -12,11 +12,14 @@ class EnvConfig:
     # ------ Huggingface ------
     HF_HOME: str
     
-    HUGGING_FACE_HUB_TOKEN: Optional[str]
-    
     TRANSFORMERS_CACHE: str
     HF_DATASETS_CACHE: str
     HF_MODULES_CACHE: str
+    
+    CACHE_DIR_LIBRISPEECH: Optional[str]
+    CACHE_DIR_ESB: Optional[str]
+    CACHE_DIR_ESB_DIAGNOSTIC: Optional[str]
+    CACHE_DIR_MLS: Optional[str]
     
     # ------ Weight&Biases ------
     WANDB_PROJECT: str

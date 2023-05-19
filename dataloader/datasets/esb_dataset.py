@@ -38,9 +38,9 @@ class ESBDataset(BaseDatasetGroup):
         # Retrieve custom `cache_dir` filepath if set:
         self.cache_dir_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
         if self.load_diagnostic:
-            self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB", None)
-        else:
             self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB_DIAGNOSTIC", None)
+        else:
+            self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB", None)
         self.dataset_name_to_cache_dir = {
             "librispeech": self.cache_dir_librispeech,
             "common_voice": self.cache_dir_esb,
@@ -51,6 +51,7 @@ class ESBDataset(BaseDatasetGroup):
             "earnings22": self.cache_dir_esb,
             "ami": self.cache_dir_esb,
         }
+        
         
         super().__init__(streaming=streaming, subset=subset)
     

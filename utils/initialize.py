@@ -18,12 +18,14 @@ def initialize_env():
     # HuggingFace:
     os.environ["HF_HOME"] = env_config.HF_HOME
     
-    if env_config.HUGGING_FACE_HUB_TOKEN is not None:
-        os.environ["HUGGING_FACE_HUB_TOKEN"] = env_config.HUGGING_FACE_HUB_TOKEN
-    
     os.environ["TRANSFORMERS_CACHE"] = env_config.TRANSFORMERS_CACHE
     os.environ["HF_DATASETS_CACHE"] = env_config.HF_DATASETS_CACHE
     os.environ["HF_MODULES_CACHE"] = env_config.HF_MODULES_CACHE
+    
+    for var in ["CACHE_DIR_LIBRISPEECH", "CACHE_DIR_ESB", "CACHE_DIR_ESB_DIAGNOSTIC", "CACHE_DIR_MLS"]:
+        if getattr(env_config, var) is not None:
+            os.environ[var] = getattr(env_config, var)
+    
     
     # WandB:
     os.environ["WANDB_PROJECT"] = env_config.WANDB_PROJECT
@@ -36,7 +38,21 @@ def initialize_env():
 
 
 def print_envs():
-    list_envs = ["HF_HOME", "TRANSFORMERS_CACHE", "HF_DATASETS_CACHE", "HF_MODULES_CACHE", "WANDB_CACHE_DIR"]
+    list_envs = [
+        "HF_HOME",
+        "TRANSFORMERS_CACHE",
+        "HF_DATASETS_CACHE",
+        "HF_MODULES_CACHE",
+        "CACHE_DIR_LIBRISPEECH",
+        "CACHE_DIR_ESB",
+        "CACHE_DIR_ESB_DIAGNOSTIC",
+        "CACHE_DIR_MLS",
+        "WANDB_PROJECT",
+        "WANDB_CACHE_DIR",
+        "PREPROCESSED_DATASETS_DIR"
+    ]
+    
     for env in list_envs:
-        print(f"{env}: {os.environ[env]}")
+        print(f"{env}: {os.environ.get(env, None)}")
+    
     return
