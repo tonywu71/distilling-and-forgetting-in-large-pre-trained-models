@@ -1,3 +1,5 @@
+import os
+
 from typing import Optional, List
 from datasets import load_dataset
 
@@ -33,6 +35,23 @@ class ESBDataset(BaseDatasetGroup):
         self.language = "english"
         self.load_diagnostic = load_diagnostic
         
+        # Retrieve custom `cache_dir` filepath if set:
+        self.cache_dir_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
+        if self.load_diagnostic:
+            self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB", None)
+        else:
+            self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB_DIAGNOSTIC", None)
+        self.dataset_name_to_cache_dir = {
+            "librispeech": self.cache_dir_librispeech,
+            "common_voice": self.cache_dir_esb,
+            "voxpopuli": self.cache_dir_esb,
+            "tedlium": self.cache_dir_esb,
+            "gigaspeech": self.cache_dir_esb,
+            "spgispeech": self.cache_dir_esb,
+            "earnings22": self.cache_dir_esb,
+            "ami": self.cache_dir_esb,
+        }
+        
         super().__init__(streaming=streaming, subset=subset)
     
     
@@ -48,11 +67,13 @@ class ESBDataset(BaseDatasetGroup):
                         self.str2dataset["librispeech_clean"] = load_dataset(path="librispeech_asr",
                                                                              name="clean",
                                                                              split="test",
+                                                                             cache_dir=self.dataset_name_to_cache_dir["librispeech"],
                                                                              streaming=False,
                                                                              use_auth_token=True)
                         self.str2dataset["librispeech_other"] = load_dataset(path="librispeech_asr",
                                                                              name="other",
                                                                              split="test",
+                                                                             cache_dir=self.dataset_name_to_cache_dir["librispeech"],
                                                                              streaming=False,
                                                                              use_auth_token=True)
                     else:
@@ -60,6 +81,7 @@ class ESBDataset(BaseDatasetGroup):
                         self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
                                                                       name=dataset_name,
                                                                       split="validation",
+                                                                      cache_dir=self.dataset_name_to_cache_dir[dataset_name],
                                                                       streaming=self.streaming,
                                                                       use_auth_token=True)
         
@@ -72,17 +94,20 @@ class ESBDataset(BaseDatasetGroup):
                         self.str2dataset["librispeech_clean"] = load_dataset(path="librispeech_asr",
                                                                              name="clean",
                                                                              split="test",
+                                                                             cache_dir=self.dataset_name_to_cache_dir["librispeech"],
                                                                              streaming=self.streaming,
                                                                              use_auth_token=True)
                         self.str2dataset["librispeech_other"] = load_dataset(path="librispeech_asr",
                                                                              name="other",
                                                                              split="test",
+                                                                             cache_dir=self.dataset_name_to_cache_dir["librispeech"],
                                                                              streaming=self.streaming,
                                                                              use_auth_token=True)
                     else:
                         self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
                                                                       name=dataset_name,
                                                                       split="clean",
+                                                                      cache_dir=self.dataset_name_to_cache_dir[dataset_name],
                                                                       streaming=self.streaming,
                                                                       use_auth_token=True
                                                                       ).rename_column("norm_transcript", "text")

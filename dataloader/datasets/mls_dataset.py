@@ -1,3 +1,5 @@
+import os
+
 from typing import Optional, List
 from datasets import load_dataset, concatenate_datasets
 
@@ -14,7 +16,7 @@ class MLSDataset(BaseDatasetGroup):
     
     def __init__(self,
                  streaming: bool=False,
-                 subset: Optional[List[str]]=None) -> None:
+                 subset: Optional[List[str]]=None) -> None:    
         
         self.dataset_path = "facebook/multilingual_librispeech"
         self.available_datasets = [
@@ -40,6 +42,22 @@ class MLSDataset(BaseDatasetGroup):
             "spanish": "spanish"
         }
         
+        
+        # Retrieve custom `cache_dir` filepath if set:
+        self.cache_dir_en_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
+        self.cache_dir_non_english_librispeech = os.environ.get("CACHE_DIR_MLS", None)
+        self.dataset_name_to_cache_dir = {
+            "dutch": self.cache_dir_non_english_librispeech,
+            "english": self.cache_dir_en_librispeech,
+            "french": self.cache_dir_non_english_librispeech,
+            "german": self.cache_dir_non_english_librispeech,
+            "italian": self.cache_dir_non_english_librispeech,
+            "polish": self.cache_dir_non_english_librispeech,
+            "portuguese": self.cache_dir_non_english_librispeech,
+            "spanish": self.cache_dir_non_english_librispeech
+        }
+        
+        
         super().__init__(streaming=streaming, subset=subset)
     
     
@@ -54,11 +72,13 @@ class MLSDataset(BaseDatasetGroup):
                     librispeech_en_clean = load_dataset(path="librispeech_asr",
                                                         name="clean",
                                                         split="test",
+                                                        cache_dir=self.dataset_name_to_cache_dir["english"],
                                                         streaming=False,
                                                         use_auth_token=True)
                     librispeech_en_other = load_dataset(path="librispeech_asr",
                                                         name="other",
                                                         split="test",
+                                                        cache_dir=self.dataset_name_to_cache_dir["english"],
                                                         streaming=False,
                                                         use_auth_token=True)
                     self.str2dataset["english"] = concatenate_datasets([librispeech_en_clean, librispeech_en_other])  # type: ignore
@@ -67,5 +87,6 @@ class MLSDataset(BaseDatasetGroup):
                     self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
                                                                   name=dataset_name,
                                                                   split="test",
+                                                                  cache_dir=self.dataset_name_to_cache_dir[dataset_name],
                                                                   streaming=self.streaming,
                                                                   use_auth_token=True)

@@ -1,3 +1,5 @@
+import os
+
 from typing import Optional, List
 from datasets import load_dataset
 
@@ -28,6 +30,19 @@ class FABDataset(BaseDatasetGroup):
             "librispeech_fr": "fr"
         }
         
+        
+        # Retrieve custom `cache_dir` filepath if set:
+        self.cache_dir_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
+        self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB_DIAGNOSTIC", None)
+        self.cache_dir_mls = os.environ.get("CACHE_DIR_MLS", None)
+        self.dataset_name_to_cache_dir = {
+            "librispeech_en_clean": self.cache_dir_librispeech,
+            "librispeech_en_other": self.cache_dir_librispeech,
+            "tedlium": self.cache_dir_esb,
+            "librispeech_fr": self.cache_dir_mls,
+        }
+        
+        
         super().__init__(streaming=streaming, subset=subset)
     
     
@@ -36,22 +51,26 @@ class FABDataset(BaseDatasetGroup):
             "librispeech_en_clean": load_dataset(path="librispeech_asr",
                                                  name="clean",
                                                  split="test",
+                                                 cache_dir=self.dataset_name_to_cache_dir["librispeech_en_clean"],
                                                  streaming=self.streaming,
                                                  use_auth_token=True),
             "librispeech_en_other": load_dataset(path="librispeech_asr",
                                                  name="other",
                                                  split="test",
+                                                 cache_dir=self.dataset_name_to_cache_dir["librispeech_en_other"],
                                                  streaming=self.streaming,
                                                  use_auth_token=True),
             "tedlium": load_dataset(path="esb/diagnostic-dataset",
                                     name="tedlium",
                                     split="clean",
+                                    cache_dir=self.dataset_name_to_cache_dir["tedlium"],
                                     streaming=self.streaming,
                                     use_auth_token=True
                                     ).rename_column("norm_transcript", "text"),
             "librispeech_fr": load_dataset(path="facebook/multilingual_librispeech",
                                            name="french",
                                            split="test",
+                                           cache_dir=self.dataset_name_to_cache_dir["librispeech_fr"],
                                            streaming=self.streaming,
                                            use_auth_token=True)
         }
