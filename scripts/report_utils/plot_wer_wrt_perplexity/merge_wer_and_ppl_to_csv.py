@@ -14,6 +14,9 @@ def main(wer_filepath: str, ppl_filepath: str, model_name: str):
     df = df_wer.merge(df_ppl, on="Dataset")
     df["Model"] = model_name
     
+    # Drop rows where "Dataset" contains "Average":
+    df = df[~df["Dataset"].str.contains("Average")]
+    
     # Save concatenated CSV table:
     savepath = (DEFAULT_OUTPUT_DIR / "report" / "plot_wer_wrt_perplexity" / f"wer_and_ppl-{model_name}").with_suffix(".csv")
     savepath.parent.mkdir(parents=True, exist_ok=True)

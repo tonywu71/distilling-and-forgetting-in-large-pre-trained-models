@@ -14,6 +14,7 @@ from transformers import WhisperProcessor
 from dataloader.datasets.base_dataset_group import BaseDatasetGroup
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
+from normalization.whisper_normalization import get_whisper_normalizer
 from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL
 
 
@@ -43,6 +44,16 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
             language = ds_group.language
         else:
             language = ds_group.ds_name_to_lang[dataset_name]
+        
+        
+        # Handle the special case of the English dataset with the basic normalizer.
+        # Note: `whisper_norm` is actually unused for perplexity computation but we
+        # keep it for consistency with `eval_whisper_on_dataset`.
+        if language == "english-basic_normalizer":
+            whisper_norm = get_whisper_normalizer(language=None)
+            language = "english"
+        else:
+            whisper_norm = get_whisper_normalizer(language=language)
         
         processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path,
                                                      language=language,
