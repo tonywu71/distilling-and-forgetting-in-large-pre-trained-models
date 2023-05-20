@@ -25,6 +25,7 @@ from utils.file_io import extract_experiment_name, extract_savepath
 
 def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to the pretrained model or its name in the HuggingFace Hub."),
          streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
+         load_full: bool=typer.Option(False, help="Whether to load the full MLS dataset (non-diagnostic)."),
          subset: Optional[List[str]]=typer.Option(None, help="Subset of the MLS dataset to evaluate on."),
          batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
@@ -34,6 +35,8 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     Note that only greedy decoding is supported for now.
     """
     
+    load_diagnostic = not load_full
+    
     # Set up the parameters:
     task = "transcribe"
     
@@ -42,6 +45,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
         "task": task,
         "dataset": "mls",
         "streaming": streaming,
+        "load_diagnostic": load_diagnostic,
         "subset": subset,
         "batch_size": batch_size,
     }
@@ -62,7 +66,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     if subset:
         print(f"Subset(s) of MLS: {subset}")
         
-    mls_dataset = MLSDataset(streaming=streaming, subset=subset)
+    mls_dataset = MLSDataset(streaming=streaming, load_diagnostic=load_diagnostic, subset=subset)
     print(f"Loaded datasets: {list(mls_dataset.keys())}")
     
     

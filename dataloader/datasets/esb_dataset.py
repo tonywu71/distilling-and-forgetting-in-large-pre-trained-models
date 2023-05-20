@@ -33,6 +33,7 @@ class ESBDataset(BaseDatasetGroup):
         ]
         self.is_multilingual = False
         self.language = "english"
+        
         self.load_diagnostic = load_diagnostic
         
         # Retrieve custom `cache_dir` filepath if set:
@@ -57,7 +58,7 @@ class ESBDataset(BaseDatasetGroup):
     
     
     def _prepare_str2dataset(self) -> None:
-        if not self.load_diagnostic:  # If load default ESB dataset...
+        if not self.load_diagnostic:  # If `load_diagnostic` default ESB dataset...
             for dataset_name in self.available_datasets:
                 if dataset_name in self.subset:  # type: ignore
                     if dataset_name == "librispeech":

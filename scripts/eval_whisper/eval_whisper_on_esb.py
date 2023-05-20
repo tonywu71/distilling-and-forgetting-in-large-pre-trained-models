@@ -24,7 +24,7 @@ from utils.file_io import extract_experiment_name, extract_savepath
 
 def main(pretrained_model_name_or_path: str,
          streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
-         load_full: bool=typer.Option(False, help="Whether to load the full ESB dataset (non diagnostic)."),
+         load_full: bool=typer.Option(False, help="Whether to load the full ESB dataset (non-diagnostic)."),
          subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB dataset to evaluate on."),
          batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
