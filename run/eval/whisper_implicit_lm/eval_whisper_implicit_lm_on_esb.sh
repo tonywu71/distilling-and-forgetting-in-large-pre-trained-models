@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=01:00:00
+#SBATCH --time=01:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -53,10 +53,10 @@ echo "python `which python`": >> $LOG
 
 # python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny.en  >> $LOG 2> $ERR
 # python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny  >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500  >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny --subset tedlium  >> $LOG 2> $ERR
+python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-medium  >> $LOG 2> $ERR
 
-python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py checkpoints/finetuning/english_model/finetune-whisper_tiny_en-librispeech_clean_100h-freeze_encoder/checkpoint-2500  >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500  >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py checkpoints/finetuning/english_model/finetune-whisper_tiny_en-librispeech_clean_100h-freeze_encoder/checkpoint-2500  >> $LOG 2> $ERR
 
 #! #############################################
 

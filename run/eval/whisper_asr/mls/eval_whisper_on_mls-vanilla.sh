@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=01:30:00
+#SBATCH --time=01:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,15 +51,16 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-tiny --streaming >> $LOG 2> $ERR
-python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-tiny --streaming --subset english >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-tiny >> $LOG 2> $ERR
 # python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-tiny.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-tiny --subset librispeech_clean --subset librispeech_other >> $LOG 2> $ERR
 # python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-base >> $LOG 2> $ERR
 # python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-small >> $LOG 2> $ERR
 # python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-small.en >> $LOG 2> $ERR
 # python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-medium >> $LOG 2> $ERR
 # python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-large-v2 >> $LOG 2> $ERR
+
+# python scripts/eval_whisper/eval_whisper_on_mls.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 >> $LOG 2> $ERR
+
 
 #! #############################################
 
