@@ -51,9 +51,11 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
     df = df.dropna(subset=["WER (%)"])
     
     if regression:
-        sns.regplot(data=df, x="Size (M parameters)", y="WER (%)", logx=log, ci=None)
+        sns.regplot(data=df, x="Size (M parameters)", y="WER (%)", logx=log,
+                    ci=None, scatter_kws={"s": 100})  # type: ignore
     else:
-        sns.scatterplot(data=df, x="Size (M parameters)", y="WER (%)", hue="Model")
+        sns.scatterplot(data=df, x="Size (M parameters)", y="WER (%)",
+                        hue="Model", s=100)
         if log:
             plt.xscale("log")
         
