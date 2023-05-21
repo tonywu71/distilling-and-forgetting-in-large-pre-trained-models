@@ -1,10 +1,9 @@
-from matplotlib import markers
 import typer
 
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
-from typing import List, Optional
+from typing import List
 from datetime import datetime
 
 import pandas as pd
