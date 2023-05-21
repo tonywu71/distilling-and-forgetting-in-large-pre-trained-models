@@ -39,6 +39,7 @@ class BaseDatasetGroup(ABC):
         else:
             assert self.language is not None, "If `is_multilingual` is False, `language` must be set in the child class before calling `super().__init__()`."
     
+    
     @abstractmethod
     def _prepare_str2dataset(self) -> None:
         """
@@ -64,7 +65,10 @@ class BaseDatasetGroup(ABC):
             # Loop over all the datasets:
             for dataset_name, dataset in self.str2dataset.items():
                 if normalize:
-                    dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)  # type: ignore
+                    if not self.streaming:
+                        dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)  # type: ignore
+                    else:
+                        dataset = dataset.map(normalize_fct)  # type: ignore
                 
                 # Update dataset:
                 self.str2dataset[dataset_name] = dataset
@@ -79,7 +83,10 @@ class BaseDatasetGroup(ABC):
                     batch["text"] = whisper_norm(batch["text"])
                     return batch
                 
-                dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)  # type: ignore
+                if not self.streaming:
+                    dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)  # type: ignore
+                else:
+                    dataset = dataset.map(normalize_fct)  # type: ignore
                 
                 # Update dataset:
                 self.str2dataset[dataset_name] = dataset

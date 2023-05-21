@@ -5,8 +5,6 @@ import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from typing import List
-import shutil
-from datetime import datetime
 
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
@@ -19,7 +17,8 @@ from functools import partial
 from pathlib import Path
 from pprint import pprint
 
-from datasets import load_from_disk
+from dataloader.dataloader import load_dataset_dict
+from dataloader.preprocessing import preprocess_dataset
 from transformers import (WhisperForConditionalGeneration,
                           WhisperProcessor,
                           Seq2SeqTrainingArguments,
@@ -30,11 +29,12 @@ from transformers import (WhisperForConditionalGeneration,
 import wandb
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from dataloader.dataloader import load_dataset_dict
-from dataloader.preprocessing import preprocess_dataset
+from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.metrics import compute_wer_fct
-from utils.callbacks import WandbCustomCallback
-from utils.config import load_yaml_config
+from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
+from callbacks.finetune_callback import WandbFinetuneCallback
+from utils.file_io import fix_model_dir_conflicts
+from utils.finetune_config import FinetuneConfig
 from utils.constants import DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP, GEN_MAX_LENGTH
 
 
@@ -43,18 +43,12 @@ def main(config_filepath: str):
     Fine-tune the Whisper model on the LibriSpeech dataset.
     """
     # --------------------   Load config   --------------------
-    config = load_yaml_config(config_filepath)
+    config = FinetuneConfig.from_yaml(config_filepath)
     
-    
-    # If a previous run has its checkpoints saved in the same directory, raise an error:
-    if Path(config.model_dir).is_dir() and not os.listdir(config.model_dir):
-        # Get the current date and time
-        print (f"Model directory `{config.model_dir}` is not empty. A timestamp will be added to the model directory.")
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        old_model_dir = Path(config.model_dir)
-        new_model_dir = old_model_dir.with_name(f"{old_model_dir.name}-{timestamp}/")
-        config.model_dir = new_model_dir.as_posix()
-        print (f"New model directory: `{config.model_dir}`.")
+    # If a previous run has its checkpoints saved in the same directory,
+    # add a timestamp to the model directory. This is to avoid overwriting
+    # previous models. Note that `config` is modified in-place.
+    fix_model_dir_conflicts(config)
     
     
     # -----------------------   W&B   -----------------------
@@ -93,23 +87,9 @@ def main(config_filepath: str):
 
     
     # Load the dataset and preprocess it:
-    assert Path(os.environ["PREPROCESSED_DATASETS_DIR"]).exists(), \
-        f"Preprocessed datasets directory `{os.environ['PREPROCESSED_DATASETS_DIR']}` not found."
-    
-    tokenizer_name = config.finetuned_from.replace("/", "-").replace(".", "-")
-    dataset_dir = str(Path(os.environ["PREPROCESSED_DATASETS_DIR"]) / config.dataset_name / tokenizer_name)
-    
-    if not config.force_reprocess_dataset and Path(dataset_dir).exists():
-        print(f"Previously proprocessed dataset found at `{dataset_dir}`. Loading from disk...")
-        dataset_dict = load_from_disk(dataset_dir)
+    if config.smart_load:
+        dataset_dict = smart_load_dataset_dict(config=config, processor=processor)
     else:
-        if config.force_reprocess_dataset:
-            print(f"`force_reprocess_dataset` was set to `True` in the config file. Reprocessing dataset from scratch...")
-            if Path(dataset_dir).exists():
-                print(f"Deleting previously preprocessed dataset at `{dataset_dir}`...")
-                shutil.rmtree(dataset_dir) 
-        else:
-            print(f"Preprocessed dataset not found at `{dataset_dir}`. Preprocessing from scratch...")
         print(f"Loading raw dataset `{config.dataset_name}` from Huggingface...")
         dataset_dict = load_dataset_dict(dataset_name=config.dataset_name)
         
@@ -118,29 +98,17 @@ def main(config_filepath: str):
                                           tokenizer=processor.tokenizer,  # type: ignore
                                           feature_extractor=processor.feature_extractor,  # type: ignore
                                           augment=config.data_augmentation)
-        
-        # Note: The pytorch tensor conversation will be done in the DataCollator.
-        
-        Path(dataset_dir).mkdir(parents=True, exist_ok=True)
-        dataset_dict.save_to_disk(dataset_dir)
-        print(f"Preprocessed dataset saved to `{dataset_dir}`. It will be loaded from disk next time.")
-    
     
     print("\n-----------------------\n")
     
     
     # Initialize the model from a pretrained checkpoint:
-    # Note: In Whisper, the decoder is conditioned on both the source and target sentences,
-    #       and the decoder inputs are the concatenation of the target sentence and a special
-    #       separator token. By default, the `forced_decoder_ids` attribute is set to a tensor
-    #       containing the target sentence and the separator token. This tells the model to
-    #       always generate the target sentence and the separator token before starting the
-    #       decoding process.
-    
     print(f"Loading pretrained model `{config.pretrained_model_name_or_path}`...")
-    
-    model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path)
-    
+    if not config.experimental_train_implicit_lm:
+        model = WhisperForConditionalGeneration.from_pretrained(config.pretrained_model_name_or_path)
+    else:
+        print("Enforcing the model to have zeroed cross-attention vectors for the encoder self-attention...")
+        model = WhisperForConditionalGenerationZeroCrossAttention.from_pretrained(config.pretrained_model_name_or_path)
     
     # Freeze the encoder and/or decoder if specified in the config:
     assert not (config.freeze_encoder and config.freeze_decoder), \
@@ -158,6 +126,12 @@ def main(config_filepath: str):
         decoder._requires_grad = False  # type: ignore
     
     
+    # Note: In Whisper, the decoder is conditioned on both the source and target sentences,
+    #       and the decoder inputs are the concatenation of the target sentence and a special
+    #       separator token. By default, the `forced_decoder_ids` attribute is set to a tensor
+    #       containing the target sentence and the separator token. This tells the model to
+    #       always generate the target sentence and the separator token before starting the
+    #       decoding process.
     model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
     model.config.suppress_tokens = []  # type: ignore
     if config.gradient_checkpointing:
@@ -205,10 +179,10 @@ def main(config_filepath: str):
     callbacks: List[TrainerCallback] = []
     
     if config.log_preds_to_wandb:
-        callbacks.append(WandbCustomCallback(config=config,
-                                             processor=processor,
-                                             eval_dataset=dataset_dict["val"],  # type: ignore
-                                             n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
+        callbacks.append(WandbFinetuneCallback(config=config,
+                                               processor=processor,
+                                               eval_dataset=dataset_dict["val"],  # type: ignore
+                                               n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
     
     if config.early_stopping_patience != -1:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore

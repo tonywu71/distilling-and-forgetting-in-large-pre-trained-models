@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 import yaml
 
 
@@ -10,9 +11,15 @@ class EnvConfig:
     """
     # ------ Huggingface ------
     HF_HOME: str
+    
     TRANSFORMERS_CACHE: str
     HF_DATASETS_CACHE: str
     HF_MODULES_CACHE: str
+    
+    CACHE_DIR_LIBRISPEECH: Optional[str]
+    CACHE_DIR_ESB: Optional[str]
+    CACHE_DIR_ESB_DIAGNOSTIC: Optional[str]
+    CACHE_DIR_MLS: Optional[str]
     
     # ------ Weight&Biases ------
     WANDB_PROJECT: str

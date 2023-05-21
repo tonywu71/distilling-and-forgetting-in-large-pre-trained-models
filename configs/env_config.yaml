@@ -1,10 +1,23 @@
-HF_HOME: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface
-TRANSFORMERS_CACHE: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/transformers
-HF_DATASETS_CACHE: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/datasets
-HF_MODULES_CACHE: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/modules
+# ==============================     HUGGINGFACE     ==============================
+HF_HOME: /home/tw581/rds/hpc-work/cache/huggingface/
 
+TRANSFORMERS_CACHE: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/data/cache/huggingface/transformers
+HF_MODULES_CACHE: /home/tw581/rds/hpc-work/cache/huggingface/modules
+HF_DATASETS_CACHE: /home/tw581/rds/hpc-work/cache/huggingface/datasets
+
+# Custom cache dir dirpaths to tackle the storage limit on HPC.
+# If no issue with storage, remove all fields values to use
+# the default cache_dir set in `HF_DATASETS_CACHE`:
+CACHE_DIR_LIBRISPEECH: /home/tw581/rds/hpc-work/cache/huggingface/custom_datasets/librispeech
+CACHE_DIR_ESB:  # Not used in this project
+CACHE_DIR_ESB_DIAGNOSTIC: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/custom_datasets/esb_diagnostic
+CACHE_DIR_MLS: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/custom_datasets/mls
+
+
+# ==============================     WANDB     ==============================
 WANDB_PROJECT: distilling-and-forgetting-in-large-pre-trained-models
 WANDB_CACHE_DIR: /home/tw581/rds/hpc-work/cache/wandb
 
 
+# ==============================     OTHERS     ==============================
 PREPROCESSED_DATASETS_DIR: /home/tw581/rds/hpc-work/preprocessed_datasets/

@@ -49,7 +49,13 @@ def eval_whisper_on_dataset(pretrained_model_name_or_path: str,
         else:
             language = ds_group.ds_name_to_lang[dataset_name]
         
-        whisper_norm = get_whisper_normalizer(language=language)
+        # Handle the special case of the English dataset with the basic normalizer:
+        if language == "english-basic_normalizer":
+            whisper_norm = get_whisper_normalizer(language=None)
+            language = "english"
+        else:
+            whisper_norm = get_whisper_normalizer(language=language)
+        
         
         processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path,
                                                      language=language,
