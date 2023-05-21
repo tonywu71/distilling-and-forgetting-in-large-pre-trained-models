@@ -42,7 +42,7 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
     small,7.72,244
     medium,5.44,769
     large,,1550
-    large-v2,,155
+    large-v2,,1550
     ```
     """
     
@@ -52,15 +52,22 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
     
     if regression:
         sns.regplot(data=df, x="Size (M parameters)", y="WER (%)", logx=log,
-                    ci=None, scatter_kws={"s": 100})  # type: ignore
+                    ci=None, scatter_kws={"s": 400})  # type: ignore
     else:
         sns.scatterplot(data=df, x="Size (M parameters)", y="WER (%)",
-                        hue="Model", s=100)
+                        hue="Model", s=400)
         if log:
             plt.xscale("log")
         
     if log:
         plt.xlabel("Size (M parameters) [log]")
+    
+    
+    # HARDCODED (for now):
+    if "Ideal distilled student" in df["Model"].values:
+        plt.axhline(y=df.loc[df["Model"] == "Ideal distilled student", "WER (%)"].values[0], color="black", linestyle="dashed")
+        plt.axvline(x=WHISPER_MODEL_SIZE_IN_M_PARAMETERS["tiny"], color="black", linestyle="dashed")
+    
     
     # Save figure:
     if savename is None:
