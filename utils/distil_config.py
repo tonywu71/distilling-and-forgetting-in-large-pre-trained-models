@@ -36,6 +36,7 @@ class DistilConfig:
     learning_rate: float
     warmup_steps: int
     eval_steps: int
+    generation_num_beams: int
     save_steps: int
     save_total_limit: Optional[int]
     logging_steps: int
