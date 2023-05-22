@@ -8,7 +8,7 @@ from transformers import (PreTrainedModel,
                           TrainingArguments,
                           TrainerState,
                           TrainerControl)
-from transformers.integrations import WandbCallback
+from transformers.generation.utils import GenerateOutput
 from datasets import Dataset
 
 from callbacks.base_training_callback import BaseWandbTrainingCallback
@@ -38,13 +38,6 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         assert isinstance(self.config, DistilConfig), "config must be `DistilConfig`"
     
     
-    def get_predictions(self, model: PreTrainedModel, inputs) -> Tensor:
-        # =======  WIP  =======
-        output = model.forward(**inputs)
-        pred_ids = torch.argmax(output.logits, dim=-1)  # type: ignore
-        return pred_ids
-    
-    
     def on_log(self,
                args: TrainingArguments,
                state: TrainerState,
@@ -52,6 +45,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
                model: PreTrainedModel,
                logs: Optional[Dict[str, float]]=None,
                **kwargs):
+        # Note: `model` corresponds to the student model in this method.
         
         # Call `BaseWandbTrainingCallback`'s parent (`WandbCallback`) method `on_log` for basic logging:
         super(BaseWandbTrainingCallback, self).on_log(args, state, control, model, logs, **kwargs)  # type: ignore
@@ -68,12 +62,14 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             data = self.data_collator([data])  # type: ignore
             
             # Note that we need to move the data to the device manually (which is not the case with Trainer):
-            inputs = data["input_features"].to(device)
+            input_features = data["input_features"].to(device)
             label_ids = data[DEFAULT_LABEL_TOKENIZED_COL].to(device)
             
             # Generate the predictions:
-            pred_ids_student = self.get_predictions(model, inputs)
-            pred_ids_teacher = self.teacher_model.generate(inputs,
+            pred_ids_student = self.teacher_model.generate(input_features,
+                                                           max_length=GEN_MAX_LENGTH,
+                                                           num_beams=self.config.generation_num_beams)  # type: ignore
+            pred_ids_teacher = self.teacher_model.generate(input_features,
                                                            max_length=GEN_MAX_LENGTH,
                                                            num_beams=self.config.generation_num_beams)  # type: ignore
             

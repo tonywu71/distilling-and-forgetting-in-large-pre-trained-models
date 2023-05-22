@@ -1,15 +1,12 @@
 from typing import Dict, Optional
 
 import torch
-from torch import Tensor
 
 from transformers import (PreTrainedModel,
                           WhisperProcessor,
                           TrainingArguments,
                           TrainerState,
                           TrainerControl)
-from transformers.generation.utils import GenerateOutput
-from transformers.integrations import WandbCallback
 from datasets import Dataset
 
 from callbacks.base_training_callback import BaseWandbTrainingCallback
@@ -37,13 +34,6 @@ class WandbFinetuneCallback(BaseWandbTrainingCallback):
         assert isinstance(self.config, FinetuneConfig), "config must be `FinetuneConfig`"
     
     
-    def get_predictions(self, model: PreTrainedModel, inputs) -> GenerateOutput | Tensor:
-        pred_ids = model.generate(inputs,
-                                    max_length=GEN_MAX_LENGTH,
-                                    num_beams=self.config.generation_num_beams)  # type: ignore
-        return pred_ids
-    
-    
     def on_log(self,
                args: TrainingArguments,
                state: TrainerState,
@@ -67,11 +57,13 @@ class WandbFinetuneCallback(BaseWandbTrainingCallback):
             data = self.data_collator([data])  # type: ignore
             
             # Note that we need to move the data to the device manually (which is not the case with Trainer):
-            inputs = data["input_features"].to(device)
+            input_features = data["input_features"].to(device)
             label_ids = data[DEFAULT_LABEL_TOKENIZED_COL].to(device)
             
             # Generate the predictions:
-            pred_ids = self.get_predictions(model, inputs)
+            pred_ids = model.generate(input_features,
+                                      max_length=GEN_MAX_LENGTH,
+                                      num_beams=self.config.generation_num_beams)  # type: ignore
             
             # Replace the padding index with the pad token id to undo the step we applied
             # in the data collator to ignore padded tokens correctly during decoding:
