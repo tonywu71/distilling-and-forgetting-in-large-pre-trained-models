@@ -21,15 +21,9 @@ python scripts/report_utils/plot_wer_wrt_perplexity/merge_wer_and_ppl_to_csv.py 
 
 # ======= 2. Plot =======
 
+# --- PPL vs WER - tiny multilingual on MLS ---
 python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-vanilla-mls.csv \
     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-finetuned-mls.csv \
-    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-medium_multilingual-vanilla-mls.csv \
-    --filename english-mls
-
-python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
-    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-vanilla-mls.csv \
-    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-finetuned-mls.csv \
-    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-medium_multilingual-vanilla-mls.csv \
     --kind regression \
-    --filename english-mls
+    --filename tiny_multilingual_mls

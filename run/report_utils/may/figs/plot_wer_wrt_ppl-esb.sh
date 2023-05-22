@@ -19,6 +19,7 @@ python scripts/report_utils/plot_wer_wrt_perplexity/merge_wer_and_ppl_to_csv.py 
     medium_multilingual-vanilla-esb
 
 
+
 # --- English ---
 python scripts/report_utils/plot_wer_wrt_perplexity/merge_wer_and_ppl_to_csv.py \
     outputs/vanilla/tiny-en/whisper-tiny-en-esb.csv \
@@ -39,62 +40,21 @@ python scripts/report_utils/plot_wer_wrt_perplexity/merge_wer_and_ppl_to_csv.py 
 
 # ======= 2. Plot =======
 
-# # --- All `tiny` ---
+# DEPRECATED:
 # python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
 #     outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_multilingual-vanilla-esb.csv \
 #     outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_multilingual-finetuned-esb.csv \
-#     outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_english-vanilla-esb.csv \
-#     outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_english-finetuned-esb.csv \
-#     --filename all-tiny-esb
-
-# python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
-#     outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_multilingual-vanilla-esb.csv \
-#     outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_multilingual-finetuned-esb.csv \
-#     outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_english-vanilla-esb.csv \
-#     outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_english-finetuned-esb.csv \
-#     outputs/report/plot_wer_wrt_perplexity/wer_and_ppl-medium_multilingual-vanilla-esb.csv \
 #     --kind regression \
-#     --filename all-tiny-esb
+#     --filename tiny_multilingual_esb
 
 
-# --- Multilingual ---
-python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_multilingual-vanilla-esb.csv \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_multilingual-finetuned-esb.csv \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-medium_multilingual-vanilla-esb.csv \
-    --filename multilingual-esb
-
-python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_multilingual-vanilla-esb.csv \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_multilingual-finetuned-esb.csv \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-medium_multilingual-vanilla-esb.csv \
-    --kind regression \
-    --filename multilingual-esb
-
-
-# --- English ---
+# --- PPL vs WER - impact of fine-tuning on Whisper tiny ---
 python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
     outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_english-vanilla-esb.csv \
     outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_english-finetuned-esb.csv \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-medium_english-vanilla-esb.csv \
-    --filename english-esb
-
-python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_english-vanilla-esb.csv \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_english-finetuned-esb.csv \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-medium_english-vanilla-esb.csv \
     --kind regression \
-    --filename english-esb
-
-
-# --- tiny vs medium ---
-python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_multilingual-vanilla-esb.csv \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-medium_multilingual-vanilla-esb.csv \
-    --filename tiny_vs_medium-esb
-
-python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-tiny_multilingual-vanilla-esb.csv \
-    outputs/report/plot_wer_wrt_perplexity/esb/wer_and_ppl-medium_multilingual-vanilla-esb.csv \
-    --kind regression \
-    --filename tiny_vs_medium-esb
+    --xlim 0 \
+    --xlim 16000 \
+    --ylim 0 \
+    --ylim 50 \
+    --filename tiny_english_esb

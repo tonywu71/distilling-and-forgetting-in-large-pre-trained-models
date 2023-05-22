@@ -20,6 +20,8 @@ sns.set_theme(context="paper", style="ticks")
 def main(filepaths: List[str],
          kind: str=typer.Option(None, "--kind", "-k",
                                 help="Kind of plot to generate. Must be one of `None`, `regression`, or `jointplot`."),
+         xlim: List[float]=typer.Option(None, "--xlim", "-x", help="Limits of the x-axis."),
+         ylim: List[float]=typer.Option(None, "--ylim", "-y", help="Limits of the y-axis."),
          filename: str=typer.Option(None, "--filename", "-f", help="Filename of the plot (without the suffix).")):
     """
     Script that takes a list of CSV outputs from `merge_wer_and_ppl_to_csv.py` and saves
@@ -38,6 +40,11 @@ def main(filepaths: List[str],
         sns.lmplot(df, x="Perplexity", y="WER (%)", hue="Model", facet_kws=dict(legend_out=False))
     else:
         raise ValueError(f"Invalid `kind` value: `{kind}`. Must be one of `None`, `regression`, or `jointplot`.")
+    
+    if xlim:
+        plt.xlim(xlim)
+    if ylim:
+        plt.ylim(ylim)
     
     # Save figure:
     if filename is None:
