@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from transformers import TrainingArguments, Trainer, PreTrainedModel
+from transformers.modeling_outputs import Seq2SeqLMOutput
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -38,17 +39,20 @@ class DistillationTrainer(Trainer):
                      student_model: PreTrainedModel,
                      inputs,
                      return_outputs: bool=False):
-        inputs = inputs.to(device)
-        outputs_student = student_model(**inputs)
+        # Move inputs to device:
+        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels']
+        
+        # Forward pass through student:
+        output_student: Seq2SeqLMOutput = student_model(**inputs)
         
         # Extract cross-entropy loss and logits from student
-        loss_ce = outputs_student.loss
-        logits_student = outputs_student.logits
+        loss_ce = output_student.loss
+        logits_student = output_student.logits
         
         # Extract logits from teacher
         with torch.no_grad():
-            outputs_teacher = self.teacher_model(**inputs)
-            logits_teacher = outputs_teacher.logits
+            output_teacher: Seq2SeqLMOutput = self.teacher_model(**inputs)
+            logits_teacher = output_teacher.logits
         
         # Soften probabilities and compute distillation loss
         loss_fct = nn.KLDivLoss(reduction="batchmean")
@@ -59,4 +63,4 @@ class DistillationTrainer(Trainer):
         # Return weighted student loss
         loss = self.args.alpha * loss_ce + (1. - self.args.alpha) * loss_kd  # type: ignore
         
-        return (loss, outputs_student) if return_outputs else loss
+        return (loss, output_student) if return_outputs else loss
