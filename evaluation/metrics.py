@@ -2,8 +2,8 @@ from typing import Dict
 
 import torch
 
-import evaluate
 from transformers import WhisperProcessor, EvalPrediction
+import evaluate
 
 from utils.constants import PADDING_IDX
 
@@ -51,7 +51,8 @@ def compute_wer_fct_distil(pred: EvalPrediction, processor: WhisperProcessor, no
     
     wer_metric = evaluate.load("wer")
     
-    pred_ids = torch.argmax(pred.predictions, dim=-1)  # type: ignore
+    pred_student = pred.predictions[0]
+    pred_ids = torch.argmax(torch.Tensor(pred_student), dim=-1)  # type: ignore
     label_ids = pred.label_ids
 
     # Replace the padding index with the pad token id to undo the step we applied
