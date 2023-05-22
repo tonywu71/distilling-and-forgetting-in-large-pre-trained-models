@@ -29,7 +29,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change:
-#SBATCH -p ampere
+#SBATCH -p pascal
 #! ############################################################
 
 
@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper_on_librispeech.py configs/distill_configs/base_to_tiny-debug.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper_on_librispeech.py configs/distill_configs/distil_base_to_tiny-debug.yaml >> $LOG 2> $ERR
 
 #! #############################################
 
