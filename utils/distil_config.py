@@ -44,6 +44,7 @@ class DistilConfig:
     early_stopping_patience: Optional[int]
     smart_load: bool = True
     log_preds_to_wandb: bool = True
+    log_raw_str: bool = False
     
     
     @staticmethod

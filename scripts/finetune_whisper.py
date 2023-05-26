@@ -182,7 +182,8 @@ def main(config_filepath: str):
         callbacks.append(WandbFinetuneCallback(config=config,
                                                processor=processor,
                                                eval_dataset=dataset_dict["val"],  # type: ignore
-                                               n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP))
+                                               n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP,
+                                               log_raw_str=config.log_raw_str))
     
     if config.early_stopping_patience != -1:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore
