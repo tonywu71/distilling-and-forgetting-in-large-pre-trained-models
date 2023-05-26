@@ -42,7 +42,7 @@ class ESBDataset(BaseDatasetGroup):
         if self.cache_dir_librispeech is None:
             print("WARNING: `CACHE_DIR_LIBRISPEECH` environment variable not set. Using default cache directory.")
         else:
-            print(f"Using cache directory: {self.cache_dir_librispeech}")
+            print(f"Using cache directory: `{self.cache_dir_librispeech}`.")
         
         
         if self.load_diagnostic:
@@ -50,13 +50,13 @@ class ESBDataset(BaseDatasetGroup):
             if self.cache_dir_esb is None:
                 print("WARNING: `CACHE_DIR_ESB_DIAGNOSTIC` environment variable not set. Using default cache directory.")
             else:
-                print(f"Using cache directory: {self.cache_dir_esb}")
+                print(f"Using cache directory: `{self.cache_dir_esb}`.")
         else:
             self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB", None)
             if self.cache_dir_esb is None:
                 print("WARNING: `CACHE_DIR_ESB` environment variable not set. Using default cache directory.")
             else:
-                print(f"Using cache directory: {self.cache_dir_esb}")
+                print(f"Using cache directory: `{self.cache_dir_esb}`.")
         
         
         self.dataset_name_to_cache_dir = {

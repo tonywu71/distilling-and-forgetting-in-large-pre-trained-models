@@ -53,13 +53,13 @@ class MLSDataset(BaseDatasetGroup):
         if self.cache_dir_en_librispeech is None:
             print("WARNING: `CACHE_DIR_EN_LIBRISPEECH` environment variable not set. Using default cache directory.")
         else:
-            print(f"Using cache directory: {self.cache_dir_en_librispeech}")
+            print(f"Using cache directory: `{self.cache_dir_en_librispeech}`.")
         
         self.cache_dir_non_english_librispeech = os.environ.get("CACHE_DIR_MLS", None)
         if self.cache_dir_non_english_librispeech is None:
             print("WARNING: `CACHE_DIR_MLS` environment variable not set. Using default cache directory.")
         else:
-            print(f"Using cache directory: {self.cache_dir_non_english_librispeech}")
+            print(f"Using cache directory: `{self.cache_dir_non_english_librispeech}`.")
         
         
         self.dataset_name_to_cache_dir = {

@@ -14,7 +14,7 @@ def load_librispeech_dummy() -> DatasetDict:
     if cache_dir_librispeech is None:
         print("WARNING: `CACHE_DIR_LIBRISPEECH` environment variable not set. Using default cache directory.")
     else:
-        print(f"Using cache directory: {cache_dir_librispeech}")
+        print(f" Using cache directory: `{cache_dir_librispeech}`.")
     
     dataset_dict = {}
     dataset_dict["train"] = load_dataset("hf-internal-testing/librispeech_asr_dummy",
@@ -46,7 +46,7 @@ def load_librispeech(train_split: str="train.100") -> DatasetDict:
     if cache_dir_librispeech is None:
         print("WARNING: `CACHE_DIR_LIBRISPEECH` environment variable not set. Using default cache directory.")
     else:
-        print(f"Using cache directory: {cache_dir_librispeech}")
+        print(f"Using cache directory: `{cache_dir_librispeech}`.")
     
     dataset_dict = {}
     dataset_dict["train"] = load_dataset("librispeech_asr",

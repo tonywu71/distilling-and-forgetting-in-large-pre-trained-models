@@ -13,7 +13,7 @@ def load_ami() -> DatasetDict:
     if cache_dir_ami is None:
         print("WARNING: `CACHE_DIR_AMI` environment variable not set. Using default cache directory.")
     else:
-        print(f"Using cache directory: {cache_dir_ami}")
+        print(f"Using cache directory: `{cache_dir_ami}`.")
     
     dataset_dict = {}
     dataset_dict["train"] = load_dataset("esb/datasets",
