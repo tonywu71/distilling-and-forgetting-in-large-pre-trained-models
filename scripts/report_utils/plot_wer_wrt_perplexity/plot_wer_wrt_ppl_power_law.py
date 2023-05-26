@@ -1,3 +1,4 @@
+from torch import le
 import typer
 
 import os, sys
@@ -6,6 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirna
 from typing import List
 from datetime import datetime
 
+from scipy.stats import pearsonr
 import numpy as np
 import pandas as pd
 
@@ -19,10 +21,7 @@ sns.set_theme(context="paper", style="ticks")
 
 
 def main(filepaths: List[str],
-         kind: str=typer.Option(None, "--kind", "-k",
-                                help="Kind of plot to generate. Must be one of `None`, `regression`, or `jointplot`."),
-         logx: bool=typer.Option(False, "--logx", help="Whether to use a log scale for the x-axis."),
-         logy: bool=typer.Option(False, "--logy", help="Whether to use a log scale for the y-axis."),
+         power_law: bool=typer.Option(False, "--power-law", "-p", help="Whether to use a power law for the regression (i.e. log-log)."),
          xlim: List[float]=typer.Option(None, "--xlim", "-x", help="Limits of the x-axis."),
          ylim: List[float]=typer.Option(None, "--ylim", "-y", help="Limits of the y-axis."),
          filename: str=typer.Option(None, "--filename", "-f", help="Filename of the plot (without the suffix).")):
@@ -36,22 +35,28 @@ def main(filepaths: List[str],
     list_df = [pd.read_csv(filepath, index_col=0) for filepath in filepaths]
     df = pd.concat(list_df, axis=0)
     
-    if logx:
+    if power_law:
         df["Perplexity"] = df["Perplexity"].apply(lambda x: np.log(x))
-    if logy:
         df["WER (%)"] = df["WER (%)"].apply(lambda x: np.log(x))
     
-    # Plot:
-    if kind is None:
-        sns.scatterplot(df, x="Perplexity", y="WER (%)", hue="Model")
-    elif kind == "regression":
-        sns.lmplot(df, x="Perplexity", y="WER (%)", hue="Model", facet_kws=dict(legend_out=False))
-    else:
-        raise ValueError(f"Invalid `kind` value: `{kind}`. Must be one of `None`, `regression`, or `jointplot`.")
     
-    if logx:
+    # Compute the R2 score using scipy.stats:
+    r, p = pearsonr(df["Perplexity"], df["WER (%)"])
+    
+    
+    # Plot:
+    g = sns.lmplot(df, x="Perplexity", y="WER (%)", hue="Model", fit_reg=False, facet_kws=dict(legend_out=False))
+    sns.regplot(df, x="Perplexity", y="WER (%)", scatter=False,
+                line_kws=dict(color="black", linestyle="--"),
+                ax=g.axes[0, 0])  # type: ignore
+    
+    
+    # Annotate the plot with the R2 score:
+    plt.annotate(f"$R^2$ = {r**2:.2f}", xy=(0.05, 0.95), xycoords="axes fraction", size=14)
+    
+    
+    if power_law:
         plt.xlabel("Log perplexity")
-    if logy:
         plt.ylabel("Log WER (%)")
     
     
@@ -63,8 +68,7 @@ def main(filepaths: List[str],
     # Save figure:
     if filename is None:
         filename = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-    if kind is not None:
-        filename += f"-{kind}"
+    
     savepath = (DEFAULT_OUTPUT_DIR / "report" / "plot_wer_wrt_perplexity" / filename).with_suffix(".png")
     savepath.parent.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()

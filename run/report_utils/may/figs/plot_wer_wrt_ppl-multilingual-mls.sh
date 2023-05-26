@@ -34,7 +34,7 @@ python scripts/report_utils/plot_wer_wrt_perplexity/merge_wer_and_ppl_to_csv.py 
 
 # ======= 2. Plot =======
 
-# --- PPL vs WER - comparison of all vanilla Whisper models ---
+# --- PPL vs WER - impact of fine-tuning on Whisper tiny multilingual ---
 python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-vanilla-mls.csv \
     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-finetuned-mls.csv \
@@ -43,8 +43,43 @@ python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
 
 python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-vanilla-mls.csv \
+    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-finetuned-mls.csv \
+    --kind regression \
+    --logx \
+    --logy \
+    --filename tiny_multilingual_mls_power_law
+
+
+# --- PPL vs WER - comparison of all vanilla Whisper models ---
+python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
+    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-vanilla-mls.csv \
     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-base_multilingual-vanilla-mls.csv \
     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-small_multilingual-vanilla-mls.csv \
     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-medium_multilingual-vanilla-mls.csv \
     --kind regression \
     --filename all_multilingual_mls
+
+# python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl.py \
+#     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-vanilla-mls.csv \
+#     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-base_multilingual-vanilla-mls.csv \
+#     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-small_multilingual-vanilla-mls.csv \
+#     outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-medium_multilingual-vanilla-mls.csv \
+#     --kind regression \
+#     --logx \
+#     --logy \
+#     --filename all_multilingual_mls_power_law
+
+python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl_power_law.py \
+    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-vanilla-mls.csv \
+    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-base_multilingual-vanilla-mls.csv \
+    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-small_multilingual-vanilla-mls.csv \
+    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-medium_multilingual-vanilla-mls.csv \
+    --filename all_multilingual_mls
+
+python scripts/report_utils/plot_wer_wrt_perplexity/plot_wer_wrt_ppl_power_law.py \
+    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-tiny_multilingual-vanilla-mls.csv \
+    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-base_multilingual-vanilla-mls.csv \
+    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-small_multilingual-vanilla-mls.csv \
+    outputs/report/plot_wer_wrt_perplexity/mls/wer_and_ppl-medium_multilingual-vanilla-mls.csv \
+    --power-law \
+    --filename all_multilingual_mls_power_law
