@@ -95,7 +95,6 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             self.log_seq_to_records(pred_ids_teacher, key="pred_teacher", is_raw=False)
             self.log_seq_to_records(pred_ids_student, key="pred_student", is_raw=False)
             
-            
             # Decode the predictions and labels without removing special tokens:
             if self.log_raw_str:
                 self.log_seq_to_records(label_ids, key="label_raw", is_raw=True)
@@ -104,13 +103,16 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             
             # Retrieve the current label and prediction strings:
             curr_label_str = self.records["label"][-1]
+            curr_pred_teacher_str = self.records["pred_teacher"][-1]
             curr_pred_student_str = self.records["pred_student"][-1]
             
-            # Compute the WER:
+            # Compute the WER of both the teacher and the student:
+            self.records["wer_teacher"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_teacher_str]))  # type: ignore
             self.records["wer_student"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_student_str]))  # type: ignore
             
             # Add boolean flag to indicate whether the prediction is correct:
-            self.records["is_student_correct"].append(curr_label_str == curr_pred_student_str)
+            self.records["is_student_correct_wrt_teacher"].append(curr_pred_student_str == curr_pred_teacher_str)
+            self.records["is_student_correct_wrt_label"].append(curr_pred_student_str == curr_label_str)
             
             # Add information about the current training state:
             self.records["epoch"].append(state.epoch)
@@ -118,7 +120,6 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         
         
         # Log the records to wandb:
-        # import pdb; pdb.set_trace()
         self.log_records_to_wandb()
         
         return
