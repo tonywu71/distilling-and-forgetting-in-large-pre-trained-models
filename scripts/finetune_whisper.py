@@ -126,13 +126,21 @@ def main(config_filepath: str):
         decoder._requires_grad = False  # type: ignore
     
     
-    # Note: In Whisper, the decoder is conditioned on both the source and target sentences,
-    #       and the decoder inputs are the concatenation of the target sentence and a special
-    #       separator token. By default, the `forced_decoder_ids` attribute is set to a tensor
-    #       containing the target sentence and the separator token. This tells the model to
-    #       always generate the target sentence and the separator token before starting the
-    #       decoding process.
-    model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+    # Notes:
+    # - In Whisper, the decoder is conditioned on both the source and target sentences,
+    #   and the decoder inputs are the concatenation of the target sentence and a special
+    #   separator token. By default, the `forced_decoder_ids` attribute is set to a tensor
+    #   containing the target sentence and the separator token. This tells the model to
+    #   always generate the target sentence and the separator token before starting the
+    #   decoding process.
+    # - The `forced_decoder_ids` should be set using the processor's `get_decoder_prompt_ids`
+    #   method, which returns the correct prompt.
+    # - If the model is English-only, the `forced_decoder_ids` should be set with
+    #   `language=None`.
+    if config.is_tokenizer_multilingual:
+        model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+    else:
+        model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=None, task=config.task)  # type: ignore
     model.config.suppress_tokens = []  # type: ignore
     if config.gradient_checkpointing:
         model.config.use_cache = False  # type: ignore
