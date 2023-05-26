@@ -25,3 +25,4 @@ num_train_epochs: 2
 early_stopping_patience: -1
 smart_load: True
 log_preds_to_wandb: True
+log_raw_str: True
