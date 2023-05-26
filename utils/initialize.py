@@ -22,7 +22,8 @@ def initialize_env():
     os.environ["HF_DATASETS_CACHE"] = env_config.HF_DATASETS_CACHE
     os.environ["HF_MODULES_CACHE"] = env_config.HF_MODULES_CACHE
     
-    for var in ["CACHE_DIR_LIBRISPEECH", "CACHE_DIR_ESB", "CACHE_DIR_ESB_DIAGNOSTIC", "CACHE_DIR_MLS"]:
+    for var in ["CACHE_DIR_LIBRISPEECH", "CACHE_DIR_AMI", "CACHE_DIR_ESB",
+                "CACHE_DIR_ESB_DIAGNOSTIC", "CACHE_DIR_MLS"]:
         if getattr(env_config, var) is not None:
             os.environ[var] = getattr(env_config, var)
     
@@ -44,6 +45,7 @@ def print_envs():
         "HF_DATASETS_CACHE",
         "HF_MODULES_CACHE",
         "CACHE_DIR_LIBRISPEECH",
+        "CACHE_DIR_AMI",
         "CACHE_DIR_ESB",
         "CACHE_DIR_ESB_DIAGNOSTIC",
         "CACHE_DIR_MLS",

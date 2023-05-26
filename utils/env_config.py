@@ -17,6 +17,7 @@ class EnvConfig:
     HF_MODULES_CACHE: str
     
     CACHE_DIR_LIBRISPEECH: Optional[str]
+    CACHE_DIR_AMI: Optional[str]
     CACHE_DIR_ESB: Optional[str]
     CACHE_DIR_ESB_DIAGNOSTIC: Optional[str]
     CACHE_DIR_MLS: Optional[str]

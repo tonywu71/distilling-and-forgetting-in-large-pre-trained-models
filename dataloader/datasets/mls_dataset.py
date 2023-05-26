@@ -47,9 +47,21 @@ class MLSDataset(BaseDatasetGroup):
         # If `load_diagnostic` is True, we will only load a 10h-subset of the MLS dataset:
         self.load_diagnostic = load_diagnostic
         
+        
         # Retrieve custom `cache_dir` filepath if set:
         self.cache_dir_en_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
+        if self.cache_dir_en_librispeech is None:
+            print("WARNING: `CACHE_DIR_EN_LIBRISPEECH` environment variable not set. Using default cache directory.")
+        else:
+            print(f"Using cache directory: {self.cache_dir_en_librispeech}")
+        
         self.cache_dir_non_english_librispeech = os.environ.get("CACHE_DIR_MLS", None)
+        if self.cache_dir_non_english_librispeech is None:
+            print("WARNING: `CACHE_DIR_MLS` environment variable not set. Using default cache directory.")
+        else:
+            print(f"Using cache directory: {self.cache_dir_non_english_librispeech}")
+        
+        
         self.dataset_name_to_cache_dir = {
             "dutch": self.cache_dir_non_english_librispeech,
             "english": self.cache_dir_en_librispeech,
