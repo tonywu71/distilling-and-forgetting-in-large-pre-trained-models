@@ -51,7 +51,8 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper.py configs/distill_configs/distil_base_to_tiny-debug.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper.py configs/distill_configs/distil_base_to_tiny-ami.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/distil_medium_to_tiny-ami.yaml >> $LOG 2> $ERR
 
 #! #############################################
 
