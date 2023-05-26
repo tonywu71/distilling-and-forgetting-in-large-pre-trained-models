@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_whisper_on_librispeech-debug
+#SBATCH -J distil_whisper-debug
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper_on_librispeech.py configs/distill_configs/distil_base_to_tiny-debug.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper.py configs/distill_configs/distil_base_to_tiny-debug.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

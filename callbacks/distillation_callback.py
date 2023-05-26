@@ -1,14 +1,14 @@
 from typing import Dict, Optional
 
+import pandas as pd
+
 import torch
-from torch import Tensor
 
 from transformers import (PreTrainedModel,
                           WhisperProcessor,
                           TrainingArguments,
                           TrainerState,
                           TrainerControl)
-from transformers.generation.utils import GenerateOutput
 from datasets import Dataset
 
 from callbacks.base_training_callback import BaseWandbTrainingCallback
@@ -36,6 +36,19 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         self.teacher_model = teacher_model
         self.table_name = "sample_predictions-distill"
         assert isinstance(self.config, DistilConfig), "config must be `DistilConfig`"
+    
+    
+    def log_records_to_wandb(self) -> None:
+        assert self.table_name is not None, "`table_name` must be set in child class"
+        
+        # Create a dataframe from the records:
+        df = pd.DataFrame(self.records)
+        df["wer_student"] = df["wer_student"].round(decimals=3)
+        
+        # Create a new wandb table:
+        table_preds = self._wandb.Table(dataframe=df)
+        self._wandb.log({self.table_name: table_preds})
+        return
     
     
     def on_log(self,
@@ -91,13 +104,13 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             
             # Retrieve the current label and prediction strings:
             curr_label_str = self.records["label"][-1]
-            curr_pred_str = self.records["pred"][-1]
+            curr_pred_student_str = self.records["pred_student"][-1]
             
             # Compute the WER:
-            self.records["wer_student"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_str]))  # type: ignore
+            self.records["wer_student"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_student_str]))  # type: ignore
             
             # Add boolean flag to indicate whether the prediction is correct:
-            self.records["is_student_correct"].append(curr_label_str == curr_pred_str)
+            self.records["is_student_correct"].append(curr_label_str == curr_pred_student_str)
             
             # Add information about the current training state:
             self.records["epoch"].append(state.epoch)
@@ -105,6 +118,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         
         
         # Log the records to wandb:
+        # import pdb; pdb.set_trace()
         self.log_records_to_wandb()
         
         return

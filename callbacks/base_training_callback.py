@@ -64,11 +64,6 @@ class BaseWandbTrainingCallback(WandbCallback, ABC):
         self.table_name: Optional[str] = None
     
     
-    @abstractmethod
-    def get_predictions(self, model: PreTrainedModel, inputs) -> GenerateOutput | torch.Tensor:
-        pass
-    
-    
     def log_audio_to_records(self, data) -> None:
         audio = wandb.Audio(data["audio"]["array"], sample_rate=data["audio"]["sampling_rate"].item())  # type: ignore
         self.records["audio"].append(audio)
@@ -84,17 +79,9 @@ class BaseWandbTrainingCallback(WandbCallback, ABC):
         return
     
     
+    @abstractmethod
     def log_records_to_wandb(self) -> None:
-        assert self.table_name is not None, "`table_name` must be set in child class"
-        
-        # Create a dataframe from the records:
-        df = pd.DataFrame(self.records)
-        df["wer"] = df["wer"].round(decimals=3)
-        
-        # Create a new wandb table:
-        table_preds = self._wandb.Table(dataframe=df)
-        self._wandb.log({self.table_name: table_preds})
-        return
+        pass
     
     
     @abstractmethod

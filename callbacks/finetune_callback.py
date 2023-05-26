@@ -1,5 +1,7 @@
 from typing import Dict, Optional
 
+import pandas as pd
+
 import torch
 
 from transformers import (PreTrainedModel,
@@ -32,6 +34,19 @@ class WandbFinetuneCallback(BaseWandbTrainingCallback):
                          log_raw_str)
         self.table_name = "sample_predictions-finetune"
         assert isinstance(self.config, FinetuneConfig), "config must be `FinetuneConfig`"
+    
+    
+    def log_records_to_wandb(self) -> None:
+        assert self.table_name is not None, "`table_name` must be set in child class"
+        
+        # Create a dataframe from the records:
+        df = pd.DataFrame(self.records)
+        df["wer"] = df["wer"].round(decimals=3)
+        
+        # Create a new wandb table:
+        table_preds = self._wandb.Table(dataframe=df)
+        self._wandb.log({self.table_name: table_preds})
+        return
     
     
     def on_log(self,

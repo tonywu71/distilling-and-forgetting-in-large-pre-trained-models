@@ -51,9 +51,9 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/finetune_whisper_on_librispeech.py configs/experimemts/compare_freezing/freeze_encoder.yaml >> $LOG 2> $ERR
-# python scripts/finetune_whisper_on_librispeech.py configs/experimemts/compare_freezing/freeze_decoder.yaml >> $LOG 2> $ERR
-# python scripts/finetune_whisper_on_librispeech.py configs/experimemts/compare_freezing/no_frozen_layer.yaml >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/experimemts/compare_freezing/freeze_encoder.yaml >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/experimemts/compare_freezing/freeze_decoder.yaml >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/experimemts/compare_freezing/no_frozen_layer.yaml >> $LOG 2> $ERR
 
 #! #############################################
 
