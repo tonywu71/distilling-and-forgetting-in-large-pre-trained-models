@@ -46,7 +46,7 @@ class DistillationTrainer(Trainer):
         
         self.METHOD_TO_LOSS_FCT = {
             "word_level": self._compute_loss_word_level,
-            # "seq_level_mode": self._compute_loss_seq_level_mode,
+            "seq_level_mode": self._compute_loss_seq_level_mode,
             # "seq_level_k_best_uniform": self._compute_loss_seq_level_k_best_uniform,
             # "seq_level_k_best_ranked": self._compute_loss_seq_level_k_best_ranked
         }
@@ -83,6 +83,44 @@ class DistillationTrainer(Trainer):
         loss_kd = self.args.temperature ** 2 * kl_div_loss(
             F.log_softmax(logits_student / self.args.temperature, dim=-1),
             F.softmax(logits_teacher / self.args.temperature, dim=-1))
+        
+        # Return weighted student loss
+        loss = self.args.ce_alpha * loss_ce + (1. - self.args.ce_alpha) * loss_kd
+        
+        return loss, output_student
+    
+    
+    def _compute_loss_seq_level_mode(self,
+                                     student_model: PreTrainedModel,
+                                     inputs) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
+        # Move inputs to device:
+        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels']
+        input_features = inputs["input_features"]
+        
+        # Generate teacher predictions using K-beam search:
+        pred_ids_teacher = self.teacher_model.generate(input_features,
+                                                       max_length=GEN_MAX_LENGTH,
+                                                       num_beams=self.args.generation_num_beams)
+        
+        # Get rid of the EOT token "<|endoftext|>" as generation is supposed to stop here:
+        pred_ids_teacher = pred_ids_teacher[:, :-1]  # (1, n_tokens + 2)
+        
+        # Forward pass through student:
+        output_student: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
+                                                                decoder_input_ids=pred_ids_teacher)
+        
+        # Extract cross-entropy loss and logits from student output:
+        loss_ce = output_student.loss
+        logits_student = output_student.logits
+        
+        # Normalize logits:
+        log_prob_all = torch.nn.functional.log_softmax(logits_student, dim=-1)
+        
+        # Get log-probabilities for each generation step:
+        log_prob_t_hat_step_wise = log_prob_all.take_along_dim(pred_ids_teacher[:, 1:])
+        
+        # Compute the sequence log-probability:
+        loss_kd = torch.sum(log_prob_t_hat_step_wise)
         
         # Return weighted student loss
         loss = self.args.ce_alpha * loss_ce + (1. - self.args.ce_alpha) * loss_kd
