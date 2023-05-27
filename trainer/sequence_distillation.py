@@ -22,7 +22,7 @@ class WordLevelDistillationTrainingArguments(DistillationTrainingArguments):
                  temperature: float=2.0,
                  *args,
                  **kwargs):
-        super().__init__(alpha=alpha,
+        super().__init__(ce_alpha=alpha,
                          temperature=temperature,
                          *args,
                          **kwargs)
@@ -38,7 +38,7 @@ class SeqLevelDistillationTrainingArguments(DistillationTrainingArguments):
                  n: int=1,
                  *args,
                  **kwargs):
-        super().__init__(alpha=alpha,
+        super().__init__(ce_alpha=alpha,
                          temperature=temperature,
                          *args,
                          **kwargs)

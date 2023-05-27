@@ -47,6 +47,13 @@ class FinetuneConfig:
     experimental_train_implicit_lm: bool = False
     
     
+    def __post_init__(self) -> None:
+        """Post-initialization checks."""
+        
+        assert self.save_total_limit is None or self.save_total_limit >= 2, \
+            "The `save_total_limit` must be at least 2, or None."
+    
+    
     @staticmethod
     def from_yaml(config_file: str) -> "FinetuneConfig":
         """Parse the YAML config file and return a Config object"""
@@ -54,10 +61,6 @@ class FinetuneConfig:
         
         with open(config_file, "r") as f:
             config_dict = yaml.safe_load(f)
-        
-        # Sanity checks:
-        assert config_dict["save_total_limit"] is None or config_dict["save_total_limit"] >= 2, \
-            "The save_total_limit must be at least 2, or None."
         
         # Convert types:
         config_dict["learning_rate"] = float(config_dict["learning_rate"])

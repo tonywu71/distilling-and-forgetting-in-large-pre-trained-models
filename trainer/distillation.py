@@ -1,3 +1,5 @@
+from typing import Optional, Literal
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -14,13 +16,19 @@ class DistillationTrainingArguments(TrainingArguments):
     Only supports distillation for non-sequential tasks.
     """
     def __init__(self,
-                 alpha: float=0.5,
-                 temperature: float=2.0,
+                 method: Literal["word_level", "seq_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"],
+                 ce_alpha: float,
+                 temperature: Optional[float]=None,
+                 distillation_num_beams: Optional[int] = None,
+                 decay_beta: Optional[float]=None,
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
-        self.alpha = alpha
+        self.method = method
+        self.ce_alpha = ce_alpha
         self.temperature = temperature
+        self.distillation_num_beams = distillation_num_beams
+        self.decay_beta = decay_beta
 
 
 class DistillationTrainer(Trainer):
@@ -33,12 +41,23 @@ class DistillationTrainer(Trainer):
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.teacher_model = teacher_model
+        
+        self.METHOD_TO_LOSS_FCT = {
+            "word_level": self._compute_loss_word_level,
+        }
     
     
     def compute_loss(self,
                      student_model: PreTrainedModel,
                      inputs,
                      return_outputs: bool=False):
+        loss, output_student = self.METHOD_TO_LOSS_FCT[self.args.method](student_model, inputs)
+        return (loss, output_student) if return_outputs else loss
+    
+    
+    def _compute_loss_word_level(self,
+                                 student_model: PreTrainedModel,
+                                 inputs) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         # Move inputs to device:
         inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels']
         
@@ -55,12 +74,12 @@ class DistillationTrainer(Trainer):
             logits_teacher = output_teacher.logits
         
         # Soften probabilities and compute distillation loss
-        loss_fct = nn.KLDivLoss(reduction="batchmean")
-        loss_kd = self.args.temperature ** 2 * loss_fct(  # type: ignore
-            F.log_softmax(logits_student / self.args.temperature, dim=-1),  # type: ignore
-            F.softmax(logits_teacher / self.args.temperature, dim=-1))  # type: ignore
+        kl_div_loss = nn.KLDivLoss(reduction="batchmean")
+        loss_kd = self.args.temperature ** 2 * kl_div_loss(
+            F.log_softmax(logits_student / self.args.temperature, dim=-1),
+            F.softmax(logits_teacher / self.args.temperature, dim=-1))
         
         # Return weighted student loss
-        loss = self.args.alpha * loss_ce + (1. - self.args.alpha) * loss_kd  # type: ignore
+        loss = self.args.ce_alpha * loss_ce + (1. - self.args.ce_alpha) * loss_kd
         
-        return (loss, output_student) if return_outputs else loss
+        return loss, output_student
