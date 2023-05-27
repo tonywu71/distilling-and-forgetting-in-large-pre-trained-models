@@ -150,6 +150,11 @@ def main(config_filepath: str):
     Path(config.model_dir).mkdir(parents=True, exist_ok=True)
     
     training_args = DistillationTrainingArguments(
+        method=config.method,
+        ce_alpha=config.ce_alpha,
+        temperature=config.temperature,
+        distillation_num_beams=config.distillation_num_beams,
+        decay_beta=config.decay_beta,
         output_dir=config.model_dir,
         per_device_train_batch_size=config.batch_size,
         per_device_eval_batch_size=config.batch_size,

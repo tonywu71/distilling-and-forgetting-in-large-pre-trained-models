@@ -7,6 +7,8 @@ import torch.nn.functional as F
 from transformers import TrainingArguments, Trainer, PreTrainedModel
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
+from utils.constants import GEN_MAX_LENGTH
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -16,7 +18,7 @@ class DistillationTrainingArguments(TrainingArguments):
     Only supports distillation for non-sequential tasks.
     """
     def __init__(self,
-                 method: Literal["word_level", "seq_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"],
+                 method: Literal["word_level", "seq_level_mode", "seq_level_k_best_uniform", "seq_level_k_best_ranked"],
                  ce_alpha: float,
                  temperature: Optional[float]=None,
                  distillation_num_beams: Optional[int] = None,
@@ -44,6 +46,9 @@ class DistillationTrainer(Trainer):
         
         self.METHOD_TO_LOSS_FCT = {
             "word_level": self._compute_loss_word_level,
+            # "seq_level_mode": self._compute_loss_seq_level_mode,
+            # "seq_level_k_best_uniform": self._compute_loss_seq_level_k_best_uniform,
+            # "seq_level_k_best_ranked": self._compute_loss_seq_level_k_best_ranked
         }
     
     

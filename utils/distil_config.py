@@ -4,7 +4,7 @@ from typing import Literal, Optional
 import yaml
 
 
-AVAILABLE_KD_METHODS = ["word_level", "seq_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+AVAILABLE_KD_METHODS = ["word_level", "seq_level_mode", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
 
 
 @dataclass
@@ -23,7 +23,7 @@ class DistilConfig:
     experiment_name: str
     lang_name: str
     task: str
-    method: Literal["word_level", "seq_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+    method: Literal["word_level", "seq_level_mode", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
     teacher_model_name_or_path: str
     student_model_name_or_path: str
     is_tokenizer_multilingual: bool
@@ -88,7 +88,7 @@ class DistilConfig:
         if self.method == "word_level":
             assert self.temperature is not None, \
                 "The `temperature` must be set for `word_level` distillation."
-        if self.method in ["seq_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
+        if self.method in ["seq_level_mode", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
             assert self.distillation_num_beams is not None, \
                 "The `distillation_num_beams` must be set for sequence-level distillation."
         if self.method == "seq_level_k_best_ranked":
