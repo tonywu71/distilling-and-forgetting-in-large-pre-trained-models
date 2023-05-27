@@ -110,6 +110,12 @@ def main(config_filepath: str):
     student_model = WhisperForConditionalGeneration.from_pretrained(config.student_model_name_or_path).to(device)  # type: ignore
     
     
+    # Freeze the teacher model:
+    for param in teacher_model.parameters():
+        param.requires_grad = False
+    teacher_model._requires_grad = False  # type: ignore
+    
+    
     # Freeze the student's encoder and/or decoder if specified in the config:
     assert not (config.freeze_encoder and config.freeze_decoder), \
         "Freezing both the encoder and the decoder would result in a model with " + \
