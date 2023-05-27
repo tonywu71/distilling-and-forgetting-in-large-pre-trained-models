@@ -6,7 +6,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from utils.initialize import initialize_env, print_envs
 initialize_env()
 
-from datasets import load_dataset
+from datasets import load_dataset, concatenate_datasets
+
+from dataloader.dataloader_custom.dataloader_ami import LIST_SUBSETS_AMI
 
 
 def main():
@@ -29,20 +31,23 @@ def main():
     
     print("Loading MLS dataset...")
     
+    dict_ami_per_split = {
+        "train": [],
+        "validation": [],
+        "test": []
+    }
     dataset_dict = {}
     
-    dataset_dict["train"] = load_dataset("esb/datasets",
-                                         name="ami",
-                                         split="train",
-                                         cache_dir=cache_dir_ami)
-    dataset_dict["val"] = load_dataset("esb/datasets",
-                                       name="ami",
-                                       split="validation",
-                                       cache_dir=cache_dir_ami)
-    dataset_dict["test"] = load_dataset("esb/datasets",
-                                        name="ami",
-                                        split="test",
-                                        cache_dir=cache_dir_ami)
+    for split in dict_ami_per_split:
+        for subset in LIST_SUBSETS_AMI:
+            print("Loading subset `{}` for split `{}`...".format(subset, split))
+            dict_ami_per_split[split].append(load_dataset("edinburghcstr/ami",
+                                                          name=subset,
+                                                          split=split,
+                                                          cache_dir=cache_dir_ami))
+    
+    for split, list_ds in dict_ami_per_split.items():
+        dataset_dict[split] = concatenate_datasets(list_ds)  # type: ignore
     
     print("Done.")
     

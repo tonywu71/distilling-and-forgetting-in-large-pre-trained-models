@@ -189,7 +189,7 @@ def main(config_filepath: str):
     if config.log_preds_to_wandb:
         callbacks.append(WandbFinetuneCallback(config=config,
                                                processor=processor,
-                                               eval_dataset=dataset_dict["val"],  # type: ignore
+                                               eval_dataset=dataset_dict["validation"],  # type: ignore
                                                n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP,
                                                log_raw_str=config.log_raw_str))
     
@@ -200,7 +200,7 @@ def main(config_filepath: str):
         args=training_args,
         model=model,  # type: ignore
         train_dataset=dataset_dict["train"],  # type: ignore
-        eval_dataset=dataset_dict["val"],  # type: ignore
+        eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
         tokenizer=processor,  # type: ignore
