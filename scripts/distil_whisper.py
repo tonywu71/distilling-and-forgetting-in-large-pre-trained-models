@@ -1,7 +1,6 @@
 import typer
 
 import os, sys
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from typing import List
@@ -31,6 +30,7 @@ from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.metrics import compute_wer_fct_distil
 from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
+from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from callbacks.distillation_callback import WandbDistillationCallback
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
@@ -194,6 +194,11 @@ def main(config_filepath: str):
     # Define callbacks:
     callbacks: List[TrainerCallback] = []
     
+    callbacks.append(EvalFirstStepCallback())
+    
+    if config.early_stopping_patience != -1:
+        callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore
+    
     if config.log_preds_to_wandb:
         callbacks.append(WandbDistillationCallback(config=config,
                                                    teacher_model=teacher_model,
@@ -201,9 +206,6 @@ def main(config_filepath: str):
                                                    eval_dataset=dataset_dict["validation"],  # type: ignore
                                                    n_samples=config.n_samples_per_wandb_logging_step,
                                                    log_raw_str=config.log_raw_str))
-    
-    if config.early_stopping_patience != -1:
-        callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore
     
     
     # Create the trainer:
