@@ -1,11 +1,11 @@
-experiment_name: distil_whisper_base_to_tiny-ami-word_level-no_log
+experiment_name: distil_whisper_base_to_tiny-ami-seq_level_mode
 lang_name: english
 task: transcribe
-method: word_level
+method: seq_level_mode
 teacher_model_name_or_path: openai/whisper-base
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distillation/whisper_base_to_tiny/ami/word_level-no_log
+model_dir: ./checkpoints/distillation/whisper_base_to_tiny/ami/seq_level_mode
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 4
@@ -26,8 +26,8 @@ num_train_epochs: 0.25
 early_stopping_patience: -1
 
 ce_alpha: 0.5
-temperature: 2.0
+distillation_num_beams: 3
 
 smart_load: True
-log_preds_to_wandb: False
+log_preds_to_wandb: True
 log_raw_str: True

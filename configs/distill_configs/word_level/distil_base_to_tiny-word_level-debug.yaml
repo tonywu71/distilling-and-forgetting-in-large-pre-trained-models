@@ -5,10 +5,10 @@ method: word_level
 teacher_model_name_or_path: openai/whisper-base
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distillation/debug/whisper_base_to_tiny
+model_dir: ./checkpoints/distillation/whisper_base_to_tiny/librispeech_debug/word_level
 freeze_encoder: True
 freeze_decoder: False
-batch_size: 16
+batch_size: 8
 gradient_accumulation_steps: 2
 gradient_checkpointing: True
 data_augmentation: False
