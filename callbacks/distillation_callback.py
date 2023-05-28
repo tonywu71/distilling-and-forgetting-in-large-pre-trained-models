@@ -79,9 +79,9 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             label_ids = data[DEFAULT_LABEL_TOKENIZED_COL].to(device)
             
             # Generate the predictions:
-            pred_ids_student = self.teacher_model.generate(input_features,
-                                                           max_length=GEN_MAX_LENGTH,
-                                                           num_beams=self.config.generation_num_beams)  # type: ignore
+            pred_ids_student = model.generate(input_features,
+                                              max_length=GEN_MAX_LENGTH,
+                                              num_beams=self.config.generation_num_beams)  # type: ignore
             pred_ids_teacher = self.teacher_model.generate(input_features,
                                                            max_length=GEN_MAX_LENGTH,
                                                            num_beams=self.config.generation_num_beams)  # type: ignore
