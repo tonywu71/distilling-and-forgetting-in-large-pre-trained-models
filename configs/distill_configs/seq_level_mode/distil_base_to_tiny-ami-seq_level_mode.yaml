@@ -8,9 +8,10 @@ is_tokenizer_multilingual: True
 model_dir: ./checkpoints/distillation/whisper_base_to_tiny/ami/seq_level_mode
 freeze_encoder: True
 freeze_decoder: False
-batch_size: 4
+batch_size: 8
 gradient_accumulation_steps: 2
 gradient_checkpointing: True
+eval_accumulation_steps: 50
 data_augmentation: False
 dataset_name: ami
 force_reprocess_dataset: False

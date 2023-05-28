@@ -153,8 +153,9 @@ def main(config_filepath: str):
         output_dir=config.model_dir,
         per_device_train_batch_size=config.batch_size,
         per_device_eval_batch_size=config.batch_size,
-        gradient_accumulation_steps=config.gradient_accumulation_steps,  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-accumulation
-        gradient_checkpointing=config.gradient_checkpointing,  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-checkpointing
+        gradient_accumulation_steps=config.gradient_accumulation_steps,
+        eval_accumulation_steps=config.eval_accumulation_steps,
+        gradient_checkpointing=config.gradient_checkpointing,
         fp16=True,
         learning_rate=config.learning_rate,
         warmup_steps=config.warmup_steps,
@@ -196,6 +197,8 @@ def main(config_filepath: str):
     if config.early_stopping_patience != -1:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore
     
+    
+    # Create the trainer:
     trainer = Seq2SeqTrainer(
         args=training_args,
         model=model,  # type: ignore

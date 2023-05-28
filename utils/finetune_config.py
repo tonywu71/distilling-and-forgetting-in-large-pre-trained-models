@@ -26,8 +26,9 @@ class FinetuneConfig:
     freeze_encoder: bool
     freeze_decoder: bool
     batch_size: int
-    gradient_accumulation_steps: int
-    gradient_checkpointing: bool
+    gradient_accumulation_steps: int  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-accumulation
+    eval_accumulation_steps: Optional[int]  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
+    gradient_checkpointing: bool  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-checkpointing
     data_augmentation: bool
     dataset_name: str
     force_reprocess_dataset: bool
