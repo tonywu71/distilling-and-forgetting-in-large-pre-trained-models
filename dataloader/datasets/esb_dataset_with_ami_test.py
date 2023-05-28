@@ -1,9 +1,10 @@
 import os
 
 from typing import Optional, List
-from datasets import load_dataset
+from datasets import load_dataset, concatenate_datasets
 
 from dataloader.datasets.esb_dataset import ESBDataset
+from dataloader.dataloader_custom.dataloader_ami import LIST_SUBSETS_AMI
 
 
 class ESBDatasetWithAMITest(ESBDataset):
@@ -44,8 +45,19 @@ class ESBDatasetWithAMITest(ESBDataset):
         if not self.load_diagnostic:  # If `load_diagnostic` default ESB dataset...
             for dataset_name in self.available_datasets:
                 if dataset_name in self.subset:  # type: ignore
+                    
                     if dataset_name == "ami":
-                        ????
+                        list_ds = []
+                        for subset in LIST_SUBSETS_AMI:
+                            list_ds.append(load_dataset("edinburghcstr/ami",
+                                                        name=subset,
+                                                        split="test",
+                                                        streaming=self.streaming,
+                                                        cache_dir=self.cache_dir_ami))
+                        self.str2dataset = {
+                            "ami": concatenate_datasets(list_ds)
+                        }
+                        
                     else:
                         # For all other datasets, load the validation splits:
                         self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
@@ -58,8 +70,19 @@ class ESBDatasetWithAMITest(ESBDataset):
         else:  # If load diagnostic dataset...
             for dataset_name in self.available_datasets:
                 if dataset_name in self.subset:  # type: ignore
+                    
                     if dataset_name == "ami":
-                        ???
+                        list_ds = []
+                        for subset in LIST_SUBSETS_AMI:
+                            list_ds.append(load_dataset("edinburghcstr/ami",
+                                                        name=subset,
+                                                        split="test",
+                                                        streaming=self.streaming,
+                                                        cache_dir=self.cache_dir_ami))
+                        self.str2dataset = {
+                            "ami": concatenate_datasets(list_ds)
+                        }
+                    
                     else:
                         self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
                                                                       name=dataset_name,
