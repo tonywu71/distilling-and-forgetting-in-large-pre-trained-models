@@ -35,7 +35,6 @@ from callbacks.distillation_callback import WandbDistillationCallback
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import distillation_sanity_check
-from utils.constants import GEN_MAX_LENGTH
 
 
 

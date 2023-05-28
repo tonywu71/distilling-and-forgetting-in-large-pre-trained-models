@@ -1,4 +1,4 @@
-experiment_name: distil_whisper_base_to_tiny-ami_100h-seq_level_mode
+experiment_name: distil_whisper_base_to_tiny-ami_10h-seq_level_mode
 lang_name: english
 task: transcribe
 method: seq_level_mode

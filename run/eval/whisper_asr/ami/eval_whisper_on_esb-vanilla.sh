@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_esb_librispeech-vanilla
+#SBATCH -J eval_whisper_on_esb_ami-vanilla
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,17 +51,15 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-tiny >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-tiny.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-base >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-base.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-small >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-small.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-medium >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-medium.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-large-v2 >> $LOG 2> $ERR
-
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-tiny --subset librispeech_clean --subset librispeech_other >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-tiny >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-tiny.en >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-base >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-base.en >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-small >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-small.en >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-medium >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-medium.en >> $LOG 2> $ERR
+# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-large-v2 >> $LOG 2> $ERR
 
 #! #############################################
 

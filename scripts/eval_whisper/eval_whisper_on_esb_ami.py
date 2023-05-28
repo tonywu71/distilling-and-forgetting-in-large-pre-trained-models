@@ -16,19 +16,21 @@ from typing import List, Optional
 
 import wandb
 
-from dataloader.datasets.esb_dataset_with_librispeech_test import ESBDatasetWithLibriSpeechTest
-from evaluation.eval_whisper_implicit_lm_on_dataset import eval_whisper_implicit_lm_on_dataset
+from dataloader.datasets.esb_dataset_with_ami_test import ESBDatasetWithAMITest
+from evaluation.eval_whisper_on_dataset import eval_whisper_on_dataset
+
 from utils.file_io import extract_experiment_name, extract_savepath
 
 
 def main(pretrained_model_name_or_path: str,
          streaming: bool=typer.Option(False, help="Whether to use streaming inference."),
-         load_full: bool=typer.Option(False, help="Whether to load the full ESB dataset (non diagnostic)."),
+         load_full: bool=typer.Option(False, help="Whether to load the full ESB dataset (non-diagnostic)."),
          subset: Optional[List[str]]=typer.Option(None, help="Subset of the ESB dataset to evaluate on."),
+         batch_size: int=typer.Option(16, help="Batch size for the ASR pipeline."),
          savepath: Optional[str]=typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
     """
-    Evaluate the whisper implicit language model on the ESB benchmark (diagnostic by default).
+    Evaluate the whisper model on the ESB benchmark (diagnostic by default).
     Note that only greedy decoding is supported for now.
     """
     
@@ -45,7 +47,8 @@ def main(pretrained_model_name_or_path: str,
         "dataset": "esb",
         "streaming": streaming,
         "load_diagnostic": load_diagnostic,
-        "subset": subset
+        "subset": subset,
+        "batch_size": batch_size,
     }
     
     print("Parameters:")
@@ -56,7 +59,7 @@ def main(pretrained_model_name_or_path: str,
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
-               name=f"eval_esb-{extract_experiment_name(pretrained_model_name_or_path)}-implicit_lm",
+               name=f"eval_esb-{extract_experiment_name(pretrained_model_name_or_path)}",
                config=config)
     
     
@@ -64,9 +67,9 @@ def main(pretrained_model_name_or_path: str,
     if subset:
         print(f"Subset(s) of ESB: {subset}")
         
-    esb_dataset = ESBDatasetWithLibriSpeechTest(streaming=streaming,
-                             load_diagnostic=load_diagnostic,
-                             subset=subset)
+    esb_dataset = ESBDatasetWithAMITest(streaming=streaming,
+                                        load_diagnostic=load_diagnostic,
+                                        subset=subset)
     print(f"Loaded datasets: {list(esb_dataset.keys())}")
     
     
@@ -77,9 +80,10 @@ def main(pretrained_model_name_or_path: str,
     
     # Evaluate:
     print("Evaluating...")
-    results = eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path=pretrained_model_name_or_path,
-                                                  ds_group=esb_dataset,
-                                                  task=task)
+    results = eval_whisper_on_dataset(pretrained_model_name_or_path=pretrained_model_name_or_path,
+                                      ds_group=esb_dataset,
+                                      batch_size=batch_size,
+                                      task=task)
     
     print("Results:")
     print(results)
@@ -90,7 +94,7 @@ def main(pretrained_model_name_or_path: str,
     
     # Save results:
     if savepath is None:
-        savepath = extract_savepath(pretrained_model_name_or_path) + "-implicit_lm-perplexity" + "-esb.csv"
+        savepath = extract_savepath(pretrained_model_name_or_path) + "-esb_ami.csv"
     
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     results.to_csv(f"{savepath}")
@@ -101,8 +105,8 @@ def main(pretrained_model_name_or_path: str,
     barplot = wandb.plot.bar(wandb.Table(dataframe=results.to_frame().reset_index()),  # type: ignore
                              label=results.index.name,
                              value=str(results.name),
-                             title="Per dataset perplexity (%)")
-    wandb.log({"perplexity_for_dataset_group": barplot})
+                             title="Per dataset WER (%)")
+    wandb.log({"wer_for_dataset_group": barplot})
     wandb.finish()
     
     return
