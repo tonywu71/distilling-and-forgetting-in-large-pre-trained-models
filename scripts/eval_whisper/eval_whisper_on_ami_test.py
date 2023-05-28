@@ -17,7 +17,7 @@ from typing import List, Optional
 
 import wandb
 
-from dataloader.datasets.ami_test import AmiTestSet
+from dataloader.datasets.ami_test import AMITestSet
 from evaluation.eval_whisper_on_dataset import eval_whisper_on_dataset
 from utils.file_io import extract_experiment_name, extract_savepath
 
@@ -62,7 +62,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     if subset:
         print(f"Subset(s) of AMI: {subset}")
         
-    ami_dataset = AmiTestSet(streaming=streaming, subset=subset)
+    ami_dataset = AMITestSet(streaming=streaming, subset=subset)
     print(f"Loaded datasets: {list(ami_dataset.keys())}")
     
     

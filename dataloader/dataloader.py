@@ -3,7 +3,7 @@ from typing import Iterable
 from datasets import DatasetDict
 
 from dataloader.dataloader_custom.dataloader_librispeech import load_librispeech, load_librispeech_dummy
-from dataloader.dataloader_custom.dataloader_ami import load_ami
+from dataloader.dataloader_custom.dataloader_ami import load_ami_100h, load_ami_10h
 from utils.constants import DEFAULT_LABEL_STR_COL
 
 
@@ -11,7 +11,8 @@ STR_TO_LOAD_FCT = {
     "librispeech_clean_100h": partial(load_librispeech, train_split="train.100"),
     "librispeech_clean_360h": partial(load_librispeech, train_split="train.360"),
     "librispeech_dummy": load_librispeech_dummy,
-    "ami": load_ami
+    "ami_100h": load_ami_100h,
+    "ami_10h": load_ami_10h
 }
 
 
