@@ -36,9 +36,9 @@ class AMITestSet(BaseDatasetGroup):
     
     def _prepare_str2dataset(self) -> None:
         list_ds = []
-        for subset in LIST_SUBSETS_AMI:
+        for subset_ami in LIST_SUBSETS_AMI:
             list_ds.append(load_dataset("edinburghcstr/ami",
-                                        name=subset,
+                                        name=subset_ami,
                                         split="test",
                                         streaming=self.streaming,
                                         cache_dir=self.cache_dir_ami))
@@ -56,9 +56,9 @@ class AMITestSet1H(AMITestSet):
     
     def _prepare_str2dataset(self) -> None:
         list_ds = []
-        for subset in LIST_SUBSETS_AMI:
+        for subset_ami in LIST_SUBSETS_AMI:
             list_ds.append(load_dataset("edinburghcstr/ami",
-                                        name=subset,
+                                        name=subset_ami,
                                         split="test[:10%]",  # 10% of the 10h test set = 1h
                                         streaming=self.streaming,
                                         cache_dir=self.cache_dir_ami))

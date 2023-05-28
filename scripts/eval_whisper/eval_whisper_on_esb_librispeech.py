@@ -44,7 +44,7 @@ def main(pretrained_model_name_or_path: str,
         "pretrained_model_name_or_path": pretrained_model_name_or_path,
         "language": language,
         "task": task,
-        "dataset": "esb",
+        "dataset": "esb_librispeech",
         "streaming": streaming,
         "load_diagnostic": load_diagnostic,
         "subset": subset,
@@ -59,13 +59,13 @@ def main(pretrained_model_name_or_path: str,
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
-               name=f"eval_esb-{extract_experiment_name(pretrained_model_name_or_path)}",
+               name=f"eval_esb_librispeech-{extract_experiment_name(pretrained_model_name_or_path)}",
                config=config)
     
     
     # Load dataset:
     if subset:
-        print(f"Subset(s) of ESB: {subset}")
+        print(f"Subset(s) of ESB (LibriSpeech): {subset}")
         
     esb_dataset = ESBDatasetWithLibriSpeechTest(streaming=streaming,
                                                 load_diagnostic=load_diagnostic,

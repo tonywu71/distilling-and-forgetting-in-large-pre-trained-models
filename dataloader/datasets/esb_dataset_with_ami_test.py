@@ -77,9 +77,9 @@ class ESBDatasetWithAMITest(BaseDatasetGroup):
                     
                     if dataset_name == "ami":
                         list_ds = []
-                        for subset in LIST_SUBSETS_AMI:
-                            list_ds.append(load_dataset("edinburghcstr/ami",
-                                                        name=subset,
+                        for subset_ami in LIST_SUBSETS_AMI:
+                            list_ds.append(load_dataset(path="edinburghcstr/ami",
+                                                        name=subset_ami,
                                                         split="test",
                                                         streaming=self.streaming,
                                                         cache_dir=self.cache_dir_ami))
@@ -102,9 +102,9 @@ class ESBDatasetWithAMITest(BaseDatasetGroup):
                     
                     if dataset_name == "ami":
                         list_ds = []
-                        for subset in LIST_SUBSETS_AMI:
+                        for subset_ami in LIST_SUBSETS_AMI:
                             list_ds.append(load_dataset("edinburghcstr/ami",
-                                                        name=subset,
+                                                        name=subset_ami,
                                                         split="test",
                                                         streaming=self.streaming,
                                                         cache_dir=self.cache_dir_ami))
