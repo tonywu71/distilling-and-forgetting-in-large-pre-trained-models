@@ -42,9 +42,13 @@ class FinetuneConfig:
     logging_steps: int
     num_train_epochs: int
     early_stopping_patience: Optional[int]
+    
+    # ======== Other ========
     smart_load: bool = True
     log_preds_to_wandb: bool = True
+    n_samples_per_wandb_logging_step: int = 8
     log_raw_str: bool = False
+    
     experimental_train_implicit_lm: bool = False
     
     

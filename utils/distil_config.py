@@ -67,6 +67,7 @@ class DistilConfig:
     # ======== Other ========
     smart_load: bool = True
     log_preds_to_wandb: bool = True
+    n_samples_per_wandb_logging_step: int = 8
     log_raw_str: bool = False
     
     

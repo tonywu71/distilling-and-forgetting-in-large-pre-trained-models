@@ -35,7 +35,7 @@ from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZ
 from callbacks.finetune_callback import WandbFinetuneCallback
 from utils.file_io import fix_model_dir_conflicts
 from utils.finetune_config import FinetuneConfig
-from utils.constants import DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP, GEN_MAX_LENGTH
+from utils.constants import GEN_MAX_LENGTH
 
 
 def main(config_filepath: str):
@@ -191,7 +191,7 @@ def main(config_filepath: str):
         callbacks.append(WandbFinetuneCallback(config=config,
                                                processor=processor,
                                                eval_dataset=dataset_dict["validation"],  # type: ignore
-                                               n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP,
+                                               n_samples=config.n_samples_per_wandb_logging_step,
                                                log_raw_str=config.log_raw_str))
     
     if config.early_stopping_patience != -1:

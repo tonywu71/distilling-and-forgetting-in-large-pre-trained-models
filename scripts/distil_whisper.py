@@ -35,7 +35,7 @@ from callbacks.distillation_callback import WandbDistillationCallback
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import distillation_sanity_check
-from utils.constants import DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP, GEN_MAX_LENGTH
+from utils.constants import GEN_MAX_LENGTH
 
 
 
@@ -200,7 +200,7 @@ def main(config_filepath: str):
                                                    teacher_model=teacher_model,
                                                    processor=processor,
                                                    eval_dataset=dataset_dict["validation"],  # type: ignore
-                                                   n_samples=DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP,
+                                                   n_samples=config.n_samples_per_wandb_logging_step,
                                                    log_raw_str=config.log_raw_str))
     
     if config.early_stopping_patience != -1:
