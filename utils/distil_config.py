@@ -61,7 +61,7 @@ class DistilConfig:
     distillation_num_beams: Optional[int] = None
     
     # `seq_level_k_best_ranked`:
-    decay_beta: Optional[float] = None
+    decay_beta: Optional[float] = 1.
     
     
     # ======== Other ========
