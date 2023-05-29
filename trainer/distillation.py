@@ -1,5 +1,7 @@
 from typing import Optional, Literal, List
 
+import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -113,20 +115,24 @@ class DistillationTrainer(Trainer):
         logits_student = output_student.logits  # (batch_size, n_tokens-1, vocab_size)
         
         # Normalize logits:
-        log_prob_all = torch.nn.functional.log_softmax(logits_student, dim=-1)
+        log_prob_all = torch.nn.functional.log_softmax(logits_student, dim=-1)  # (batch_size, n_tokens-1, vocab_size)
         
         # Get log-probabilities for each generation step:
-        log_prob_t_hat_step_wise = log_prob_all.take_along_dim(pred_ids_teacher[:, 1:, None], dim=-1)
+        log_prob_t_hat_step_wise = log_prob_all.take_along_dim(pred_ids_teacher[:, 1:, None], dim=-1)  # (batch_size, n_tokens-1, 1)
         
         # Compute the sequence log-probability:
-        loss_kd = (-1) * torch.sum(log_prob_t_hat_step_wise)
+        loss_kd = (-1) * torch.sum(log_prob_t_hat_step_wise.squeeze(), axis=-1)  # (batch_size,)  # type: ignore
+        
+        # Because the default cross-entropy loss is computed with reduction='mean', we need to
+        # also take the mean of the sequence log-probabilities to be consistent:
+        loss_kd = torch.mean(loss_kd)  # (1,)
         
         # Return weighted student loss
         loss = self.args.ce_alpha * loss_ce + (1. - self.args.ce_alpha) * loss_kd
         
         return loss, output_student
 
-
+    
     def _compute_loss_seq_level_k_best(self,
                                        student_model: PreTrainedModel,
                                        inputs,
@@ -137,17 +143,20 @@ class DistillationTrainer(Trainer):
         
         # Generate teacher predictions using K-beam search:
         dict_pred_ids_teacher_beam_search = self.teacher_model.generate(input_features,
-                                                                   max_length=GEN_MAX_LENGTH,
-                                                                   num_beams=self.args.distillation_num_beams,
-                                                                   num_return_sequences=self.args.distillation_num_beams,
-                                                                   output_scores=True,
-                                                                   return_dict_in_generate=True)
+                                                                        max_length=GEN_MAX_LENGTH,
+                                                                        num_beams=self.args.distillation_num_beams,
+                                                                        num_return_sequences=self.args.distillation_num_beams,
+                                                                        output_scores=True,
+                                                                        return_dict_in_generate=True)
         
         # Retrieve the K-best tokenized sequences:
         pred_ids_teacher_beam_search = dict_pred_ids_teacher_beam_search.sequences  # (batch_size * distillation_num_beams, n_tokens)
         
-        # Normalize scores using only the K-best sequences:
-        prob_pred_teacher_sequences = torch.nn.functional.softmax(dict_pred_ids_teacher_beam_search.sequences_scores, dim=-1)
+        # Note: dict_pred_ids_teacher_beam_search.sequences_scores -> (batch_size * distillation_num_beams,)
+        prob_pred_teacher_sequences = dict_pred_ids_teacher_beam_search.sequences_scores.reshape((-1, self.args.distillation_num_beams))  # (batch_size, distillation_num_beams)
+        
+        # Re-normalize scores using only the K-best sequences:
+        prob_pred_teacher_sequences = torch.nn.functional.softmax(prob_pred_teacher_sequences, dim=-1)  # (batch_size, distillation_num_beams)
         
         # Note: `pred_ids_teacher` is the result of a concatenation of generate outputs along the batch dimension (axis=0).
         # Therefore, if `distillation_num_beams` = 2, then the first `batch_size` rows correspond to the 2 best beam-search predictions
@@ -174,22 +183,31 @@ class DistillationTrainer(Trainer):
             logits_student = output_student.logits  # (batch_size, n_tokens-1, vocab_size)
             
             # Normalize logits:
-            log_prob_all = torch.nn.functional.log_softmax(logits_student, dim=-1)
+            log_prob_all = torch.nn.functional.log_softmax(logits_student, dim=-1)  # (batch_size, n_tokens-1, vocab_size)
             
             # Get log-probabilities for each generation step:
-            log_prob_t_hat_step_wise = log_prob_all.take_along_dim(pred_ids_teacher[:, 1:, None], dim=-1)
+            log_prob_t_hat_step_wise = log_prob_all.take_along_dim(pred_ids_teacher[:, 1:, None], dim=-1)  # (batch_size, n_tokens-1, 1)
             
             # Compute the sequence log-probability:
-            list_loss_kd.append((-1) * torch.sum(log_prob_t_hat_step_wise))
+            list_loss_kd.append((-1) * torch.sum(log_prob_t_hat_step_wise.squeeze(), axis=-1))  # (batch_size,)  # type: ignore
         
+        # Compute the mean of the cross-entropy losses over the K-best sequences:
+        loss_ce = torch.mean(torch.stack(list_loss_ce))  # (1,)
         
-        loss_ce = torch.sum(torch.stack(list_loss_ce))
-        
+        # Compute the weighted mean of the sequence log-probabilities:
+        # Notes:
+        # - weights -> (distillation_num_beams,)
+        # - prob_pred_teacher_sequences -> (batch_size, distillation_num_beams)
+        # - torch.stack(list_loss_kd, axis=-1) -> (batch_size, distillation_num_beams)
         if rank_weighting:
             weights = self.get_rank_based_exp_decay_weights(K=self.args.distillation_num_beams, beta=self.args.decay_beta)
-            loss_kd = torch.sum(weights * prob_pred_teacher_sequences * torch.stack(list_loss_kd))
+            loss_kd = torch.sum(weights[None, :] * prob_pred_teacher_sequences * torch.stack(list_loss_kd, axis=-1))  # (batch_size,)
         else:
-            loss_kd = torch.sum(prob_pred_teacher_sequences * torch.stack(list_loss_kd))
+            loss_kd = torch.sum(prob_pred_teacher_sequences * torch.stack(list_loss_kd, axis=-1))  # (batch_size,)
+        
+        # Because the default cross-entropy loss is computed with reduction='mean', we need to
+        # also take the mean of the sequence log-probabilities to be consistent:
+        loss_kd = torch.mean(loss_kd)  # (1,)
         
         # Return weighted student loss
         loss = self.args.ce_alpha * loss_ce + (1. - self.args.ce_alpha) * loss_kd
@@ -210,10 +228,10 @@ class DistillationTrainer(Trainer):
     
     
     @staticmethod
-    def get_rank_based_exp_decay_weights(K: int, beta: float):
-        weights = torch.zeros(K)
+    def get_rank_based_exp_decay_weights(K: int, beta: float) -> torch.Tensor:
+        """Returns a tensor of shape (K,) containing the weights for the rank-based exponential decay."""
+        weights = torch.zeros(K).to(device)
         for k in range(1, K + 1):
-            weights[k - 1] = torch.exp(-beta * (k - 1))  # type: ignore
+            weights[k - 1] = np.exp(- beta * (k - 1))
         weights /= torch.sum(weights)
         return weights
-    
