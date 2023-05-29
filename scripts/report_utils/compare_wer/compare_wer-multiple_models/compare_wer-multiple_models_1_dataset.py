@@ -9,7 +9,8 @@ from pathlib import Path
 import pandas as pd
 
 
-def main(filepaths: List[str]=typer.Argument(..., help="Paths to CSV files.")):
+def main(filepaths: List[str],
+         dataset: str = typer.Option(..., help="Dataset to use."),):
     """
     Script that takes multiple CSV outputs from `eval_whisper_on_esb.py` and outputs a comparison table in LaTeX.
     Note that RER is not computed here.
@@ -23,7 +24,9 @@ def main(filepaths: List[str]=typer.Argument(..., help="Paths to CSV files.")):
     for idx, (df, model) in enumerate(zip(list_df, list_models)):
         list_df[idx].index = [model]  # type: ignore
     
-    df = pd.concat(list_df, axis=0).T
+    df = pd.concat(list_df, axis=0)
+    
+    df = df[dataset]
     
     output = df.round(2).to_latex()
     
