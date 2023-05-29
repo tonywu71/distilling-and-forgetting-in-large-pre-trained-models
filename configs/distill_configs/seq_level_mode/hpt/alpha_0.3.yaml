@@ -9,9 +9,9 @@ model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/seq_level_m
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 16
-gradient_accumulation_steps: 2
+gradient_accumulation_steps: 4
 gradient_checkpointing: True
-eval_accumulation_steps: 200
+eval_accumulation_steps: 100
 data_augmentation: False
 dataset_name: ami_10h
 force_reprocess_dataset: False
