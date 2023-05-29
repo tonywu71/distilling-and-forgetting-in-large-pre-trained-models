@@ -30,6 +30,7 @@ WHISPER_MODEL_SIZE_IN_M_PARAMETERS = {
 def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WERs."),
          regression: bool=typer.Option(False, "--regression", "-r", help="Whether to plot a regression line."),
          log: bool=typer.Option(False, "--log", "-l", help="Whether to plot the x-axis on a log scale."),
+         plot_ideal: bool=typer.Option(False, "--plot-ideal", "-i", help="Whether to plot the ideal student model."),
          savename: str=typer.Option(None, "--savename", "-f", help="Filename of the saved plot (without the suffix).")):
     """
     `datapath` must be the filepath of a manually created CSV file containing the WERs of the models.
@@ -50,12 +51,25 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
     df = pd.read_csv(datapath)
     df = df.dropna(subset=["WER (%)"])
     
+    markers = {model: "o" for model in WHISPER_MODEL_SIZE_IN_M_PARAMETERS.keys()}
+    
+    if plot_ideal:
+        size_ideal = min(WHISPER_MODEL_SIZE_IN_M_PARAMETERS.values())
+        wer_ideal = df["WER (%)"].min()
+        row_ideal = pd.DataFrame.from_dict({
+            "Model": ["Ideal distilled model"],
+            "WER (%)": [wer_ideal],
+            "Size (M parameters)": [size_ideal]
+        })
+        df = pd.concat([df, row_ideal])  # type: ignore
+        markers["Ideal distilled model"] = "^"
+    
     if regression:
-        sns.regplot(data=df, x="Size (M parameters)", y="WER (%)", logx=log,
-                    ci=None, scatter_kws={"s": 400})  # type: ignore
+        sns.regplot(data=df, x="Size (M parameters)", y="WER (%)",
+                    logx=log, ci=None, scatter_kws={"s": 400})  # type: ignore
     else:
-        sns.scatterplot(data=df, x="Size (M parameters)", y="WER (%)",
-                        hue="Model", s=400)
+        sns.scatterplot(data=df, x="Size (M parameters)", y="WER (%)", hue="Model",
+                        s=400, style="Model", markers=markers)  # type: ignore
         if log:
             plt.xscale("log")
         
@@ -63,10 +77,9 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
         plt.xlabel("Size (M parameters) [log]")
     
     
-    # HARDCODED (for now):
-    if "Ideal distilled student" in df["Model"].values:
-        plt.axhline(y=df.loc[df["Model"] == "Ideal distilled student", "WER (%)"].values[0], color="black", linestyle="dashed")
-        plt.axvline(x=WHISPER_MODEL_SIZE_IN_M_PARAMETERS["tiny"], color="black", linestyle="dashed")
+    if plot_ideal:
+        plt.axvline(x=size_ideal, color="black", linestyle="dashed")
+        plt.axhline(y=wer_ideal, color="black", linestyle="dashed")
     
     
     # Save figure:
