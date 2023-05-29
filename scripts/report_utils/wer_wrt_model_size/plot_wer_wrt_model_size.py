@@ -17,14 +17,14 @@ from utils.constants import DEFAULT_OUTPUT_DIR
 sns.set_theme(context="paper", style="ticks")
 
 
-WHISPER_MODEL_SIZE_IN_M_PARAMETERS = {
-    "tiny": 39,
-    "base": 74,
-    "small": 244,
-    "medium": 769,
-    "large": 1550,
-    "large-v2": 1550
-}
+# WHISPER_MODEL_SIZE_IN_M_PARAMETERS = {
+#     "tiny": 39,
+#     "base": 74,
+#     "small": 244,
+#     "medium": 769,
+#     "large": 1550,
+#     "large-v2": 1550
+# }
 
 
 def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WERs."),
@@ -51,10 +51,10 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
     df = pd.read_csv(datapath)
     df = df.dropna(subset=["WER (%)"])
     
-    markers = {model: "o" for model in WHISPER_MODEL_SIZE_IN_M_PARAMETERS.keys()}
+    markers = {model: "o" for model in df["Model"].unique()}
     
     if plot_ideal:
-        size_ideal = min(WHISPER_MODEL_SIZE_IN_M_PARAMETERS.values())
+        size_ideal = df["Size (M parameters)"].min()
         wer_ideal = df["WER (%)"].min()
         row_ideal = pd.DataFrame.from_dict({
             "Model": ["Ideal distilled model"],
@@ -81,6 +81,21 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
         plt.axvline(x=size_ideal, color="black", linestyle="dashed")
         plt.axhline(y=wer_ideal, color="black", linestyle="dashed")
     
+    
+    if "distilled" in df["Model"].unique():
+        # Draw arrow from "tiny" to "distilled":
+        tiny = df[df["Model"] == "tiny"]
+        distilled = df[df["Model"] == "distilled"]
+        plt.annotate("", xy=(distilled["Size (M parameters)"], distilled["WER (%)"]),
+                     xytext=(tiny["Size (M parameters)"], tiny["WER (%)"]),
+                     arrowprops=dict(arrowstyle="->", color="black", lw=3))
+        # Add text to the right of the center of the arrow:
+        # plt.text(x=distilled["Size (M parameters)"] + 2., y=distilled["WER (%)"] + 0.5, s="Distillation", fontsize=14)
+        
+        plt.text(x=tiny["Size (M parameters)"] + 4.,
+                 y=(tiny["WER (%)"].values + distilled["WER (%)"].values) / 2,
+                 s="Distillation",
+                 fontsize=12)
     
     # Save figure:
     if savename is None:
