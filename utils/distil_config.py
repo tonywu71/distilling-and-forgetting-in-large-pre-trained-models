@@ -93,6 +93,10 @@ class DistilConfig:
         if self.method in ["seq_level_mode", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
             assert self.distillation_num_beams is not None, \
                 "The `distillation_num_beams` must be set for sequence-level distillation."
+        if self.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
+            assert self.distillation_num_beams is not None and self.distillation_num_beams > 1, \
+                "The `distillation_num_beams` must be set to a value greater than 1 for " + \
+                "`seq_level_k_best_uniform` and `seq_level_k_best_ranked` distillation methods."
         if self.method == "seq_level_k_best_ranked":
             assert self.decay_beta is not None, \
                 "The `decay_beta` must be set for `seq_level_k_best_ranked` distillation."
