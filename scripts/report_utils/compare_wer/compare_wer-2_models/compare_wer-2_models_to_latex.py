@@ -10,8 +10,22 @@ from pathlib import Path
 import pandas as pd
 
 
-def post_process_esb(df: pd.DataFrame) -> pd.DataFrame:
+def post_process_esb_librispeech(df: pd.DataFrame) -> pd.DataFrame:
     COLS_IN_DOMAIN = ["librispeech_clean", "librispeech_other"]
+    COLS_TO_EXCLUDE = ["Average"]
+    
+    df = df.copy()
+    
+    cols_out_of_domain = df.index.difference(COLS_IN_DOMAIN).difference(COLS_TO_EXCLUDE)
+
+    df.loc["In-domain average", :] = df.loc[COLS_IN_DOMAIN, :].mean()
+    df.loc["Out-of-domain average", :] = df.loc[cols_out_of_domain, :].mean()
+    
+    return df
+
+
+def post_process_esb_ami(df: pd.DataFrame) -> pd.DataFrame:
+    COLS_IN_DOMAIN = ["ami"]
     COLS_TO_EXCLUDE = ["Average"]
     
     df = df.copy()
@@ -41,7 +55,7 @@ def post_process_mls(df: pd.DataFrame) -> pd.DataFrame:
 
 def main(filepath_1: str=typer.Argument(..., help="Path to first CSV file."),
          filepath_2: str=typer.Argument(..., help="Path to second CSV file."),
-         dataset_group: Optional[str]=typer.Option(None, help="Dataset group to use. Either 'esb' or 'mls'.")):
+         dataset_group: Optional[str]=typer.Option(None, help="Dataset group to use. Either 'esb_librispeech', 'esb_ami', or 'mls'.")):
     """
     Script that takes 2 CSV outputs from `eval_whisper_on_esb.py` and outputs a comparison table in LaTeX.
     Use the `dataset_group` option to specify the dataset group to use for additional statistics.ß
@@ -63,8 +77,10 @@ def main(filepath_1: str=typer.Argument(..., help="Path to first CSV file."),
     
     if dataset_group is None:
         pass
-    elif dataset_group == "esb":
-        df = post_process_esb(df)
+    elif dataset_group == "esb_librispeech":
+        df = post_process_esb_librispeech(df)
+    elif dataset_group == "esb_ami":
+        df = post_process_esb_ami(df)
     elif dataset_group == "mls":
         df = post_process_mls(df)
     else:
