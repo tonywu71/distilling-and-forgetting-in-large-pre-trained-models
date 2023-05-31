@@ -17,6 +17,7 @@ from utils.constants import DEFAULT_OUTPUT_DIR
 sns.set_theme(context="paper", style="ticks")
 
 
+# --- Kept for reference ---
 # WHISPER_MODEL_SIZE_IN_M_PARAMETERS = {
 #     "tiny": 39,
 #     "base": 74,
@@ -33,7 +34,8 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
          plot_ideal: bool=typer.Option(False, "--plot-ideal", "-i", help="Whether to plot the ideal student model."),
          savename: str=typer.Option(None, "--savename", "-f", help="Filename of the saved plot (without the suffix).")):
     """
-    `datapath` must be the filepath of a manually created CSV file containing the WERs of the models.
+    `datapath` must be the filepath of a manually created CSV file containing the WER and the model size for each model.
+    If there is a "distilled" model, an arrow from the smallest model to "distilled" will be drawn.
     
     Example:
     ```
