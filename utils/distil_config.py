@@ -36,6 +36,7 @@ class DistilConfig:
     gradient_checkpointing: bool  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-checkpointing
     data_augmentation: bool
     dataset_name: str
+    col_id: str
     force_reprocess_dataset: bool
     optim: str
     learning_rate: float
@@ -66,6 +67,7 @@ class DistilConfig:
     
     # ======== Other ========
     smart_load: bool = True
+    force_reprocess_k_best: bool = False
     log_preds_to_wandb: bool = True
     n_samples_per_wandb_logging_step: int = 8
     log_raw_str: bool = False

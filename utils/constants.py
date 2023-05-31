@@ -3,6 +3,7 @@ from pathlib import Path
 # ------ Config ------
 DEFAULT_ENV_CONFIG_FILEPATH = "configs/env_config.yaml"
 CHECKPOINTS_DIRNAME = "checkpoints"
+K_BEAM_SEARCH_DIRNAME = "k_beam_search"
 DEFAULT_NUM_PROC = 8  # see https://docs.hpc.cam.ac.uk/hpc/user-guide/a100.html#hardware
 
 

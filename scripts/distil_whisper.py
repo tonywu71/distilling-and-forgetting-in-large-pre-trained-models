@@ -30,6 +30,7 @@ from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.metrics import compute_wer_fct_distil
 from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
+from k_beam_search.smart_load_k_beam_search import smart_load_k_beam_search
 from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from callbacks.distillation_callback import WandbDistillationCallback
 from utils.distil_config import DistilConfig
@@ -98,6 +99,12 @@ def main(config_filepath: str):
                                           tokenizer=processor.tokenizer,  # type: ignore
                                           feature_extractor=processor.feature_extractor,  # type: ignore
                                           augment=config.data_augmentation)
+    
+    if config.method in ["seq_level_1_best", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]:  # If distillation is sequence-level...
+        # Get the K-beam search outputs from the teacher model:
+        id_to_k_beam_search_output = smart_load_k_beam_search(config=config,
+                                                              dataset=dataset_dict["validation"])  # type: ignore
+    
     
     print("\n-----------------------\n")
     

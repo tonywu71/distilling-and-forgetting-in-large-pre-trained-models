@@ -28,18 +28,22 @@ def smart_load_dataset_dict(config: FinetuneConfig | DistilConfig,
     
     # Load the preprocessed dataset if it exists and if `force_reprocess_dataset` is set to `False`:
     if not config.force_reprocess_dataset and Path(dataset_dir).exists():
-        print(f"Previously proprocessed dataset found at `{dataset_dir}`. Loading from disk...")
+        print(f"Previously preprocessed dataset found at `{dataset_dir}`. Loading from disk...")
         dataset_dict = load_from_disk(dataset_dir)
     
     # Otherwise, preprocess the dataset from scratch:
     else:
         if config.force_reprocess_dataset:
-            print(f"`force_reprocess_dataset` was set to `True` in the config file. Reprocessing dataset from scratch...")
+            print(f"`force_reprocess_dataset` was set to `True` in the config file.")
             if Path(dataset_dir).exists():
                 print(f"Deleting previously preprocessed dataset at `{dataset_dir}`...")
                 shutil.rmtree(dataset_dir) 
         else:
-            print(f"Preprocessed dataset not found at `{dataset_dir}`. Preprocessing from scratch...")
+            print(f"Preprocessed dataset not found at `{dataset_dir}`.")
+        
+        
+        print("Preprocessing from scratch...")
+        
         print(f"Loading raw dataset `{config.dataset_name}` from Huggingface...")
         dataset_dict = load_dataset_dict(dataset_name=config.dataset_name)
         

@@ -28,7 +28,7 @@ def fix_model_dir_conflicts(config: FinetuneConfig | DistilConfig) -> None:
     return
 
 
-def extract_experiment_name(model_filepath: str) -> str:
+def extract_exp_name_from_model_path(model_filepath: str) -> str:
     """
     Extract the conventional experiment name from a model path.
     
@@ -46,7 +46,7 @@ def extract_experiment_name(model_filepath: str) -> str:
     return experiment_name
 
 
-def extract_savepath(model_filepath: str) -> str:
+def extract_output_savepath_from_model_path(model_filepath: str) -> str:
     """
     Extract the model savepath from a model path.
     
