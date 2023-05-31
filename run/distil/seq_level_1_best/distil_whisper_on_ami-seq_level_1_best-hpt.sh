@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_whisper-ami-seq_level_mode-hpt
+#SBATCH -J distil_whisper-ami-seq_level_1_best-hpt
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,9 +51,9 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/distil_whisper.py configs/distill_configs/seq_level_mode/hpt/alpha_0.3.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distill_configs/seq_level_mode/hpt/alpha_0.5.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distill_configs/seq_level_mode/hpt/alpha_0.7.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/seq_level_1_best/hpt/alpha_0.3.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/seq_level_1_best/hpt/alpha_0.5.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/seq_level_1_best/hpt/alpha_0.7.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

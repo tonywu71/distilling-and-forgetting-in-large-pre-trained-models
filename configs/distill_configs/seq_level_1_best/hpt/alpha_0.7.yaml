@@ -1,11 +1,11 @@
-experiment_name: distil_whisper_medium_to_tiny-ami_10h-seq_level_mode-hpt-alpha_0_7
+experiment_name: distil_whisper_medium_to_tiny-ami_10h-seq_level_1_best-hpt-alpha_0_7
 lang_name: english
 task: transcribe
-method: seq_level_mode
+method: seq_level_1_best
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/seq_level_mode-hpt
+model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/seq_level_1_best-hpt
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 16

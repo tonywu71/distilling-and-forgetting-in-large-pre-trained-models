@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_whisper-seq_level_mode-debug
+#SBATCH -J distil_whisper-seq_level_1_best-debug
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper.py configs/distill_configs/seq_level_mode/distil_base_to_tiny-seq_level_mode-debug.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper.py configs/distill_configs/seq_level_1_best/distil_base_to_tiny-seq_level_1_best-debug.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

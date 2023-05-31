@@ -20,7 +20,7 @@ class DistillationTrainingArguments(TrainingArguments):
     Only supports distillation for non-sequential tasks.
     """
     def __init__(self,
-                 method: Literal["word_level", "seq_level_mode", "seq_level_k_best_uniform", "seq_level_k_best_ranked"],
+                 method: Literal["word_level", "seq_level_1_best", "seq_level_k_best_uniform", "seq_level_k_best_ranked"],
                  ce_alpha: float,
                  temperature: Optional[float]=None,
                  distillation_num_beams: Optional[int] = None,
@@ -48,7 +48,7 @@ class DistillationTrainer(Trainer):
         
         self.METHOD_TO_LOSS_FCT = {
             "word_level": self._compute_loss_word_level,
-            "seq_level_mode": self._compute_loss_seq_level_mode,
+            "seq_level_1_best": self._compute_loss_seq_level_1_best,
             "seq_level_k_best_uniform": self._compute_loss_seq_level_k_best_uniform,
             "seq_level_k_best_ranked": self._compute_loss_seq_level_k_best_ranked
         }
@@ -92,7 +92,7 @@ class DistillationTrainer(Trainer):
         return loss, output_student
 
 
-    def _compute_loss_seq_level_mode(self,
+    def _compute_loss_seq_level_1_best(self,
                                      student_model: PreTrainedModel,
                                      inputs) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         # Move inputs to device:
