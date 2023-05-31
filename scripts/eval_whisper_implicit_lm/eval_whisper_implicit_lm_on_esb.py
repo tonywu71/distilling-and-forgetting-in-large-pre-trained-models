@@ -16,7 +16,7 @@ from typing import List, Optional
 
 import wandb
 
-from dataloader.datasets.esb_dataset import ESBDataset
+from dataloader.datasets.esb_dataset_with_librispeech_test import ESBDatasetWithLibriSpeechTest
 from evaluation.eval_whisper_implicit_lm_on_dataset import eval_whisper_implicit_lm_on_dataset
 from utils.file_io import extract_experiment_name, extract_savepath
 
@@ -64,7 +64,7 @@ def main(pretrained_model_name_or_path: str,
     if subset:
         print(f"Subset(s) of ESB: {subset}")
         
-    esb_dataset = ESBDataset(streaming=streaming,
+    esb_dataset = ESBDatasetWithLibriSpeechTest(streaming=streaming,
                              load_diagnostic=load_diagnostic,
                              subset=subset)
     print(f"Loaded datasets: {list(esb_dataset.keys())}")

@@ -1,0 +1,36 @@
+experiment_name: distil_whisper_base_to_tiny-seq_level_k_best_ranked-debug
+lang_name: english
+task: transcribe
+method: seq_level_k_best_ranked
+teacher_model_name_or_path: openai/whisper-base
+student_model_name_or_path: openai/whisper-tiny
+is_tokenizer_multilingual: True
+model_dir: ./checkpoints/distillation/whisper_base_to_tiny/librispeech_debug/seq_level_k_best_ranked
+freeze_encoder: True
+freeze_decoder: False
+batch_size: 16
+gradient_accumulation_steps: 4
+eval_accumulation_steps:
+gradient_checkpointing: True
+data_augmentation: False
+dataset_name: librispeech_dummy
+force_reprocess_dataset: False
+optim: adamw_torch
+learning_rate: 1e-5
+warmup_steps: 5
+eval_steps: 5
+generation_num_beams: 3
+logging_steps: 5
+save_steps: 100
+save_total_limit: 2
+num_train_epochs: 10
+early_stopping_patience: -1
+
+ce_alpha: 0.5
+distillation_num_beams: 3
+decay_beta: 2
+
+smart_load: True
+log_preds_to_wandb: True
+log_raw_str: True
+n_samples_per_wandb_logging_step: 8

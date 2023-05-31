@@ -17,7 +17,7 @@ class ESBDataset(BaseDatasetGroup):
     
     def __init__(self,
                  streaming: bool=False,
-                 load_diagnostic: bool=False,
+                 load_diagnostic: bool=True,
                  subset: Optional[List[str]]=None) -> None:
         
         self.dataset_path = "esb/datasets" if not load_diagnostic else "esb/diagnostic-dataset"
@@ -36,14 +36,24 @@ class ESBDataset(BaseDatasetGroup):
         
         self.load_diagnostic = load_diagnostic
         
+        
         # Retrieve custom `cache_dir` filepath if set:
-        self.cache_dir_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
         if self.load_diagnostic:
             self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB_DIAGNOSTIC", None)
+            if self.cache_dir_esb is None:
+                print("WARNING: `CACHE_DIR_ESB_DIAGNOSTIC` environment variable not set. Using default cache directory.")
+            else:
+                print(f"Using cache directory: `{self.cache_dir_esb}`.")
         else:
             self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB", None)
+            if self.cache_dir_esb is None:
+                print("WARNING: `CACHE_DIR_ESB` environment variable not set. Using default cache directory.")
+            else:
+                print(f"Using cache directory: `{self.cache_dir_esb}`.")
+        
+        
         self.dataset_name_to_cache_dir = {
-            "librispeech": self.cache_dir_librispeech,
+            "librispeech": self.cache_dir_esb,
             "common_voice": self.cache_dir_esb,
             "voxpopuli": self.cache_dir_esb,
             "tedlium": self.cache_dir_esb,
@@ -61,55 +71,21 @@ class ESBDataset(BaseDatasetGroup):
         if not self.load_diagnostic:  # If `load_diagnostic` default ESB dataset...
             for dataset_name in self.available_datasets:
                 if dataset_name in self.subset:  # type: ignore
-                    if dataset_name == "librispeech":
-                        # Load the 2 test splits of LibriSpeech from the original HF dataset as
-                        # `esb/datasets` does not provide the text annotations for the test set.
-                        # Important note: `streaming` is set to `False` here as we want to take advantage
-                        # of the fact that the full LibriSpeech dataset has already been cached.
-                        self.str2dataset["librispeech_clean"] = load_dataset(path="librispeech_asr",
-                                                                             name="clean",
-                                                                             split="test",
-                                                                             cache_dir=self.dataset_name_to_cache_dir["librispeech"],
-                                                                             streaming=False,
-                                                                             use_auth_token=True)
-                        self.str2dataset["librispeech_other"] = load_dataset(path="librispeech_asr",
-                                                                             name="other",
-                                                                             split="test",
-                                                                             cache_dir=self.dataset_name_to_cache_dir["librispeech"],
-                                                                             streaming=False,
-                                                                             use_auth_token=True)
-                    else:
-                        # For all other datasets, load the validation splits:
-                        self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
-                                                                      name=dataset_name,
-                                                                      split="validation",
-                                                                      cache_dir=self.dataset_name_to_cache_dir[dataset_name],
-                                                                      streaming=self.streaming,
-                                                                      use_auth_token=True)
+                    # For all other datasets, load the validation splits:
+                    self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
+                                                                    name=dataset_name,
+                                                                    split="validation",
+                                                                    cache_dir=self.dataset_name_to_cache_dir[dataset_name],
+                                                                    streaming=self.streaming,
+                                                                    use_auth_token=True)
         
         else:  # If load diagnostic dataset...
             for dataset_name in self.available_datasets:
                 if dataset_name in self.subset:  # type: ignore
-                    if dataset_name == "librispeech":
-                        # Load the 2 splits of LibriSpeech from the original HF test dataset
-                        # because LibriSpeech is our main dataset of interest (used for fine-tuning):
-                        self.str2dataset["librispeech_clean"] = load_dataset(path="librispeech_asr",
-                                                                             name="clean",
-                                                                             split="test",
-                                                                             cache_dir=self.dataset_name_to_cache_dir["librispeech"],
-                                                                             streaming=self.streaming,
-                                                                             use_auth_token=True)
-                        self.str2dataset["librispeech_other"] = load_dataset(path="librispeech_asr",
-                                                                             name="other",
-                                                                             split="test",
-                                                                             cache_dir=self.dataset_name_to_cache_dir["librispeech"],
-                                                                             streaming=self.streaming,
-                                                                             use_auth_token=True)
-                    else:
-                        self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
-                                                                      name=dataset_name,
-                                                                      split="clean",
-                                                                      cache_dir=self.dataset_name_to_cache_dir[dataset_name],
-                                                                      streaming=self.streaming,
-                                                                      use_auth_token=True
-                                                                      ).rename_column("norm_transcript", "text")
+                    self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
+                                                                    name=dataset_name,
+                                                                    split="clean",
+                                                                    cache_dir=self.dataset_name_to_cache_dir[dataset_name],
+                                                                    streaming=self.streaming,
+                                                                    use_auth_token=True
+                                                                    ).rename_column("norm_transcript", "text")

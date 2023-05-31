@@ -6,10 +6,6 @@ CHECKPOINTS_DIRNAME = "checkpoints"
 DEFAULT_NUM_PROC = 8  # see https://docs.hpc.cam.ac.uk/hpc/user-guide/a100.html#hardware
 
 
-# ------ wandb ------
-DEFAULT_N_SAMPLES_PER_WANDB_LOGGING_STEP = 8
-
-
 # ------ Constants ------
 DEFAULT_LABEL_STR_COL = "text"
 DEFAULT_LABEL_TOKENIZED_COL = "labels"  # default column name used by the HuggingFace Trainer

@@ -52,7 +52,6 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 # python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-tiny >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-tiny.en >> $LOG 2> $ERR
 # python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-base >> $LOG 2> $ERR
 # python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-small >> $LOG 2> $ERR
 # python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-small.en >> $LOG 2> $ERR
