@@ -10,7 +10,7 @@ from datasets import Dataset
 from k_beam_search.k_beam_search import get_k_beam_search_output
 from utils.distil_config import DistilConfig
 from utils.file_io import extract_exp_name_from_model_path
-from utils.constants import K_BEAM_SEARCH_DIRNAME
+from utils.constants import K_BEAM_SEARCH_DIRNAME, DATASET_NAME_TO_COL_ID
 from utils.pickle_caching import load_pickle, save_as_pickle
 
 
@@ -18,10 +18,13 @@ def smart_load_k_beam_search(config: DistilConfig,
                              dataset: Dataset) -> Dict[str, BeamSearchEncoderDecoderOutput]:
     
     # Sanity checks:
-    assert config.method in ["seq_level_1_best", "seq_level_k_best_uniform", "seq_level_k_best_ranked"], \
-        f'Invalid method `{config.method}`. Must be one of `["seq_level_1_best", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]`.'
+    assert config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"], \
+        f'Invalid method `{config.method}`. Must be one of `["seq_level_k_best_uniform", "seq_level_k_best_ranked"]`.'
     assert config.distillation_num_beams is not None, \
         "The `distillation_num_beams` must be set for sequence-level distillation."
+    assert config.dataset_name in DATASET_NAME_TO_COL_ID, \
+        f"Invalid dataset name `{config.dataset_name}`. Must be one of `{list(DATASET_NAME_TO_COL_ID.keys())}`."
+    
     
     processed_datasets_dir = Path(os.environ["PREPROCESSED_DATASETS_DIR"])
     if not processed_datasets_dir.exists():
@@ -58,7 +61,7 @@ def smart_load_k_beam_search(config: DistilConfig,
         print(f"Computing K-beam search from scratch...")
         id_to_k_beam_search_output = get_k_beam_search_output(model_name_or_path=config.teacher_model_name_or_path,
                                                               dataset=dataset,
-                                                              col_id=config.col_id,
+                                                              col_id=DATASET_NAME_TO_COL_ID[config.dataset_name],
                                                               num_beams=config.distillation_num_beams)
         
         

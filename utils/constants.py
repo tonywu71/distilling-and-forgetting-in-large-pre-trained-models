@@ -17,3 +17,11 @@ GEN_MAX_LENGTH = 225
 # ------ Filepaths ------
 DEFAULT_LOG_DIR = Path("logs")
 DEFAULT_OUTPUT_DIR = Path("outputs")
+
+
+# ------ Target dataset ------
+DATASET_NAME_TO_COL_ID = {
+    "librispeech_clean_100h": "id",
+    "ami_10h": "audio_id",
+    "ami_100h": "audio_id"
+}

@@ -100,11 +100,12 @@ def main(config_filepath: str):
                                           feature_extractor=processor.feature_extractor,  # type: ignore
                                           augment=config.data_augmentation)
     
-    if config.method in ["seq_level_1_best", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]:  # If distillation is sequence-level...
+    if config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:  # If distillation is sequence-level...
         # Get the K-beam search outputs from the teacher model:
         id_to_k_beam_search_output = smart_load_k_beam_search(config=config,
                                                               dataset=dataset_dict["validation"])  # type: ignore
-    
+    else:
+        id_to_k_beam_search_output = None
     
     print("\n-----------------------\n")
     
@@ -219,7 +220,7 @@ def main(config_filepath: str):
     distillation_trainer = DistillationTrainer(
         args=training_args,
         model=student_model,  # type: ignore
-        teacher_model=teacher_model,  # type: ignore
+        id_to_k_beam_search_output=id_to_k_beam_search_output,
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
