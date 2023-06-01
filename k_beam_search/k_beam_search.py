@@ -21,6 +21,8 @@ def get_k_beam_search_output(model_name_or_path: str,
     
     # Sanity check:
     assert col_id in dataset.features, f"Column `{col_id}` not found in dataset."
+    if num_beams == 1:
+        raise NotImplementedError("K-Beam search with K=1 is not supported during caching.")
     
     # Initialize the model from pretrained checkpoint:
     print(f"Loading model for K-Beam search from `{model_name_or_path}`...")
