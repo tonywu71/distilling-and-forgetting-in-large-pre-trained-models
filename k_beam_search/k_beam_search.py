@@ -42,12 +42,12 @@ def get_k_beam_search_output(model_name_or_path: str,
         input_features = data["input_features"].to(device)  # type: ignore
         
         # Generate teacher predictions using K-beam search:
-        id_to_k_beam_search_output[col_id] = model.generate(input_features,  # type: ignore
-                                                            max_length=GEN_MAX_LENGTH,
-                                                            num_beams=num_beams,
-                                                            num_return_sequences=num_beams,
-                                                            output_scores=True,
-                                                            return_dict_in_generate=True)
+        id_to_k_beam_search_output[data[col_id]] = model.generate(input_features,  # type: ignore
+                                                                  max_length=GEN_MAX_LENGTH,
+                                                                  num_beams=num_beams,
+                                                                  num_return_sequences=num_beams,
+                                                                  output_scores=True,
+                                                                  return_dict_in_generate=True)
     
     return id_to_k_beam_search_output
 
