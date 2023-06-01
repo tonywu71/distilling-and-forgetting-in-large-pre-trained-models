@@ -14,6 +14,6 @@ def save_as_pickle(data: Any, savepath: str) -> None:
         pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def load_pickle(path: str) -> Any:
-    with open(path, 'rb') as f:
+def load_pickle(filepath: str) -> Any:
+    with open(filepath, 'rb') as f:
         return pickle.load(f)

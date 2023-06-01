@@ -17,7 +17,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def get_k_beam_search_output(model_name_or_path: str,
                              dataset: Dataset,
                              col_id: str,
-                             num_beams: int) -> Dict[str, BeamSearchEncoderDecoderOutput]:
+                             num_beams: int,
+                             data_collator=None) -> Dict[str, BeamSearchEncoderDecoderOutput]:
     
     # Sanity check:
     assert col_id in dataset.features, f"Column `{col_id}` not found in dataset."
@@ -30,12 +31,15 @@ def get_k_beam_search_output(model_name_or_path: str,
     
     id_to_k_beam_search_output: Dict[str, BeamSearchEncoderDecoderOutput] = {}
     
-    for idx, data in tqdm(enumerate(dataset)):
+    print("\nGenerating K-Beam search output...")
+    
+    for idx, data in tqdm(enumerate(dataset), total=len(dataset), desc="Example"):
         # Collate the data into batches of size 1:
-        data = self.data_collator([data])  # type: ignore
+        if data_collator is not None:
+            data = data_collator([data])  # type: ignore
         
         # Note that we need to move the data to the device manually (which is not the case with Trainer):
-        input_features = data["input_features"].to(device)
+        input_features = data["input_features"].to(device)  # type: ignore
         
         # Generate teacher predictions using K-beam search:
         id_to_k_beam_search_output[col_id] = model.generate(input_features,  # type: ignore

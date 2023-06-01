@@ -100,6 +100,8 @@ def main(config_filepath: str):
                                           feature_extractor=processor.feature_extractor,  # type: ignore
                                           augment=config.data_augmentation)
     
+    print("\n-----------------------\n")
+    
     if config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:  # If distillation is sequence-level...
         # Get the K-beam search outputs from the teacher model:
         id_to_k_beam_search_output = smart_load_k_beam_search(config=config,

@@ -22,3 +22,4 @@ WANDB_CACHE_DIR: /home/tw581/rds/hpc-work/cache/wandb
 
 # ==============================     OTHERS     ==============================
 PREPROCESSED_DATASETS_DIR: /home/tw581/rds/hpc-work/preprocessed_datasets/
+K_BEAM_SEARCH_CACHE_DIR: /home/tw581/rds/hpc-work/k_beam_search_cache/
