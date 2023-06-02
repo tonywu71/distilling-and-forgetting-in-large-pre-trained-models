@@ -1,4 +1,4 @@
-from typing import Optional, Literal, List, Dict
+from typing import Optional, Literal
 
 import numpy as np
 
@@ -8,9 +8,7 @@ import torch.nn.functional as F
 
 from transformers import TrainingArguments, Trainer, PreTrainedModel
 from transformers.modeling_outputs import Seq2SeqLMOutput
-from transformers.generation import BeamSearchEncoderDecoderOutput
-
-from k_beam_search.prepare_k_beam_features import get_batched_k_beam_search_output_from_inputs
+from utils.constants import DEFAULT_LABEL_TOKENIZED_COL, LOSS_MASK_IDX
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -122,75 +120,91 @@ class DistillationTrainer(Trainer):
         
         # Move inputs to device:
         inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels']
+         
         input_features = inputs["input_features"]
+        teacher_sequences = inputs["teacher_sequences"]  # (batch_size, num_beams, n_tokens)
+        teacher_sequences_attention_mask = self.get_attention_mask_from_tensor(teacher_sequences)  # (batch_size, num_beams, n_tokens)
+        teacher_sequences_scores = inputs["teacher_sequences_scores"]  # (batch_size, num_beams)
         
-        # Generate teacher predictions using K-beam search:
-        dict_pred_ids_teacher_beam_search = self.get_batched_k_beam_search_output_from_inputs(inputs)
+        batch_size = input_features.shape[0]
+        distillation_num_beams = self.args.distillation_num_beams
+        n_tokens = teacher_sequences.shape[-1]
         
-        # Retrieve the K-best tokenized sequences:
-        pred_ids_teacher_beam_search = dict_pred_ids_teacher_beam_search.sequences  # (batch_size * distillation_num_beams, n_tokens)
+        assert distillation_num_beams <= teacher_sequences.shape[1], \
+            f"The number of beams for distillation must be <= the number of beams used for generation. " \
+            f"Got {distillation_num_beams} beams for distillation and {teacher_sequences.shape[1]} beams for generation."
         
-        # Note: dict_pred_ids_teacher_beam_search.sequences_scores -> (batch_size * distillation_num_beams,)
-        prob_pred_teacher_sequences = dict_pred_ids_teacher_beam_search.sequences_scores.reshape((-1, self.args.distillation_num_beams))  # (batch_size, distillation_num_beams)
+        # Retrieve only the beams of interest:
+        teacher_sequences = teacher_sequences[:, :distillation_num_beams, :]  # (batch_size, distillation_num_beams, n_tokens)
+        teacher_sequences_scores = teacher_sequences_scores[:, :distillation_num_beams]  # (batch_size, distillation_num_beams)
         
-        # Re-normalize scores using only the K-best sequences:
-        prob_pred_teacher_sequences = torch.nn.functional.softmax(prob_pred_teacher_sequences, dim=-1)  # (batch_size, distillation_num_beams)
+        # Re-normalize scores using only the K-best sequences by applying a softmax over the beam dimension:
+        teacher_sequences_prob = torch.nn.functional.softmax(teacher_sequences_scores, dim=-1)  # (batch_size, distillation_num_beams)
         
-        # Note: `pred_ids_teacher` is the result of a concatenation of generate outputs along the batch dimension (axis=0).
-        # Therefore, if `distillation_num_beams` = 2, then the first `batch_size` rows correspond to the 2 best beam-search predictions
-        # for the first input, the next `batch_size` rows correspond to the 2 best predictions for the second input, etc...
+        # We want to take advantage of the fact that the batch dimension and the beam dimension are indifferent to process them all at once.
+        # Important note: Technically, the student model should be able to process the entire batch of size `batch_size * distillation_num_beams`. If
+        #                 this is not the case, we need to reduce the batch size accordingly.
+        teacher_sequences = teacher_sequences.reshape(batch_size * distillation_num_beams, n_tokens)  # (batch_size * distillation_num_beams, n_tokens)
         
-        # Split `pred_ids_teacher` into `distillation_num_beams` tensors of size `(batch_size, n_tokens)`:
-        pred_ids_teacher_list = torch.split(pred_ids_teacher_beam_search,  # type: ignore
-                                            split_size_or_sections=input_features.shape[0],
-                                            dim=0)
+        # Forward pass through student:
+        # Note that we excluded the EOT token "<|endoftext|>" as generation is supposed to stop here.
+        student_output: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
+                                                                decoder_input_ids=teacher_sequences[:, :-1],
+                                                                labels=teacher_sequences[:, 1:],
+                                                                decoder_attention_mask=teacher_sequences_attention_mask[:, :-1])
         
-        # Placeholders for the loss terms:
-        list_loss_ce: List[torch.Tensor] = []
-        list_loss_kd: List[torch.Tensor] = []
+        # Extract cross-entropy loss and logits from student output:
+        loss_ce = student_output.loss  # mean cross-entropy -> (1,)  # TODO: Check if this is the correct reduction
+        student_logits = student_output.logits  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
+        vocab_size = student_logits.shape[-1]
         
-        for pred_ids_teacher in pred_ids_teacher_list:
-            # Forward pass through student:
-            # Note that we excluded the EOT token "<|endoftext|>" as generation is supposed to stop here.
-            output_student: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                    decoder_input_ids=pred_ids_teacher[:, :-1],
-                                                                    labels=pred_ids_teacher[:, 1:])
-            
-            # Extract cross-entropy loss and logits from student output:
-            list_loss_ce.append(output_student.loss)
-            logits_student = output_student.logits  # (batch_size, n_tokens-1, vocab_size)
-            
-            # Normalize logits:
-            log_prob_all = torch.nn.functional.log_softmax(logits_student, dim=-1)  # (batch_size, n_tokens-1, vocab_size)
-            
-            # Get log-probabilities for each generation step:
-            log_prob_t_hat_step_wise = log_prob_all.take_along_dim(pred_ids_teacher[:, 1:, None], dim=-1)  # (batch_size, n_tokens-1, 1)
-            
-            # Compute the sequence log-probability:
-            list_loss_kd.append((-1) * torch.sum(log_prob_t_hat_step_wise.squeeze(), axis=-1))  # (batch_size,)  # type: ignore
+        # Temporarily reshape logits to be able to properly use softmax along the last dimension:
+        student_logits = student_logits.reshape(batch_size, distillation_num_beams, n_tokens - 1, -1)  # (batch_size, distillation_num_beams, n_tokens-1, vocab_size)
         
-        # Compute the mean of the cross-entropy losses over the K-best sequences:
-        loss_ce = torch.mean(torch.stack(list_loss_ce))  # (1,)
+        # Normalize logits:
+        student_log_prob_all = torch.nn.functional.log_softmax(student_logits, dim=-1)  # (batch_size, distillation_num_beams, n_tokens-1, vocab_size)
+        
+        # Reshape back to original shape:
+        student_log_prob_all = student_log_prob_all.reshape(batch_size * distillation_num_beams, n_tokens - 1, -1)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
+        
+        # Set the values associated to the pad tokens to 0:
+        # Note: Because we will sum the log-probabilities to make use of the product rule in the log space,
+        #       a sufficient method to ignore the padded values is to set them to 0.
+        
+        # Repeat attention_mask for the n_vocab dimension:
+        student_log_prob_all_mask = teacher_sequences_attention_mask["attention_mask"][:, :-1, None].expand(-1, -1, vocab_size)
+        output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)
+        
+        # Get log-probabilities for each generation step:
+        log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences[:, 1:, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens-1, 1)
+        
+        # Compute the sequence negative log-probability of `y_hat`, which is equal to `loss_kd`:
+        # log_prob_t_hat_step_wise.squeeze() -> (batch_size * distillation_num_beams, n_tokens-1)
+        # Hence we need to sum over the last dimension to get the sequence log-probability.
+        loss_kd = - torch.sum(log_prob_t_hat_step_wise.squeeze(), axis=-1)  # (batch_size * distillation_num_beams,)
+        loss_kd = loss_kd.reshape(batch_size, distillation_num_beams)  # (batch_size, distillation_num_beams)
         
         # Compute the weighted mean of the sequence log-probabilities:
-        # Notes:
+        # Inputs:
         # - weights -> (distillation_num_beams,)
-        # - prob_pred_teacher_sequences -> (batch_size, distillation_num_beams)
-        # - torch.stack(list_loss_kd, axis=-1) -> (batch_size, distillation_num_beams)
+        # - teacher_sequences_prob -> (batch_size, distillation_num_beams)
+        # - loss_kd -> (batch_size, distillation_num_beams)
+        # Output:
+        # - weights * teacher_sequences_prob * loss_kd -> (batch_size, distillation_num_beams) [broadcasting]
         if rank_weighting:
             weights = self.get_rank_based_exp_decay_weights(K=self.args.distillation_num_beams, beta=self.args.decay_beta)
-            loss_kd = torch.sum(weights[None, :] * prob_pred_teacher_sequences * torch.stack(list_loss_kd, axis=-1))  # (batch_size,)
+            loss_kd = torch.sum(weights * teacher_sequences_prob * loss_kd, axis=-1)  # (batch_size,)
         else:
-            loss_kd = torch.sum(prob_pred_teacher_sequences * torch.stack(list_loss_kd, axis=-1))  # (batch_size,)
+            loss_kd = torch.sum(teacher_sequences_prob * loss_kd, axis=-1)  # (batch_size,)
         
         # Because the default cross-entropy loss is computed with reduction='mean', we need to
         # also take the mean of the sequence log-probabilities to be consistent:
-        loss_kd = torch.mean(loss_kd)  # (1,)
+        loss_kd = torch.mean(loss_kd,)  # (1,)
         
         # Return weighted student loss
         loss = self.args.ce_alpha * loss_ce + (1. - self.args.ce_alpha) * loss_kd
         
-        return loss, output_student
+        return loss, student_output
     
     
     def _compute_loss_seq_level_k_best_uniform(self,
@@ -211,11 +225,12 @@ class DistillationTrainer(Trainer):
         return self._compute_loss_seq_level_k_best(student_model, inputs, rank_weighting=True)
     
     
-    def get_batched_k_beam_search_output_from_inputs(self, inputs) -> BeamSearchEncoderDecoderOutput:
-        return get_batched_k_beam_search_output_from_inputs(inputs,
-                                                            col_id=self.col_id,
-                                                            distillation_num_beams=self.args.distillation_num_beams,
-                                                            id_to_k_beam_search_output=self.id_to_k_beam_search_output)
+    @staticmethod
+    def get_attention_mask_from_tensor(tensor: torch.Tensor) -> torch.Tensor:
+        """
+        Returns the attention mask from a tensor of shape (batch_size, n_tokens).
+        """
+        return tensor.ne(LOSS_MASK_IDX).float()
     
     
     @staticmethod

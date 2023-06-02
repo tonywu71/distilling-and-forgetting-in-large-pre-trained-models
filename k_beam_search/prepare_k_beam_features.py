@@ -1,13 +1,6 @@
 from typing import Dict, Any
-
-from tqdm.auto import tqdm
-
 import torch
-
 from transformers import WhisperForConditionalGeneration
-from transformers.generation import BeamSearchEncoderDecoderOutput
-from datasets import Dataset
-
 from utils.constants import GEN_MAX_LENGTH
 
 
@@ -39,11 +32,11 @@ def prepare_k_beam_features_fct(batch: Dict[str, Any],
     # - outputs.sequences_scores -> (batch_size * num_beams,)
     
     # Add the follwoing fields to the current batch, i.e. a fortiori add columns for the dataset:
-    batch["sequences"] = list(torch.split(outputs.sequences,
-                                          split_size_or_sections=num_beams,
-                                          dim=0))  # batch_size tensors of shape (num_beams, n_tokens)
-    batch["sequences_scores"] = list(torch.split(outputs.sequences_scores,
-                                                 split_size_or_sections=num_beams,
-                                                 dim=0))  # batch_size tensors of shape (num_beams,)
+    batch["teacher_sequences"] = list(torch.split(outputs.sequences,
+                                                  split_size_or_sections=num_beams,
+                                                  dim=0))  # batch_size tensors of shape (num_beams, n_tokens)
+    batch["teacher_sequences_scores"] = list(torch.split(outputs.sequences_scores,
+                                                         split_size_or_sections=num_beams,
+                                                         dim=0))  # batch_size tensors of shape (num_beams,)
     
     return batch

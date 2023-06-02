@@ -123,9 +123,11 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         
         # Map the dataset:
         print("\nGenerating K-Beam search output...")
-        dataset_dict = dataset_dict.map(prepare_k_beam_features, batched=True, batch_size=config.batch_size)
+        dataset_dict = dataset_dict.map(prepare_k_beam_features,
+                                        batched=True,
+                                        batch_size=config.batch_size,
+                                        num_proc=config.num_proc)
         
-
         # Set the path to save the K-Beam search results:
         cache_filepath = str(parent_cache_dir / f"k_{num_beams}")
         
