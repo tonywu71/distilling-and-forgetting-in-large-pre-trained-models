@@ -11,6 +11,7 @@ from transformers import (PreTrainedModel,
                           TrainerControl)
 from datasets import Dataset
 
+from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from callbacks.base_training_callback import BaseWandbTrainingCallback
 from utils.finetune_config import FinetuneConfig
 from utils.distil_config import DistilConfig
@@ -32,8 +33,11 @@ class WandbFinetuneCallback(BaseWandbTrainingCallback):
                          eval_dataset,
                          n_samples,
                          log_raw_str)
-        self.table_name = "sample_predictions-finetune"
+        
         assert isinstance(self.config, FinetuneConfig), "config must be `FinetuneConfig`"
+        
+        self.table_name = "sample_predictions-finetune"
+        self.data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor)
     
     
     def log_records_to_wandb(self) -> None:

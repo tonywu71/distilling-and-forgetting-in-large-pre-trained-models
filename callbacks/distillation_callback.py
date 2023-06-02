@@ -11,8 +11,8 @@ from transformers import (PreTrainedModel,
                           TrainerControl)
 from datasets import Dataset
 
+from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from callbacks.base_training_callback import BaseWandbTrainingCallback
-from utils.finetune_config import FinetuneConfig
 from utils.distil_config import DistilConfig
 from utils.constants import GEN_MAX_LENGTH, PADDING_IDX, DEFAULT_LABEL_TOKENIZED_COL
 
@@ -22,8 +22,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class WandbDistillationCallback(BaseWandbTrainingCallback):
     def __init__(self,
-                 config: FinetuneConfig | DistilConfig,
-                 teacher_model: PreTrainedModel,
+                 config: DistilConfig,
                  processor: WhisperProcessor,
                  eval_dataset: Dataset,
                  n_samples: int,
@@ -33,9 +32,12 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
                          eval_dataset,
                          n_samples,
                          log_raw_str)
-        self.teacher_model = teacher_model
-        self.table_name = "sample_predictions-distill"
+        
         assert isinstance(self.config, DistilConfig), "config must be `DistilConfig`"
+        
+        self.table_name = "sample_predictions-distill"
+        self.data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
+                                                                  other_cols=["sequences", "sequences_scores"])                                                              
     
     
     def log_records_to_wandb(self) -> None:
@@ -82,9 +84,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             pred_ids_student = model.generate(input_features,
                                               max_length=GEN_MAX_LENGTH,
                                               num_beams=self.config.generation_num_beams)  # type: ignore
-            pred_ids_teacher = self.teacher_model.generate(input_features,
-                                                           max_length=GEN_MAX_LENGTH,
-                                                           num_beams=self.config.generation_num_beams)  # type: ignore
+            pred_ids_teacher = data["sequences"][0][0]  # get 1st element of the size-1 batch and 1st beam
             
             # Replace the padding index with the pad token id to undo the step we applied
             # in the data collator to ignore padded tokens correctly during decoding:

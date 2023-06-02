@@ -10,7 +10,7 @@ from transformers import TrainingArguments, Trainer, PreTrainedModel
 from transformers.modeling_outputs import Seq2SeqLMOutput
 from transformers.generation import BeamSearchEncoderDecoderOutput
 
-from k_beam_search.k_beam_search import get_batched_k_beam_search_output_from_inputs
+from k_beam_search.prepare_k_beam_features import get_batched_k_beam_search_output_from_inputs
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -43,24 +43,15 @@ class DistillationTrainer(Trainer):
     """
     def __init__(self,
                  teacher_model: Optional[PreTrainedModel] = None,
-                 id_to_k_beam_search_output: Optional[Dict[str, BeamSearchEncoderDecoderOutput]] = None,
-                 col_id: Optional[str] = None,
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.teacher_model = teacher_model
-        self.id_to_k_beam_search_output = id_to_k_beam_search_output
-        self.col_id = col_id
         
         # Sanity checks:
         if self.args.method == "word_level":
             assert self.teacher_model is not None, \
                 "The `teacher_model` must be set for word-level distillation."
-        if self.args.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
-            assert self.id_to_k_beam_search_output is not None, \
-                "The `id_to_k_beam_search_output` must be set for sequence-level distillation."
-            assert self.col_id is not None, \
-                "The `col_id` must be set for sequence-level distillation."
         
         
         self.METHOD_TO_LOSS_FCT = {

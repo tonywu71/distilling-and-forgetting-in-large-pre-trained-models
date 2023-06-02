@@ -72,7 +72,10 @@ def preprocess_dataset(dataset_dict: DatasetDict,
     - Augment the dataset (optional)
     - Normalize the labels
     - Prepare the dataset (extract features and tokenize labels)
-    - Filter the dataset (remove ampty samples and samples that are too long)
+    - Filter the dataset (remove empty samples and samples that are too long).
+    
+    Note: We deliberately chose to keep the audio features to be able to plot
+          to log them in the wandb callback.
     """
     
     for split in dataset_dict:
