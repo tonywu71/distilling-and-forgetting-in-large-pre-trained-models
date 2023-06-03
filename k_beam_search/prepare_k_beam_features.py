@@ -13,12 +13,14 @@ def prepare_k_beam_features_fct(batch: Dict[str, Any],
     """
     Utility to create K-Beam features for a dataset. Should be used with `Dataset.map()`.
     
+    Important: The dataset must be converted to PyTorch format first.
+    
     The following new columns are added to the dataset:
     - `sequences` -> (num_beams, n_tokens)
     - `sequences_scores` -> (num_beams,)
     """
     
-    input_features = batch["input_features"]
+    input_features = batch["input_features"].to(device)
 
     # Generate teacher predictions using K-beam search:
     outputs = model.generate(input_features,
@@ -31,12 +33,12 @@ def prepare_k_beam_features_fct(batch: Dict[str, Any],
     # - outputs.sequences -> (batch_size * num_beams, n_tokens)
     # - outputs.sequences_scores -> (batch_size * num_beams,)
     
-    # Add the follwoing fields to the current batch, i.e. a fortiori add columns for the dataset:
+    # Add the following fields to the current batch, i.e. a fortiori add columns for the dataset:
     batch["teacher_sequences"] = list(torch.split(outputs.sequences,
                                                   split_size_or_sections=num_beams,
-                                                  dim=0))  # batch_size tensors of shape (num_beams, n_tokens)
+                                                  dim=0))  # `batch_size` tensors of shape (num_beams, n_tokens)
     batch["teacher_sequences_scores"] = list(torch.split(outputs.sequences_scores,
                                                          split_size_or_sections=num_beams,
-                                                         dim=0))  # batch_size tensors of shape (num_beams,)
+                                                         dim=0))  # `batch_size` tensors of shape (num_beams,)
     
     return batch

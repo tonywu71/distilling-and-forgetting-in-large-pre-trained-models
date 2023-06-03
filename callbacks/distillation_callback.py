@@ -37,7 +37,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         
         self.table_name = "sample_predictions-distill"
         self.data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
-                                                                  other_cols=["teacher_sequences", "teacher_sequences_scores"])                                                              
+                                                                  add_k_beam_features=True)                                                              
     
     
     def log_records_to_wandb(self) -> None:
@@ -84,7 +84,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             pred_ids_student = model.generate(input_features,
                                               max_length=GEN_MAX_LENGTH,
                                               num_beams=self.config.generation_num_beams)  # type: ignore
-            pred_ids_teacher = data["sequences"][0][0]  # get 1st element of the size-1 batch and 1st beam
+            pred_ids_teacher = data["teacher_sequences"][0][0]  # get 1st element of the size-1 batch and 1st beam
             
             # Replace the padding index with the pad token id to undo the step we applied
             # in the data collator to ignore padded tokens correctly during decoding:

@@ -77,42 +77,47 @@ def main(config_filepath: str):
     
     # ----------------------   Main   ----------------------
     
-    # Load processor (contains both tokenizer and feature extractor)
-    processor = WhisperProcessor.from_pretrained(
-        config.teacher_model_name_or_path,
+    # Important note: Although all English models share the same tokenizer, they do not have
+    # the same feature extractor. Since we are interested in training the student model, we
+    # will use the student model's processor to preprocess the dataset.
+    
+    # Load student processor (contains both tokenizer and feature extractor):
+    student_processor = WhisperProcessor.from_pretrained(
+        config.student_model_name_or_path,
         language=config.lang_name,
         task=config.task
     )
     
     # Create the data collator that will be used to prepare the data for training:
     if config.method == "word_level":
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor)
     else:
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor,
-                                                             other_cols=["sequences", "sequences_scores"])
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
+                                                             add_k_beam_features=True)
         
     # Load the dataset and preprocess it:
     if config.smart_load:
-        dataset_dict = smart_load_dataset_dict(config=config, processor=processor)
+        dataset_dict = smart_load_dataset_dict(config=config, processor=student_processor)
     else:
         print(f"Loading raw dataset `{config.dataset_name}` from Huggingface...")
         dataset_dict = load_dataset_dict(dataset_name=config.dataset_name)
         
         print(f"Preprocessing dataset `{config.dataset_name}`...")
         dataset_dict = preprocess_dataset(dataset_dict,  # type: ignore
-                                        tokenizer=processor.tokenizer,  # type: ignore
-                                        feature_extractor=processor.feature_extractor,  # type: ignore
-                                        augment=config.data_augmentation)
+                                          tokenizer=student_processor.tokenizer,  # type: ignore
+                                          feature_extractor=student_processor.feature_extractor,  # type: ignore
+                                          augment=config.data_augmentation)
     
     print("\n-----------------------\n")
     
-    if config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:  # If distillation is sequence-level...
-        # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
-        dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
-                                                             dataset_dict=dataset_dict)  # type: ignore
+    # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
+    dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
+                                                            dataset_dict=dataset_dict)  # type: ignore
+    
+    # Note: Technically, the K-beam search features are not needed for the word-level distillation. However,
+    #       we still load them for simplicity and because they are needed for `WandbDistillationCallback`.
     
     print("\n-----------------------\n")
-    
     
     # Initialize the models from pretrained checkpoints:
     if config.method == "word_level":
@@ -159,9 +164,9 @@ def main(config_filepath: str):
     for model in [teacher_model, student_model]:
         if model is not None:  # ignore teacher model if not used
             if config.is_tokenizer_multilingual:
-                model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+                model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
             else:
-                model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=None, task=config.task)
+                model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=None, task=config.task)
             model.config.suppress_tokens = []  # type: ignore
             if config.gradient_checkpointing:
                 model.config.use_cache = False  # type: ignore
@@ -195,6 +200,7 @@ def main(config_filepath: str):
         save_strategy="steps",
         save_steps=config.save_steps,
         save_total_limit=config.save_total_limit,
+        remove_unused_columns=False,  # keep the K-beam search features
         load_best_model_at_end=True,
         metric_for_best_model="wer",
         greater_is_better=False,  # the lower the WER, the better
@@ -204,7 +210,7 @@ def main(config_filepath: str):
     
     # Define the compute_metrics function:
     compute_wer = partial(compute_wer_fct_distil,
-                          processor=processor,
+                          processor=student_processor,
                           normalize=True)
     
     
@@ -218,8 +224,7 @@ def main(config_filepath: str):
     
     if config.log_preds_to_wandb:
         callbacks.append(WandbDistillationCallback(config=config,
-                                                   teacher_model=teacher_model,  # type: ignore
-                                                   processor=processor,
+                                                   processor=student_processor,
                                                    eval_dataset=dataset_dict["validation"],  # type: ignore
                                                    n_samples=config.n_samples_per_wandb_logging_step,
                                                    log_raw_str=config.log_raw_str))
@@ -229,12 +234,13 @@ def main(config_filepath: str):
     distillation_trainer = DistillationTrainer(
         args=training_args,
         model=student_model,  # type: ignore
+        student_tokenizer=student_processor.tokenizer,
         teacher_model=teacher_model,
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
-        tokenizer=processor,  # type: ignore
+        tokenizer=student_processor,  # type: ignore
         callbacks=callbacks
     )
     

@@ -1,5 +1,4 @@
 from functools import partial
-from typing import Dict
 
 import os
 import re
@@ -7,6 +6,7 @@ from pathlib import Path
 
 import torch
 
+from transformers import WhisperForConditionalGeneration
 from datasets import load_from_disk, DatasetDict, Dataset
 
 from k_beam_search.prepare_k_beam_features import prepare_k_beam_features_fct
@@ -35,10 +35,10 @@ def get_k_beam_cache_dir(config: DistilConfig, parent_cache_dir: Path) -> str | 
     
     # Get list of all the Pickle files in `dataset_dir_all`:
     for x in parent_cache_dir.iterdir():
-        if x.is_file() and x.suffix == ".pkl":
+        if x.is_dir():
             # Use Regex to retrieve the number of beams from the file name:
             # Example: "preprocessed_datasets/k_beam_search/ami_10h/openai/whisper-medium/k_5.pkl" -> "5"
-            reg_pattern = r'^k_\d+$'
+            reg_pattern = r'^k_(\d+)$'
             if re.match(reg_pattern, x.stem):
                 cached_k = int(re.findall(reg_pattern, x.stem)[0])
                 if cached_k >= config.distillation_num_beams:
@@ -92,6 +92,7 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
     if not config.force_reprocess_k_best and k_beam_cache_dir is not None:
         print(f"Previously saved K-Beam search results found at `{k_beam_cache_dir}`. Loading from disk...")
         dataset_dict = load_from_disk(k_beam_cache_dir)
+        print(f"Succesfully loaded dataset with K-Beam search from `{k_beam_cache_dir}`.")
     
     # Otherwise, preprocess the dataset from scratch:
     else:
@@ -123,16 +124,15 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         
         # Map the dataset:
         print("\nGenerating K-Beam search output...")
-        dataset_dict = dataset_dict.map(prepare_k_beam_features,
-                                        batched=True,
-                                        batch_size=config.batch_size,
-                                        num_proc=config.num_proc)
+        dataset_dict = dataset_dict.with_format("pt").map(prepare_k_beam_features,
+                                                          batched=True,
+                                                          batch_size=config.batch_size)
         
         # Set the path to save the K-Beam search results:
         cache_filepath = str(parent_cache_dir / f"k_{num_beams}")
         
         Path(cache_filepath).parent.mkdir(parents=True, exist_ok=True)
         dataset_dict.save_to_disk(cache_filepath)
-        print(f"Dataset with K-Beam search saved to `{k_beam_cache_dir}`. It will be loaded from disk next time.")
+        print(f"Dataset with K-Beam search saved to `{cache_filepath}`. It will be loaded from disk next time.")
     
     return dataset_dict
