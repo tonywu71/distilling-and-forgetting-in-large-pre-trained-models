@@ -84,7 +84,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             pred_ids_student = model.generate(input_features,
                                               max_length=GEN_MAX_LENGTH,
                                               num_beams=self.config.generation_num_beams)  # type: ignore
-            pred_ids_teacher = data["teacher_sequences"][0][0]  # get 1st element of the size-1 batch and 1st beam
+            pred_ids_teacher = data["teacher_sequences"][0:1, 0, :]  # get 1st element of the size-1 batch and 1st beam
             
             # Replace the padding index with the pad token id to undo the step we applied
             # in the data collator to ignore padded tokens correctly during decoding:
