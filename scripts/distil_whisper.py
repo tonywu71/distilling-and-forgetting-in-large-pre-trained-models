@@ -26,6 +26,7 @@ from transformers import (WhisperForConditionalGeneration,
 
 import wandb
 
+from models.whisper_for_distillation import WhisperForConditionalGenerationForDistillation
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.metrics import compute_wer_fct_distil
@@ -128,7 +129,7 @@ def main(config_filepath: str):
         teacher_model = None  # the teacher model is not needed for sequence-level distillation as we already have its K-beam search outputs laoded
     
     print(f"Loading student model `{config.student_model_name_or_path}`...")
-    student_model = WhisperForConditionalGeneration.from_pretrained(config.student_model_name_or_path).to(device)  # type: ignore
+    student_model = WhisperForConditionalGenerationForDistillation.from_pretrained(config.student_model_name_or_path).to(device)  # type: ignore
     
     
     # Freeze the student's encoder and/or decoder if specified in the config:
@@ -191,13 +192,14 @@ def main(config_filepath: str):
         num_train_epochs=config.num_train_epochs,
         evaluation_strategy="steps",
         eval_steps=config.eval_steps,
+        generation_num_beams=config.generation_num_beams,  # TODO: experimental
         logging_strategy="steps",
         logging_first_step=True,
         logging_steps=config.eval_steps,
         save_strategy="steps",
         save_steps=config.save_steps,
         save_total_limit=config.save_total_limit,
-        # predict_with_generate=True,  # Can't be used with DistillationTrainer -> can we use Seq2SeqTrainer instead?
+        predict_with_generate=True,  # TODO: experimental
         remove_unused_columns=False,  # keep the K-beam search features
         load_best_model_at_end=True,
         metric_for_best_model="wer",
