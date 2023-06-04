@@ -69,7 +69,7 @@ class BaseWandbTrainingCallback(WandbCallback, ABC):
                            tokenized_seq: GenerateOutput | Tensor,
                            key: str,
                            is_raw: bool=False) -> None:
-        curr_label_str = self.processor.batch_decode(tokenized_seq, skip_special_tokens=not(is_raw), normalize=not(is_raw))[0]  # type: ignore
+        curr_label_str = self.processor.tokenizer.batch_decode(tokenized_seq, skip_special_tokens=not(is_raw), normalize=not(is_raw))[0]  # type: ignore
         self.records[key].append("".join(curr_label_str))
         return
     

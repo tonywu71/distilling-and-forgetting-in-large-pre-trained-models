@@ -55,11 +55,11 @@ def compute_wer_fct_distil(pred: EvalPrediction, processor: WhisperProcessor, no
     # - predictions: Predictions of the model.
     # - label_ids: Targets to be matched.
     
-    # TODO: Add sanity check to make sure that the predictions are indeed the student predictions:
-    # `pred.predictions` is a 2-tuple:
-    # - 1st element: the predictions of the student model -> (num_beams, seq_len, vocab_size)
-    # - 2nd element: ??????
-    # import pdb; pdb.set_trace()
+    # For sequence`pred.predictions` is a 2-tuple:
+    # - 1st element: the predictions of the student model -> (batch_size, seq_len, vocab_size) = (73, 92, 51865)
+    # - 2nd element: the embeddings generated after the 2D convolution layers -> (73, 1500, 384)
+    #                See `model.model.encoder.embed_positions (embed_positions): Embedding(1500, 384)
+    
     pred_student = pred.predictions[0]
     pred_ids = torch.argmax(torch.Tensor(pred_student), dim=-1)  # type: ignore
     label_ids = pred.label_ids

@@ -197,20 +197,20 @@ def main(config_filepath: str):
         save_strategy="steps",
         save_steps=config.save_steps,
         save_total_limit=config.save_total_limit,
-        # predict_with_generate=True,  # Can't be used with DistillationTrainer -> can we use Seq2SeqTrainer instead?
         remove_unused_columns=False,  # keep the K-beam search features
         load_best_model_at_end=True,
-        metric_for_best_model="wer",
-        greater_is_better=False,  # the lower the WER, the better
+        metric_for_best_model="wer" if config.method == "word_level" else "eval_loss",
+        greater_is_better=False,  # the lower the WER, the better (same for the loss)
         report_to="wandb"  # type: ignore
     )
     
     
     # Define the compute_metrics function:
-    compute_wer = partial(compute_wer_fct_distil,
-                          processor=student_processor,
-                          normalize=True)
-    
+    if config.method == "word_level":
+        compute_wer = partial(compute_wer_fct_distil,
+                            processor=student_processor,
+                            normalize=True)
+        
     
     # Define callbacks:
     callbacks: List[TrainerCallback] = []
@@ -237,7 +237,7 @@ def main(config_filepath: str):
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
-        compute_metrics=compute_wer,  # type: ignore
+        compute_metrics=compute_wer if config.method == "word_level" else None,
         tokenizer=student_processor,  # type: ignore
         callbacks=callbacks
     )
