@@ -6,19 +6,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformers import (TrainingArguments,
-                          Trainer,
-                          Seq2SeqTrainingArguments,
-                          Seq2SeqTrainer,
-                          PreTrainedModel,
-                          WhisperTokenizer)
+from transformers import TrainingArguments, Trainer, PreTrainedModel, WhisperTokenizer
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-class DistillationTrainingArguments(Seq2SeqTrainingArguments):
+class DistillationTrainingArguments(TrainingArguments):
     """
     Subclass of `TrainingArguments` used for `DistillationTrainer`.
     Only supports distillation for non-sequential tasks.
@@ -39,7 +34,7 @@ class DistillationTrainingArguments(Seq2SeqTrainingArguments):
         self.decay_beta = decay_beta
 
 
-class DistillationTrainer(Seq2SeqTrainer):
+class DistillationTrainer(Trainer):
     """
     Trainer class for distillation. Should be used with `args=DistillationTrainingArguments`.
     """
