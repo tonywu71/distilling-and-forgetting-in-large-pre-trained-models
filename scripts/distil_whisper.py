@@ -77,10 +77,6 @@ def main(config_filepath: str):
     
     # ----------------------   Main   ----------------------
     
-    # Important note: Although all English models share the same tokenizer, they do not have
-    # the same feature extractor. Since we are interested in training the student model, we
-    # will use the student model's processor to preprocess the dataset.
-    
     # Load student processor (contains both tokenizer and feature extractor):
     student_processor = WhisperProcessor.from_pretrained(
         config.student_model_name_or_path,
@@ -110,8 +106,9 @@ def main(config_filepath: str):
     
     print("\n-----------------------\n")
     
-    # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
-    dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
+    if config.method != "word_level":
+        # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
+        dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
                                                             dataset_dict=dataset_dict)  # type: ignore
     
     # Note: Technically, the K-beam search features are not needed for the word-level distillation. However,
@@ -200,6 +197,7 @@ def main(config_filepath: str):
         save_strategy="steps",
         save_steps=config.save_steps,
         save_total_limit=config.save_total_limit,
+        # predict_with_generate=True,  # Can't be used with DistillationTrainer -> can we use Seq2SeqTrainer instead?
         remove_unused_columns=False,  # keep the K-beam search features
         load_best_model_at_end=True,
         metric_for_best_model="wer",

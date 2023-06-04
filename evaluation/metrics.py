@@ -51,6 +51,15 @@ def compute_wer_fct_distil(pred: EvalPrediction, processor: WhisperProcessor, no
     
     wer_metric = evaluate.load("wer")
     
+    # `pred` has the following attributes:
+    # - predictions: Predictions of the model.
+    # - label_ids: Targets to be matched.
+    
+    # TODO: Add sanity check to make sure that the predictions are indeed the student predictions:
+    # `pred.predictions` is a 2-tuple:
+    # - 1st element: the predictions of the student model -> (num_beams, seq_len, vocab_size)
+    # - 2nd element: ??????
+    # import pdb; pdb.set_trace()
     pred_student = pred.predictions[0]
     pred_ids = torch.argmax(torch.Tensor(pred_student), dim=-1)  # type: ignore
     label_ids = pred.label_ids

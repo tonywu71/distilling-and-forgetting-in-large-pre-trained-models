@@ -209,6 +209,7 @@ class DistillationTrainer(Trainer):
         # also take the mean of the sequence log-probabilities to be consistent:
         loss_kd = torch.mean(loss_kd,)  # (1,)
         
+        # TODO: Take the cross-entropy into account
         # # Return weighted student loss
         # loss = self.args.ce_alpha * loss_ce + (1. - self.args.ce_alpha) * loss_kd
         
