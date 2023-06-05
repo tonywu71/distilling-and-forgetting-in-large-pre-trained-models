@@ -58,23 +58,23 @@ echo "python `which python`": >> $LOG
 
 #! ================     CURRENT     ================
 
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/1_1-learning_rate.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/1_2-learning_rate.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/1_3-learning_rate.yaml >> $LOG 2> $ERR
+
 #! =================================================
 
 
 #! ==================     TODO     ==================
 
-python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/1_1-learning_rate.yaml >> $LOG 2> $ERR
-python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/1_2-learning_rate.yaml >> $LOG 2> $ERR
-python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/1_3-learning_rate.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/2_1-temperature.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/2_2-temperature.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/2_3-temperature.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/2_4-temperature.yaml >> $LOG 2> $ERR
 
-python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/2_1-temperature.yaml >> $LOG 2> $ERR
-python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/2_2-temperature.yaml >> $LOG 2> $ERR
-python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/2_3-temperature.yaml >> $LOG 2> $ERR
-python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/2_4-temperature.yaml >> $LOG 2> $ERR
-
-python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/3_1-alpha_ce.yaml >> $LOG 2> $ERR
-python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/3_2-alpha_ce.yaml >> $LOG 2> $ERR
-python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/3_3-alpha_ce.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/3_1-alpha_ce.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/3_2-alpha_ce.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/3_3-alpha_ce.yaml >> $LOG 2> $ERR
 
 #! =================================================
 
