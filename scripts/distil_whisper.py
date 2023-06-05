@@ -225,6 +225,7 @@ def main(config_filepath: str):
                                                    processor=student_processor,
                                                    eval_dataset=dataset_dict["validation"],  # type: ignore
                                                    n_samples=config.n_samples_per_wandb_logging_step,
+                                                   teacher_model=teacher_model,  # should be None if word-level distillation
                                                    log_raw_str=config.log_raw_str))
     
     
