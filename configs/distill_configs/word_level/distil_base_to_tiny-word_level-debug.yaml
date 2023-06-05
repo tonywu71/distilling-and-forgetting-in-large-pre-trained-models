@@ -1,5 +1,4 @@
 experiment_name: distil_whisper_base_to_tiny-word_level-debug
-is_hpt: False
 lang_name: english
 task: transcribe
 method: word_level
