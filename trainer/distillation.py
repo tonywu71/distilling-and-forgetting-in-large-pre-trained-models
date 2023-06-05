@@ -266,8 +266,11 @@ class DistillationTrainer(Trainer):
         """
         Returns a tensor of shape (K,) containing the weights for the rank-based exponential decay.
         """
+        assert beta > 0, f"The `beta` parameter must be > 0. Got `{beta}`."
+        
         weights = torch.zeros(K).to(device)
         for k in range(1, K + 1):
             weights[k - 1] = np.exp(- beta * (k - 1))
         weights /= torch.sum(weights)
+        
         return weights

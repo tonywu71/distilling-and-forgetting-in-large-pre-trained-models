@@ -50,12 +50,11 @@ class DistilConfig:
     
     
     # ======== Knowledge distillation hyperparameters ========
-    # TODO: Set defaults for these hyperparameters after running some experiments.
     # General:
     ce_alpha: float = 0.5
     
     # `word_level`:
-    temperature: Optional[float] = None
+    temperature: float = 2
     
     # Sequence-level (`seq_level_k_best_uniform`, `seq_level_k_best_ranked`)
     distillation_num_beams: Optional[int] = None
@@ -101,7 +100,8 @@ class DistilConfig:
         if self.method == "seq_level_k_best_ranked":
             assert self.decay_beta is not None, \
                 "The `decay_beta` must be set for `seq_level_k_best_ranked` distillation."
-    
+            assert self.decay_beta > 0, \
+                "The `decay_beta` must be greater than 0 for `seq_level_k_best_ranked` distillation."
     
     @staticmethod
     def from_yaml(config_file: str) -> "DistilConfig":

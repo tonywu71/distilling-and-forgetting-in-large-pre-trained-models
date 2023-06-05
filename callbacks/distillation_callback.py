@@ -223,7 +223,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             
             # Print and log the average WER:
             print(f"Student WER: {avg_wer:.3f}%")
-            self._wandb.log({"eval/wer_student_%": avg_wer})
+            self._wandb.log({"validation/wer_student_%": avg_wer})
         
         return
     
