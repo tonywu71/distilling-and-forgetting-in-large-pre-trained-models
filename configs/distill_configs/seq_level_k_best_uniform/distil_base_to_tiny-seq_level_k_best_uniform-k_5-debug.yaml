@@ -1,15 +1,15 @@
-experiment_name: distil_whisper_base_to_tiny-seq_level_k_best_uniform-k_3-debug
+experiment_name: distil_whisper_base_to_tiny-seq_level_k_best_uniform-k_5-debug-lr
 lang_name: english
 task: transcribe
 method: seq_level_k_best_uniform
 teacher_model_name_or_path: openai/whisper-base
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distillation/whisper_base_to_tiny/librispeech_debug/seq_level_k_best_uniform/k_3
+model_dir: ./checkpoints/distillation/whisper_base_to_tiny/librispeech_debug/seq_level_k_best_uniform/k_5
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
-gradient_accumulation_steps: 2
+gradient_accumulation_steps: 4
 eval_accumulation_steps:
 gradient_checkpointing: True
 data_augmentation: False
@@ -21,13 +21,13 @@ warmup_steps: 5
 eval_steps: 5
 generation_num_beams: 5
 logging_steps: 5
-save_steps: 100
+save_steps: 10000  # do not save checkpoints
 save_total_limit: 2
 num_train_epochs: 30
 early_stopping_patience: -1
 
 ce_alpha: 0.5
-distillation_num_beams: 3
+distillation_num_beams: 5
 
 smart_load: True
 log_preds_to_wandb: True
