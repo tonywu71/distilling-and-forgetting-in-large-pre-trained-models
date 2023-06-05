@@ -22,7 +22,7 @@ generation_num_beams: 5
 logging_steps: 50
 save_steps: 100000  # do not save the model
 save_total_limit: 2
-num_train_epochs: 1
+num_train_epochs: 0.5
 early_stopping_patience: -1
 
 smart_load: True
