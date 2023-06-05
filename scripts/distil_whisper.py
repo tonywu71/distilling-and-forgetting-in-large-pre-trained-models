@@ -33,6 +33,7 @@ from trainer.distillation import DistillationTrainer, DistillationTrainingArgume
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
 from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from callbacks.distillation_callback import WandbDistillationCallback
+from hpt.hp_mapping import MAPPING_NAME_TO_HP_SPACE
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import distillation_sanity_check
@@ -200,7 +201,7 @@ def main(config_filepath: str):
         remove_unused_columns=False,  # keep the K-beam search features
         load_best_model_at_end=True,
         metric_for_best_model="wer" if config.method == "word_level" else "eval_loss",
-        greater_is_better=False,  # the lower the WER, the better (same for the loss)
+        greater_is_better=False,  # the lower the WER/loss, the better
         report_to="wandb"  # type: ignore
     )
     
@@ -246,7 +247,13 @@ def main(config_filepath: str):
     print("Starting distillation...")
         
     # Distil the model:
-    distillation_trainer.train()
+    if not config.is_hpt:
+        distillation_trainer.train()
+    else:
+        distillation_trainer.hyperparameter_search(n_trials=config.n_trials,
+                                                   direction="minimize",  # the lower the WER/loss, the better
+                                                   backend="optuna",
+                                                   hp_space=MAPPING_NAME_TO_HP_SPACE[config.hpt_name])
     
     print("Distillation finished.")
     

@@ -21,6 +21,7 @@ class DistilConfig:
       disable this feature.
     """
     experiment_name: str
+    is_hpt: bool = False
     lang_name: str
     task: str
     method: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
@@ -71,6 +72,11 @@ class DistilConfig:
     log_raw_str: bool = False
     
     
+    # ======== HPT ========
+    hpt_name: Optional[str] = None
+    n_trials: Optional[int] = None
+    
+    
     
     def __post_init__(self) -> None:
         """Post-initialization checks."""
@@ -102,6 +108,12 @@ class DistilConfig:
                 "The `decay_beta` must be set for `seq_level_k_best_ranked` distillation."
             assert self.decay_beta > 0, \
                 "The `decay_beta` must be greater than 0 for `seq_level_k_best_ranked` distillation."
+        
+        if self.is_hpt:
+            assert self.hpt_name is not None, "The `hpt_name` must be set for HPT experiments."
+            assert self.n_trials is not None, "The `n_trials` must be set for HPT experiments."
+            assert self.n_trials > 0, "The `n_trials` must be greater than 0 for HPT experiments."
+    
     
     @staticmethod
     def from_yaml(config_file: str) -> "DistilConfig":
