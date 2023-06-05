@@ -52,11 +52,16 @@ def main(config_filepath: str):
     # previous models. Note that `config` is modified in-place.
     fix_model_dir_conflicts(config)
     
+    # Prepare tags for W&B:
+    list_tags = [config.method]
+    if config.is_hpt:
+        list_tags.append("hpt")
     
     # -----------------------   W&B   -----------------------
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="distillation",
+               tags=list_tags,
                name=config.experiment_name,
                config=asdict(config))
     
