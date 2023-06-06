@@ -117,9 +117,10 @@ class DistillationTrainer(Trainer):
         """
         
         # Move inputs to device:
-        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels']
+        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels', 'teacher_sequences', 'teacher_sequences_scores']
          
         input_features = inputs["input_features"]  # (batch_size, 80, 3000)
+        labels = inputs["labels"]  # (batch_size, n_tokens_labels)
         teacher_sequences = inputs["teacher_sequences"]  # (batch_size, num_beams, n_tokens)
         teacher_sequences_scores = inputs["teacher_sequences_scores"]  # (batch_size, num_beams)
         
@@ -150,20 +151,25 @@ class DistillationTrainer(Trainer):
         teacher_sequences = teacher_sequences.reshape(batch_size * distillation_num_beams, n_tokens)  # (batch_size * distillation_num_beams, n_tokens)
         teacher_sequences_attention_mask = teacher_sequences_attention_mask.reshape(batch_size * distillation_num_beams, n_tokens)  # (batch_size * distillation_num_beams, n_tokens)
         
+        # Get the cross-entropy loss from student output wrt to the labels:
+        # Notes: - The teacher model is not used in the cross-entropy loss computation.
+        #        - We don't have to handle padding tokens as the cross-entropy loss will ignore them (see `preprocess_tokenized_labels` in `DataCollatorSpeechSeq2SeqWithPadding`).
+        #        - We have to get the CE loss now because we will need to repeat the input features for the number of beams.
+        student_output_wrt_label: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
+                                                                          decoder_input_ids=labels[:, :-1],
+                                                                          decoder_attention_mask=labels[:, :-1])
+        loss_ce = student_output_wrt_label.loss  # mean cross-entropy -> (1,)
+        
         # Repeat input features for the number of beams. The resulting tensor will have shape (batch_size * distillation_num_beams, dim_features).
         input_features = input_features.repeat_interleave(distillation_num_beams, dim=0)  # (batch_size * distillation_num_beams, 80, 3000)
         
         # Forward pass through student:
         # Note that we excluded the EOT token "<|endoftext|>" as generation is supposed to stop here.
-        student_output: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                decoder_input_ids=teacher_sequences[:, :-1],
-                                                                decoder_attention_mask=teacher_sequences_attention_mask[:, :-1])
+        student_output_wrt_teacher: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
+                                                                            decoder_input_ids=teacher_sequences[:, :-1],
+                                                                            decoder_attention_mask=teacher_sequences_attention_mask[:, :-1])
         
-        
-        # Extract cross-entropy loss and logits from student output:
-        # TODO: Get CE wrt to label and not with respect to teacher label !!!
-        # loss_ce = student_output.loss  # mean cross-entropy -> (1,)
-        student_logits = student_output.logits  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
+        student_logits = student_output_wrt_teacher.logits  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         vocab_size = student_logits.shape[-1]
         
         # Temporarily reshape logits to be able to properly use softmax along the last dimension:
@@ -180,8 +186,20 @@ class DistillationTrainer(Trainer):
         #       a sufficient method to ignore the padded values is to set them to 0.
         
         # Repeat attention_mask for the n_vocab dimension:
-        student_log_prob_all_mask = teacher_sequences_attention_mask[:, :-1, None].expand(-1, -1, vocab_size)
-        output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)
+        student_log_prob_all_mask = teacher_sequences_attention_mask[:, :-1, None].expand(-1, -1, vocab_size)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
+        output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
+        
+        # # TODO: Decode a few rows from 'output_log_prob_all_masked' using greedy decoding:
+        # max_indices = torch.argmax(output_log_prob_all_masked, dim=-1)  # (batch_size * distillation_num_beams, n_tokens-1)
+        # max_idx = max_indices[0, :]  # (n_tokens-1,)
+        # from transformers import WhisperProcessor
+        # processor = WhisperProcessor.from_pretrained(
+        #     "openai/whisper-tiny",
+        #     language="english",
+        #     task="transcribe",
+        # )
+        # res = processor.tokenizer.batch_decode(max_idx, skip_special_tokens=True, normalize=True)  # type: ignore
+        # print(res)
         
         # Get log-probabilities for each generation step:
         log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences[:, 1:, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens-1, 1)
@@ -209,11 +227,10 @@ class DistillationTrainer(Trainer):
         # also take the mean of the sequence log-probabilities to be consistent:
         loss_kd = torch.mean(loss_kd,)  # (1,)
         
-        # TODO: Take the cross-entropy into account
-        # # Return weighted student loss
-        # loss = self.args.ce_alpha * loss_ce + (1. - self.args.ce_alpha) * loss_kd
+        # Return weighted student loss
+        loss = self.args.ce_alpha * loss_ce + (1. - self.args.ce_alpha) * loss_kd
         
-        return loss_kd, student_output
+        return loss, student_output_wrt_teacher
     
     
     def _compute_loss_seq_level_k_best_uniform(self,
