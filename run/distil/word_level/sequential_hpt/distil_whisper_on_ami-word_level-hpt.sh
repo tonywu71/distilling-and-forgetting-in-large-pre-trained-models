@@ -75,6 +75,8 @@ echo "python `which python`": >> $LOG
 
 #! ================     CURRENT     ================
 
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/4_1-final.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/word_level/sequential_hpt/4_2-final.yaml >> $LOG 2> $ERR
 
 #! =================================================
 
