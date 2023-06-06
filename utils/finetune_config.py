@@ -31,7 +31,6 @@ class FinetuneConfig:
     gradient_checkpointing: bool  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-checkpointing
     data_augmentation: bool
     dataset_name: str
-    force_reprocess_dataset: bool
     optim: str
     learning_rate: float
     warmup_steps: int
@@ -45,6 +44,7 @@ class FinetuneConfig:
     
     # ======== Other ========
     smart_load: bool = True
+    force_reprocess_dataset: bool = False
     log_preds_to_wandb: bool = True
     n_samples_per_wandb_logging_step: int = 8
     log_raw_str: bool = False
