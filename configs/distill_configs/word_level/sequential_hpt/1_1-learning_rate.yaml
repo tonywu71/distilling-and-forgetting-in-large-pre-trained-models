@@ -5,7 +5,7 @@ method: word_level
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/word_level/hpt-1_1
+model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/word_level-hpt/hpt-1_1
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 16
