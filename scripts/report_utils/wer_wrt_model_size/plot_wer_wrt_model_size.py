@@ -31,7 +31,7 @@ sns.set_theme(context="paper", style="ticks")
 def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WERs."),
          regression: bool=typer.Option(False, "--regression", "-r", help="Whether to plot a regression line."),
          log: bool=typer.Option(False, "--log", "-l", help="Whether to plot the x-axis on a log scale."),
-         plot_ideal: bool=typer.Option(False, "--plot-ideal", "-i", help="Whether to plot the ideal student model."),
+         plot_expected: bool=typer.Option(False, "--plot-expected", "-i", help="Whether to plot the expected distilled model."),
          savename: str=typer.Option(None, "--savename", "-f", help="Filename of the saved plot (without the suffix).")):
     """
     `datapath` must be the filepath of a manually created CSV file containing the WER and the model size for each model.
@@ -55,16 +55,16 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
     
     markers = {model: "o" for model in df["Model"].unique()}
     
-    if plot_ideal:
-        size_ideal = df["Size (M parameters)"].min()
-        wer_ideal = df["WER (%)"].min()
-        row_ideal = pd.DataFrame.from_dict({
-            "Model": ["Ideal distilled model"],
-            "WER (%)": [wer_ideal],
-            "Size (M parameters)": [size_ideal]
+    if plot_expected:
+        size_expected = df["Size (M parameters)"].min()
+        wer_expected = df["WER (%)"].min()
+        row_expected = pd.DataFrame.from_dict({
+            "Model": ["Expected distilled model"],
+            "WER (%)": [wer_expected],
+            "Size (M parameters)": [size_expected]
         })
-        df = pd.concat([df, row_ideal])  # type: ignore
-        markers["Ideal distilled model"] = "^"
+        df = pd.concat([df, row_expected])  # type: ignore
+        markers["Expected distilled model"] = "^"
     
     if regression:
         sns.regplot(data=df, x="Size (M parameters)", y="WER (%)",
@@ -79,9 +79,9 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
         plt.xlabel("Size (M parameters) [log]")
     
     
-    if plot_ideal:
-        plt.axvline(x=size_ideal, color="black", linestyle="dashed")
-        plt.axhline(y=wer_ideal, color="black", linestyle="dashed")
+    if plot_expected:
+        plt.axvline(x=size_expected, color="black", linestyle="dashed")
+        plt.axhline(y=wer_expected, color="black", linestyle="dashed")
     
     
     if "distilled" in df["Model"].unique():
