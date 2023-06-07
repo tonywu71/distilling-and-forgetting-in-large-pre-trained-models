@@ -54,6 +54,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
+               tags=["ami_test"],
                name=f"eval_librispeech_clean_test-{extract_exp_name_from_model_path(pretrained_model_name_or_path)}",
                config=config)
     

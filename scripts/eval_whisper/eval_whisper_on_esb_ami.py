@@ -59,6 +59,7 @@ def main(pretrained_model_name_or_path: str,
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
+               tags=["esb"],
                name=f"eval_esb_ami-{extract_exp_name_from_model_path(pretrained_model_name_or_path)}",
                config=config)
     
