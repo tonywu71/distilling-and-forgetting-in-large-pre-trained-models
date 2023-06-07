@@ -10,7 +10,7 @@ freeze_encoder: True
 freeze_decoder: False
 batch_size: 16
 gradient_accumulation_steps: 4
-eval_accumulation_steps: 40
+eval_accumulation_steps: 20
 gradient_checkpointing: True
 data_augmentation: False
 dataset_name: ami_100h
@@ -23,13 +23,14 @@ generation_num_beams: 5
 logging_steps: 100
 save_steps: 100
 save_total_limit:
-num_train_epochs: 2
+num_train_epochs: 1
 early_stopping_patience: 3
 
 ce_alpha: 0.9
 temperature: 5.0
 
 smart_load: True
+eval_first_step: True
 log_preds_to_wandb: True
 log_raw_str: True
 n_samples_per_wandb_logging_step: 16

@@ -67,6 +67,7 @@ class DistilConfig:
     smart_load: bool = True
     force_reprocess_dataset: bool = False
     force_reprocess_k_best: bool = False
+    eval_first_step: bool = False
     log_preds_to_wandb: bool = True
     n_samples_per_wandb_logging_step: int = 8
     log_raw_str: bool = False
@@ -103,6 +104,7 @@ class DistilConfig:
                 "The `decay_beta` must be set for `seq_level_k_best_ranked` distillation."
             assert self.decay_beta > 0, \
                 "The `decay_beta` must be greater than 0 for `seq_level_k_best_ranked` distillation."
+    
     
     @staticmethod
     def from_yaml(config_file: str) -> "DistilConfig":
