@@ -1,11 +1,11 @@
-experiment_name: distil_whisper_medium_to_tiny-ami_10h-word_level
+experiment_name: distil_whisper_medium_to_tiny-ami_10h-word_level-temperature_100
 lang_name: english
 task: transcribe
 method: word_level
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/word_level
+model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/word_level-temperature_100
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 16
@@ -27,7 +27,7 @@ num_train_epochs: 3
 early_stopping_patience: 3
 
 ce_alpha: 0.9
-temperature: 5.0
+temperature: 100
 
 smart_load: True
 log_preds_to_wandb: True
