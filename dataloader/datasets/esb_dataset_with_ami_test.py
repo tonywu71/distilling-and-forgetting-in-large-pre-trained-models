@@ -83,7 +83,7 @@ class ESBDatasetWithAMITest(BaseDatasetGroup):
                                                         split="test",
                                                         streaming=self.streaming,
                                                         cache_dir=self.cache_dir_ami))
-                        self.str2dataset["ami"] =  concatenate_datasets(list_ds)
+                        self.str2dataset["ami"] = concatenate_datasets(list_ds)
                         
                     else:
                         # For all other datasets, load the validation splits:
