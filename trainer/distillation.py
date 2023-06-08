@@ -165,6 +165,7 @@ class DistillationTrainer(Trainer):
         
         # Forward pass through student:
         # Note that we excluded the EOT token "<|endoftext|>" as generation is supposed to stop here.
+        import pdb; pdb.set_trace()
         student_output_wrt_teacher: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
                                                                             decoder_input_ids=teacher_sequences[:, :-1],
                                                                             decoder_attention_mask=teacher_sequences_attention_mask[:, :-1])
@@ -181,6 +182,8 @@ class DistillationTrainer(Trainer):
         # Reshape back to original shape:
         student_log_prob_all = student_log_prob_all.reshape(batch_size * distillation_num_beams, n_tokens - 1, -1)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         
+        # Note: The first `K = distillation_num_beams` rows of output_log_prob_all_masked correspond to the same example but with different beams.
+        
         # Set the values associated to the pad tokens to 0:
         # Note: Because we will sum the log-probabilities to make use of the product rule in the log space,
         #       a sufficient method to ignore the padded values is to set them to 0.
@@ -189,17 +192,19 @@ class DistillationTrainer(Trainer):
         student_log_prob_all_mask = teacher_sequences_attention_mask[:, :-1, None].expand(-1, -1, vocab_size)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         
-        # import pdb; pdb.set_trace()
+        # ========== DEBUG ==========
         # # TODO: Decode a few rows from 'output_log_prob_all_masked' using greedy decoding:
+        # # Check student preds
+        # import pdb; pdb.set_trace()
         # max_indices = torch.argmax(output_log_prob_all_masked, dim=-1)  # (batch_size * distillation_num_beams, n_tokens-1)
-        # res = self.student_tokenizer.batch_decode(max_indices, skip_special_tokens=True, normalize=True)  # type: ignore
-        # print(res)
+        # res_student = self.student_tokenizer.batch_decode(max_indices, skip_special_tokens=True, normalize=True)  # type: ignore
         
         # # Check teacher preds
         # res_teacher = self.student_tokenizer.batch_decode(teacher_sequences, skip_special_tokens=True, normalize=True)
         
         # # Check labels
         # res_true = self.student_tokenizer.batch_decode(labels, skip_special_tokens=True, normalize=True)
+        # ========================
         
         # Get log-probabilities for each generation step:
         log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences[:, 1:, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens-1, 1)
@@ -254,13 +259,16 @@ class DistillationTrainer(Trainer):
     def get_attention_mask_from_tensor(self, tensor: torch.Tensor) -> torch.Tensor:
         """
         Returns the attention mask from a tensor of shape (batch_size, n_tokens).
+        Convention:
+        - 1 for tokens that are not masked
+        - 0 for tokens that are masked.
         
         Example:
         - Input: tensor([[50257.,  50362.,     76.,    1694.,    627.,   50256.],
                          [50257.,  50362.,  13099.,   50256.,  50256.,   50256.]])
         
-        - Output: tensor([[1, 1, 1, 1, 1, 1],
-                          [1, 1, 1, 1, 0, 0]])
+        - Output: tensor([[0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 1, 1]])
         
         Note: The padding token is the same as the end-of-text (EOT) token. Therefore,
               we should turn off the attention for all the EOT tokens at the exception
@@ -272,9 +280,9 @@ class DistillationTrainer(Trainer):
         
         pad_token_id = self.student_tokenizer.pad_token_id
         indices = (tensor == pad_token_id).long().argmax(dim=-1)
-        attention_mask = torch.zeros_like(tensor, dtype=torch.long)
+        attention_mask = torch.ones_like(tensor, dtype=torch.long)
         for idx, row in zip(indices, attention_mask):
-            row[idx+1:] = 1  # ignore the first EOT token of each row
+            row[idx+1:] = 0  # ignore the first EOT token of each row
         return attention_mask
     
     
