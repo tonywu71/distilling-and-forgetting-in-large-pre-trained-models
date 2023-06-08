@@ -5,7 +5,7 @@ import torch
 from transformers import WhisperProcessor, EvalPrediction
 import evaluate
 
-from utils.constants import PADDING_IDX
+from utils.constants import LOSS_MASK_IDX
 
 
 def compute_wer_fct(pred: EvalPrediction, processor: WhisperProcessor, normalize: bool=True) -> Dict[str, float]:
@@ -27,7 +27,7 @@ def compute_wer_fct(pred: EvalPrediction, processor: WhisperProcessor, normalize
 
     # Replace the padding index with the pad token id to undo the step we applied
     # in the data collator to ignore padded tokens correctly in the loss:
-    label_ids[label_ids==PADDING_IDX] = processor.tokenizer.pad_token_id  # type: ignore
+    label_ids[label_ids==LOSS_MASK_IDX] = processor.tokenizer.pad_token_id  # type: ignore
     
     # Decode the predictions:
     pred_str = processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=True, normalize=normalize)  # type: ignore
@@ -51,13 +51,22 @@ def compute_wer_fct_distil(pred: EvalPrediction, processor: WhisperProcessor, no
     
     wer_metric = evaluate.load("wer")
     
+    # `pred` has the following attributes:
+    # - predictions: Predictions of the model.
+    # - label_ids: Targets to be matched.
+    
+    # For sequence`pred.predictions` is a 2-tuple:
+    # - 1st element: the predictions of the student model -> (batch_size, seq_len, vocab_size) = (73, 92, 51865)
+    # - 2nd element: the embeddings generated after the 2D convolution layers -> (73, 1500, 384)
+    #                See `model.model.encoder.embed_positions (embed_positions): Embedding(1500, 384)
+    
     pred_student = pred.predictions[0]
     pred_ids = torch.argmax(torch.Tensor(pred_student), dim=-1)  # type: ignore
     label_ids = pred.label_ids
 
     # Replace the padding index with the pad token id to undo the step we applied
     # in the data collator to ignore padded tokens correctly in the loss:
-    label_ids[label_ids==PADDING_IDX] = processor.tokenizer.pad_token_id  # type: ignore
+    label_ids[label_ids==LOSS_MASK_IDX] = processor.tokenizer.pad_token_id  # type: ignore
     
     # Decode the predictions:
     pred_str = processor.tokenizer.batch_decode(pred_ids, skip_special_tokens=True, normalize=normalize)  # type: ignore

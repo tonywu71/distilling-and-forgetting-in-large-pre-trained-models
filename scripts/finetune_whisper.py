@@ -187,7 +187,8 @@ def main(config_filepath: str):
     # Define callbacks:
     callbacks: List[TrainerCallback] = []
     
-    callbacks.append(EvalFirstStepCallback())
+    if config.eval_first_step:
+        callbacks.append(EvalFirstStepCallback())
     
     if config.early_stopping_patience != -1:
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore

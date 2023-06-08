@@ -3,8 +3,6 @@ from typing import Dict, Optional
 
 from collections import defaultdict
 
-import pandas as pd
-
 import torch
 from torch import Tensor
 
@@ -20,7 +18,6 @@ import evaluate
 
 import wandb
 
-from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from utils.finetune_config import FinetuneConfig
 from utils.distil_config import DistilConfig
 from utils.constants import DEFAULT_LABEL_STR_COL
@@ -51,9 +48,7 @@ class BaseWandbTrainingCallback(WandbCallback, ABC):
         self.eval_dataset = eval_dataset
         self.eval_dataset = self.eval_dataset.filter(lambda x: x.strip(), input_columns=[DEFAULT_LABEL_STR_COL])
         self.eval_dataset.set_format("torch")
-        
-        self.data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor)
-        
+                
         self.n_samples = n_samples
         self.wer_metric = evaluate.load("wer")
         

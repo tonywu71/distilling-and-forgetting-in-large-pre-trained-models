@@ -34,6 +34,7 @@ def initialize_env():
     
     # Other:
     os.environ["PREPROCESSED_DATASETS_DIR"] = env_config.PREPROCESSED_DATASETS_DIR
+    os.environ["K_BEAM_SEARCH_CACHE_DIR"] = env_config.K_BEAM_SEARCH_CACHE_DIR
     
     return
 
@@ -51,7 +52,8 @@ def print_envs():
         "CACHE_DIR_MLS",
         "WANDB_PROJECT",
         "WANDB_CACHE_DIR",
-        "PREPROCESSED_DATASETS_DIR"
+        "PREPROCESSED_DATASETS_DIR",
+        "K_BEAM_SEARCH_CACHE_DIR"
     ]
     
     for env in list_envs:

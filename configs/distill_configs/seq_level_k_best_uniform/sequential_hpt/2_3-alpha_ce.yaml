@@ -1,0 +1,39 @@
+experiment_name: seq_level_k_best_uniform_sequential_hpt-1_1
+lang_name: english
+task: transcribe
+method: seq_level_k_best_uniform
+teacher_model_name_or_path: openai/whisper-medium
+student_model_name_or_path: openai/whisper-tiny
+is_tokenizer_multilingual: True
+model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/seq_level_k_best_uniform-hpt/hpt-2_3
+freeze_encoder: True
+freeze_decoder: False
+batch_size: 32
+gradient_accumulation_steps: 2
+eval_accumulation_steps:
+gradient_checkpointing: True
+data_augmentation: False
+dataset_name: ami_10h
+optim: adamw_torch
+warmup_steps: 25
+eval_steps: 50
+generation_num_beams: 5
+logging_steps: 25
+save_steps: 50
+save_total_limit: 2
+num_train_epochs: 0.5
+early_stopping_patience: -1
+
+ce_alpha: 0.5
+distillation_num_beams: 3
+
+smart_load: True
+log_preds_to_wandb: True
+log_raw_str: True
+n_samples_per_wandb_logging_step: 32
+
+
+# ======  HPT  ======
+is_hpt: True
+learning_rate:  # optimized
+alpha_ce: 0.6  # current

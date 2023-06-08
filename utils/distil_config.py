@@ -4,7 +4,7 @@ from typing import Literal, Optional
 import yaml
 
 
-AVAILABLE_KD_METHODS = ["word_level", "seq_level_1_best", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+AVAILABLE_KD_METHODS = ["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
 
 
 @dataclass
@@ -23,7 +23,7 @@ class DistilConfig:
     experiment_name: str
     lang_name: str
     task: str
-    method: Literal["word_level", "seq_level_1_best", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+    method: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
     teacher_model_name_or_path: str
     student_model_name_or_path: str
     is_tokenizer_multilingual: bool
@@ -36,7 +36,6 @@ class DistilConfig:
     gradient_checkpointing: bool  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-checkpointing
     data_augmentation: bool
     dataset_name: str
-    force_reprocess_dataset: bool
     optim: str
     learning_rate: float
     warmup_steps: int
@@ -50,14 +49,13 @@ class DistilConfig:
     
     
     # ======== Knowledge distillation hyperparameters ========
-    # TODO: Set defaults for these hyperparameters after running some experiments.
     # General:
     ce_alpha: float = 0.5
     
     # `word_level`:
-    temperature: Optional[float] = None
+    temperature: float = 2
     
-    # Sequence-level (`seq_level_1_best`, `seq_level_k_best_uniform`, `seq_level_k_best_ranked`)
+    # Sequence-level (`seq_level_k_best_uniform`, `seq_level_k_best_ranked`)
     distillation_num_beams: Optional[int] = None
     
     # `seq_level_k_best_ranked`:
@@ -65,7 +63,11 @@ class DistilConfig:
     
     
     # ======== Other ========
+    is_hpt: bool = False
     smart_load: bool = True
+    force_reprocess_dataset: bool = False
+    force_reprocess_k_best: bool = False
+    eval_first_step: bool = True
     log_preds_to_wandb: bool = True
     n_samples_per_wandb_logging_step: int = 8
     log_raw_str: bool = False
@@ -90,7 +92,7 @@ class DistilConfig:
         if self.method == "word_level":
             assert self.temperature is not None, \
                 "The `temperature` must be set for `word_level` distillation."
-        if self.method in ["seq_level_1_best", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
+        if self.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
             assert self.distillation_num_beams is not None, \
                 "The `distillation_num_beams` must be set for sequence-level distillation."
         if self.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
@@ -100,6 +102,8 @@ class DistilConfig:
         if self.method == "seq_level_k_best_ranked":
             assert self.decay_beta is not None, \
                 "The `decay_beta` must be set for `seq_level_k_best_ranked` distillation."
+            assert self.decay_beta > 0, \
+                "The `decay_beta` must be greater than 0 for `seq_level_k_best_ranked` distillation."
     
     
     @staticmethod

@@ -28,6 +28,7 @@ class EnvConfig:
     
     # ------ Other ------
     PREPROCESSED_DATASETS_DIR: str
+    K_BEAM_SEARCH_CACHE_DIR: str
 
 
 def load_yaml_env_config(config_file: str) -> EnvConfig:

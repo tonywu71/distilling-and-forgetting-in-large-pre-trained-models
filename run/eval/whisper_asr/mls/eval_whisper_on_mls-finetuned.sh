@@ -29,7 +29,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change:
-#SBATCH -p pascal
+#SBATCH -p ampere
 #! ############################################################
 
 
@@ -52,7 +52,7 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 # python scripts/eval_whisper/eval_whisper_on_mls.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 >> $LOG 2> $ERR
-python scripts/eval_whisper/eval_whisper_on_mls.py checkpoints/distillation/whisper_medium_to_tiny/ami_10h/seq_level_1_best-k_1/checkpoint-50 >> $LOG 2> $ERR
+python scripts/eval_whisper/eval_whisper_on_mls.py checkpoints/distillation/whisper_medium_to_tiny/ami_10h/word_level/checkpoint-250 >> $LOG 2> $ERR
 
 #! #############################################
 

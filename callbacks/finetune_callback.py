@@ -11,10 +11,11 @@ from transformers import (PreTrainedModel,
                           TrainerControl)
 from datasets import Dataset
 
+from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from callbacks.base_training_callback import BaseWandbTrainingCallback
 from utils.finetune_config import FinetuneConfig
 from utils.distil_config import DistilConfig
-from utils.constants import GEN_MAX_LENGTH, PADDING_IDX, DEFAULT_LABEL_TOKENIZED_COL
+from utils.constants import GEN_MAX_LENGTH, LOSS_MASK_IDX, DEFAULT_LABEL_TOKENIZED_COL
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -32,8 +33,11 @@ class WandbFinetuneCallback(BaseWandbTrainingCallback):
                          eval_dataset,
                          n_samples,
                          log_raw_str)
-        self.table_name = "sample_predictions-finetune"
+        
         assert isinstance(self.config, FinetuneConfig), "config must be `FinetuneConfig`"
+        
+        self.table_name = "sample_predictions-finetune"
+        self.data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor)
     
     
     def log_records_to_wandb(self) -> None:
@@ -82,7 +86,7 @@ class WandbFinetuneCallback(BaseWandbTrainingCallback):
             
             # Replace the padding index with the pad token id to undo the step we applied
             # in the data collator to ignore padded tokens correctly during decoding:
-            label_ids[label_ids==PADDING_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
+            label_ids[label_ids==LOSS_MASK_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
             
             # Decode both the predictions and the labels:
             self.log_seq_to_records(label_ids, key="label", is_raw=False)

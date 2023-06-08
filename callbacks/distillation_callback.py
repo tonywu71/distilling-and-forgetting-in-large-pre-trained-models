@@ -1,8 +1,9 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import pandas as pd
 
 import torch
+from torch.utils.data import DataLoader
 
 from transformers import (PreTrainedModel,
                           WhisperProcessor,
@@ -10,11 +11,12 @@ from transformers import (PreTrainedModel,
                           TrainerState,
                           TrainerControl)
 from datasets import Dataset
+import evaluate
 
+from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from callbacks.base_training_callback import BaseWandbTrainingCallback
-from utils.finetune_config import FinetuneConfig
 from utils.distil_config import DistilConfig
-from utils.constants import GEN_MAX_LENGTH, PADDING_IDX, DEFAULT_LABEL_TOKENIZED_COL
+from utils.constants import GEN_MAX_LENGTH, LOSS_MASK_IDX, DEFAULT_LABEL_TOKENIZED_COL
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -22,20 +24,38 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class WandbDistillationCallback(BaseWandbTrainingCallback):
     def __init__(self,
-                 config: FinetuneConfig | DistilConfig,
-                 teacher_model: PreTrainedModel,
+                 config: DistilConfig,
                  processor: WhisperProcessor,
                  eval_dataset: Dataset,
                  n_samples: int,
-                 log_raw_str: bool=False):
+                 teacher_model: Optional[PreTrainedModel] = None,
+                 log_raw_str: bool = False):
         super().__init__(config,
                          processor,
                          eval_dataset,
                          n_samples,
                          log_raw_str)
-        self.teacher_model = teacher_model
-        self.table_name = "sample_predictions-distill"
+        
         assert isinstance(self.config, DistilConfig), "config must be `DistilConfig`"
+        
+        self.table_name = "sample_predictions-distill"
+        self.data_collator_no_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
+                                                                            add_k_beam_features=False)
+
+        self.wer_metric = evaluate.load("wer")
+        
+        self.is_seq_level = (self.config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"])
+        
+        if self.is_seq_level:  # If sequence-level distillation...
+            self.data_collator_with_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
+                                                                                  add_k_beam_features=True)
+            self.eval_dataloader = DataLoader(self.eval_dataset,
+                                              batch_size=self.config.batch_size,
+                                              shuffle=False,
+                                              collate_fn=self.data_collator_no_k_beam)
+        else:  # If word-level distillation...
+            assert teacher_model is not None, "`teacher_model` must be provided for word-level distillation"
+            self.teacher_model = teacher_model
     
     
     def log_records_to_wandb(self) -> None:
@@ -62,7 +82,18 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         
         # Call `BaseWandbTrainingCallback`'s parent (`WandbCallback`) method `on_log` for basic logging:
         super(BaseWandbTrainingCallback, self).on_log(args, state, control, model, logs, **kwargs)  # type: ignore
-                
+        
+        # Log the predictions of the student model:
+        self.predict_and_log_preds_to_wandb(model, state)
+        
+        if self.is_seq_level:
+            # Compute the WER of the student model:
+            self.compute_wer_sequence_level_and_log(args, model, state)
+        
+        return
+
+    
+    def predict_and_log_preds_to_wandb(self, model: PreTrainedModel, state: TrainerState) -> None:
         # Iterate through the first n samples:
         for idx, data in enumerate(self.eval_dataset):
             if idx >= self.n_samples:
@@ -71,24 +102,8 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             # Log the original audio (should be done before call to DataCollator):
             self.log_audio_to_records(data)
             
-            # Collate the data into batches of size 1:
-            data = self.data_collator([data])  # type: ignore
-            
-            # Note that we need to move the data to the device manually (which is not the case with Trainer):
-            input_features = data["input_features"].to(device)
-            label_ids = data[DEFAULT_LABEL_TOKENIZED_COL].to(device)
-            
-            # Generate the predictions:
-            pred_ids_student = model.generate(input_features,
-                                              max_length=GEN_MAX_LENGTH,
-                                              num_beams=self.config.generation_num_beams)  # type: ignore
-            pred_ids_teacher = self.teacher_model.generate(input_features,
-                                                           max_length=GEN_MAX_LENGTH,
-                                                           num_beams=self.config.generation_num_beams)  # type: ignore
-            
-            # Replace the padding index with the pad token id to undo the step we applied
-            # in the data collator to ignore padded tokens correctly during decoding:
-            label_ids[label_ids==PADDING_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
+            # Get labels and predictions:
+            label_ids, pred_ids_teacher, pred_ids_student = self.get_labels_and_preds(student_model=model, data=data)
             
             # Decode both the predictions and the labels:
             self.log_seq_to_records(label_ids, key="label", is_raw=False)
@@ -121,5 +136,94 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         
         # Log the records to wandb:
         self.log_records_to_wandb()
+        return
+
+
+    def get_labels_and_preds(self, student_model: PreTrainedModel, data) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Returns the labels and the teacher and student predictions.
+        Automatically handles both word-level and sequence-level distillation.
+        """
+        if self.is_seq_level:  # If sequence-level distillation...
+            # Collate the data into batches of size 1:
+            data = self.data_collator_with_k_beam([data])  # type: ignore
+            
+            # Note that we need to move the data to the device manually (which is not the case with Trainer):
+            input_features = data["input_features"].to(device)
+            label_ids = data[DEFAULT_LABEL_TOKENIZED_COL].to(device)
+            
+            # Replace the padding index with the pad token id to undo the step we applied
+            # in the data collator to ignore padded tokens correctly during decoding:
+            label_ids[label_ids==LOSS_MASK_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
+            
+            # Generate the predictions:
+            pred_ids_teacher = data["teacher_sequences"][0:1, 0, :]  # get 1st element of the size-1 batch and 1st beam
+            pred_ids_student = student_model.generate(input_features,
+                                                      max_length=GEN_MAX_LENGTH,
+                                                      num_beams=self.config.generation_num_beams)  # type: ignore
+        
+        else:  # If word-level distillation...
+            # Collate the data into batches of size 1:
+            # Note: `data_collator_no_k_beam` because we haven't loaded the dataset with k-beam
+            data = self.data_collator_no_k_beam([data])  # type: ignore
+            
+            # Note that we need to move the data to the device manually (which is not the case with Trainer):
+            input_features = data["input_features"].to(device)
+            label_ids = data[DEFAULT_LABEL_TOKENIZED_COL].to(device)
+            
+            # Replace the padding index with the pad token id to undo the step we applied
+            # in the data collator to ignore padded tokens correctly during decoding:
+            label_ids[label_ids==LOSS_MASK_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
+            
+            # Generate the predictions:
+            pred_ids_student = student_model.generate(input_features,
+                                                      max_length=GEN_MAX_LENGTH,
+                                                      num_beams=self.config.generation_num_beams)  # type: ignore
+            pred_ids_teacher = self.teacher_model.generate(input_features,
+                                                           max_length=GEN_MAX_LENGTH,
+                                                           num_beams=self.config.generation_num_beams)  # type: ignore
+        
+        return label_ids, pred_ids_teacher, pred_ids_student
+    
+    
+    def compute_wer_sequence_level_and_log(self, args: TrainingArguments, model: PreTrainedModel, state: TrainerState) -> None:
+        total_wer = 0
+        count = 0
+        
+        # Print and log the WER of the student model every `eval_steps`:
+        if state.global_step % args.eval_steps == 0:
+            for batch in self.eval_dataloader:
+                # Note that we need to move the data to the device manually (which is not the case with Trainer):
+                input_features = batch["input_features"].to(device)
+                label_ids = batch[DEFAULT_LABEL_TOKENIZED_COL].to(device)
+                
+                # Generate the predictions:
+                pred_ids_student = model.generate(input_features,
+                                                    max_length=GEN_MAX_LENGTH,
+                                                    num_beams=self.config.generation_num_beams)  # type: ignore
+                
+                # Decode the predictions:
+                pred_str_student = self.processor.tokenizer.batch_decode(pred_ids_student, skip_special_tokens=True, normalize=True)  # type: ignore
+                
+                # Replace the padding index with the pad token id to undo the step we applied
+                # in the data collator to ignore padded tokens correctly in the loss:
+                label_ids[label_ids==LOSS_MASK_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
+                
+                # Decode the labels:
+                label_str = self.processor.tokenizer.batch_decode(label_ids, skip_special_tokens=True, normalize=True)  # type: ignore
+
+                # Compute the WER in percent:
+                # for current_label_str, current_pred_str in zip(label_str, pred_str_student):
+                    # total_wer += 100 * self.wer_metric.compute(references=current_label_str, predictions=current_pred_str)  # type: ignore
+                total_wer += 100 * self.wer_metric.compute(references=label_str, predictions=pred_str_student)  # type: ignore
+                count += 1
+            
+            # Compute the average WER:
+            avg_wer = total_wer / count
+            
+            # Print and log the average WER:
+            print(f"Student WER: {avg_wer:.3f}%")
+            self._wandb.log({"validation/wer_student_%": avg_wer})
         
         return
+    

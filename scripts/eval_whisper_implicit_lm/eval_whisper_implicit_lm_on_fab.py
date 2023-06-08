@@ -18,7 +18,7 @@ import wandb
 
 from dataloader.datasets.fab_dataset import FABDataset
 from evaluation.eval_whisper_implicit_lm_on_dataset import eval_whisper_implicit_lm_on_dataset
-from utils.file_io import extract_experiment_name, extract_savepath
+from utils.file_io import extract_exp_name_from_model_path, extract_output_savepath_from_model_path
 
 
 
@@ -51,7 +51,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="evaluation",
-               name=f"eval_fab-{extract_experiment_name(pretrained_model_name_or_path)}-implicit_lm",
+               name=f"eval_fab-{extract_exp_name_from_model_path(pretrained_model_name_or_path)}-implicit_lm",
                config=config)
     
     
@@ -83,7 +83,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     
     # Save results:
     if savepath is None:
-        savepath = extract_savepath(pretrained_model_name_or_path) + "-implicit_lm-perplexity" +  "-fab.csv"
+        savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + "-implicit_lm-perplexity" +  "-fab.csv"
     
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     results.to_csv(f"{savepath}")
