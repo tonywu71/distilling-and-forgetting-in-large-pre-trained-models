@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_whisper-debug
+#SBATCH -J distil_whisper-word_level-debug
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -29,7 +29,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change:
-#SBATCH -p pascal
+#SBATCH -p ampere
 #! ############################################################
 
 

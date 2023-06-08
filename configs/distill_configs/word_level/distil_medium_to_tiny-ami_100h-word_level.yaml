@@ -10,7 +10,7 @@ freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
 gradient_accumulation_steps: 2
-eval_accumulation_steps: 10
+eval_accumulation_steps: 5
 gradient_checkpointing: True
 data_augmentation: False
 dataset_name: ami_100h

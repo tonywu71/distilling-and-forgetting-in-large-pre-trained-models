@@ -29,7 +29,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change:
-#SBATCH -p pascal
+#SBATCH -p ampere
 #! ############################################################
 
 
@@ -51,7 +51,8 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper.py configs/distill_configs/seq_level_k_best_ranked/distil_base_to_tiny-seq_level_k_best_ranked-debug.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/seq_level_k_best_ranked/distil_base_to_tiny-seq_level_k_best_ranked-k_5-debug.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/seq_level_k_best_ranked/distil_base_to_tiny-seq_level_k_best_ranked-k_5-debug-no_ce.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

@@ -114,7 +114,7 @@ def main(config_filepath: str):
     if config.method != "word_level":
         # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
         dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
-                                                            dataset_dict=dataset_dict)  # type: ignore
+                                                             dataset_dict=dataset_dict)  # type: ignore
     
     # Note: Technically, the K-beam search features are not needed for the word-level distillation. However,
     #       we still load them for simplicity and because they are needed for `WandbDistillationCallback`.

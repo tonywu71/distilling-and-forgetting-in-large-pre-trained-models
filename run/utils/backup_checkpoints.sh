@@ -51,7 +51,3 @@ cp -r /home/tw581/mlmi_dissertation/distilling-and-forgetting-in-large-pre-train
 
 
 echo "Time: `date`" >> $LOG
-
-
-
-
