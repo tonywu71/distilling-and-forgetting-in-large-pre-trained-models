@@ -165,7 +165,6 @@ class DistillationTrainer(Trainer):
         
         # Forward pass through student:
         # Note that we excluded the EOT token "<|endoftext|>" as generation is supposed to stop here.
-        import pdb; pdb.set_trace()
         student_output_wrt_teacher: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
                                                                             decoder_input_ids=teacher_sequences[:, :-1],
                                                                             decoder_attention_mask=teacher_sequences_attention_mask[:, :-1])
