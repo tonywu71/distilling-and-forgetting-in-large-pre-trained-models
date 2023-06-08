@@ -3,10 +3,7 @@ Note: For each dataset, the label column must be renamed to the value stored in 
 """
 
 import os
-from datasets import DatasetDict, load_dataset, concatenate_datasets
-
-
-LIST_SUBSETS_AMI = ["ihm", "sdm"]
+from datasets import DatasetDict, load_dataset
 
 
 def load_ami_100h() -> DatasetDict:
@@ -18,24 +15,19 @@ def load_ami_100h() -> DatasetDict:
     else:
         print(f"Using cache directory: `{cache_dir_ami}`.")
     
-    dict_ami_per_split = {
-        "train": [],
-        "validation": [],
-        "test": []
-    }
-
     dataset_dict = {}
-    
-    for split, list_ds in dict_ami_per_split.items():
-        for subset in LIST_SUBSETS_AMI:
-            dict_ami_per_split[split].append(load_dataset("edinburghcstr/ami",
-                                                          name=subset,
-                                                          split=split,
-                                                          cache_dir=cache_dir_ami))
-    
-    for split, list_ds in dict_ami_per_split.items():
-        dataset_dict[split] = concatenate_datasets(list_ds)  # type: ignore
-    
+    dataset_dict["train"] = load_dataset("edinburghcstr/ami",
+                                         name="ihm",
+                                         split="train",
+                                         cache_dir=cache_dir_ami)
+    dataset_dict["validation"] = load_dataset("edinburghcstr/ami",
+                                              name="ihm",
+                                              split="validation",
+                                              cache_dir=cache_dir_ami)
+    dataset_dict["test"] = load_dataset("edinburghcstr/ami",
+                                        name="ihm",
+                                        split="test",
+                                        cache_dir=cache_dir_ami)
     dataset_dict = DatasetDict(dataset_dict)
     
     # Column renaming is not necessary here because the AMI dataset already has the correct column name.    
@@ -56,24 +48,20 @@ def load_ami_10h() -> DatasetDict:
     else:
         print(f"Using cache directory: `{cache_dir_ami}`.")
     
-    dict_ami_per_split = {
-        "train": [],
-        "validation": [],
-        "test": []
-    }
-
+    # We load the 10h-dataset by sampling the first 10% splits of the 100h-dataset.
     dataset_dict = {}
-    
-    for split, list_ds in dict_ami_per_split.items():
-        for subset in LIST_SUBSETS_AMI:
-            dict_ami_per_split[split].append(load_dataset("edinburghcstr/ami",
-                                                          name=subset,
-                                                          split=f"{split}[:10%]",  # 10% * 100h = 10h
-                                                          cache_dir=cache_dir_ami))
-    
-    for split, list_ds in dict_ami_per_split.items():
-        dataset_dict[split] = concatenate_datasets(list_ds)  # type: ignore
-    
+    dataset_dict["train"] = load_dataset("edinburghcstr/ami",
+                                         name="ihm",
+                                         split="train[:10%]",
+                                         cache_dir=cache_dir_ami)
+    dataset_dict["validation"] = load_dataset("edinburghcstr/ami",
+                                              name="ihm",
+                                              split="validation[:10%]",
+                                              cache_dir=cache_dir_ami)
+    dataset_dict["test"] = load_dataset("edinburghcstr/ami",
+                                        name="ihm",
+                                        split="test[:10%]",
+                                        cache_dir=cache_dir_ami)
     dataset_dict = DatasetDict(dataset_dict)
     
     # Column renaming is not necessary here because the AMI dataset already has the correct column name.    

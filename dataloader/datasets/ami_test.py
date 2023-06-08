@@ -2,10 +2,9 @@ from typing import Optional, List
 
 import os
 
-from datasets import load_dataset, concatenate_datasets
+from datasets import load_dataset
 
 from dataloader.datasets.base_dataset_group import BaseDatasetGroup
-from dataloader.dataloader_custom.dataloader_ami import LIST_SUBSETS_AMI
 
 
 class AMITestSet(BaseDatasetGroup):
@@ -35,16 +34,11 @@ class AMITestSet(BaseDatasetGroup):
     
     
     def _prepare_str2dataset(self) -> None:
-        list_ds = []
-        for subset_ami in LIST_SUBSETS_AMI:
-            list_ds.append(load_dataset("edinburghcstr/ami",
-                                        name=subset_ami,
-                                        split="test",
-                                        streaming=self.streaming,
-                                        cache_dir=self.cache_dir_ami))
-        
         self.str2dataset = {
-            "ami_test": concatenate_datasets(list_ds)
+            "ami_test": load_dataset("edinburghcstr/ami",
+                                     name="ihm",
+                                     split="test",
+                                     cache_dir=self.cache_dir_ami)
         }
 
 
@@ -55,14 +49,9 @@ class AMITestSet1H(AMITestSet):
         super().__init__(streaming=streaming, subset=subset)
     
     def _prepare_str2dataset(self) -> None:
-        list_ds = []
-        for subset_ami in LIST_SUBSETS_AMI:
-            list_ds.append(load_dataset("edinburghcstr/ami",
-                                        name=subset_ami,
-                                        split="test[:10%]",  # 10% of the 10h test set = 1h
-                                        streaming=self.streaming,
-                                        cache_dir=self.cache_dir_ami))
-        
         self.str2dataset = {
-            "ami_test": concatenate_datasets(list_ds)
+            "ami_test": load_dataset("edinburghcstr/ami",
+                                    name="ihm",
+                                    split="test[:10%]",
+                                    cache_dir=self.cache_dir_ami)
         }
