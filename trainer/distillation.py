@@ -156,8 +156,8 @@ class DistillationTrainer(Trainer):
         #        - We don't have to handle padding tokens as the cross-entropy loss will ignore them (see `preprocess_tokenized_labels` in `DataCollatorSpeechSeq2SeqWithPadding`).
         #        - We have to get the CE loss now because we will need to repeat the input features for the number of beams.
         student_output_wrt_label: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                          decoder_input_ids=labels[:, :-1],
-                                                                          decoder_attention_mask=labels[:, :-1])
+                                                                          decoder_input_ids=labels.masked_fill(labels.eq(-100), self.student_tokenizer.eos_token_id)[:, :-1],
+                                                                          labels=labels[:, 1:])
         loss_ce = student_output_wrt_label.loss  # mean cross-entropy -> (1,)
         
         # Repeat input features for the number of beams. The resulting tensor will have shape (batch_size * distillation_num_beams, dim_features).
@@ -189,17 +189,17 @@ class DistillationTrainer(Trainer):
         student_log_prob_all_mask = teacher_sequences_attention_mask[:, :-1, None].expand(-1, -1, vocab_size)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         
+        # import pdb; pdb.set_trace()
         # # TODO: Decode a few rows from 'output_log_prob_all_masked' using greedy decoding:
         # max_indices = torch.argmax(output_log_prob_all_masked, dim=-1)  # (batch_size * distillation_num_beams, n_tokens-1)
-        # max_idx = max_indices[0, :]  # (n_tokens-1,)
-        # from transformers import WhisperProcessor
-        # processor = WhisperProcessor.from_pretrained(
-        #     "openai/whisper-tiny",
-        #     language="english",
-        #     task="transcribe",
-        # )
-        # res = processor.tokenizer.batch_decode(max_idx, skip_special_tokens=True, normalize=True)  # type: ignore
+        # res = self.student_tokenizer.batch_decode(max_indices, skip_special_tokens=True, normalize=True)  # type: ignore
         # print(res)
+        
+        # # Check teacher preds
+        # res_teacher = self.student_tokenizer.batch_decode(teacher_sequences, skip_special_tokens=True, normalize=True)
+        
+        # # Check labels
+        # res_true = self.student_tokenizer.batch_decode(labels, skip_special_tokens=True, normalize=True)
         
         # Get log-probabilities for each generation step:
         log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences[:, 1:, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens-1, 1)

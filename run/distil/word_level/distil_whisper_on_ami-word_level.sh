@@ -54,7 +54,6 @@ echo "python `which python`": >> $LOG
 # python scripts/distil_whisper.py configs/distill_configs/word_level/distil_medium_to_tiny-ami_10h-word_level.yaml >> $LOG 2> $ERR
 python scripts/distil_whisper.py configs/distill_configs/word_level/distil_medium_to_tiny-ami_100h-word_level.yaml >> $LOG 2> $ERR
 
-
 #! #############################################
 
 
