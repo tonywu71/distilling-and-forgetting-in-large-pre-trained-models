@@ -13,9 +13,10 @@ class ESBDatasetWithAMITest(BaseDatasetGroup):
     """
     
     def __init__(self,
-                 streaming: bool=False,
-                 load_diagnostic: bool=True,
-                 subset: Optional[List[str]]=None) -> None:
+                 streaming: bool = False,
+                 load_diagnostic: bool = True,
+                 is_ami_10h: bool = True,
+                 subset: Optional[List[str]] = None) -> None:
         
         self.dataset_path = "esb/datasets" if not load_diagnostic else "esb/diagnostic-dataset"
         self.available_datasets = [
@@ -32,6 +33,7 @@ class ESBDatasetWithAMITest(BaseDatasetGroup):
         self.language = "english"
         
         self.load_diagnostic = load_diagnostic
+        self.is_ami_10h = is_ami_10h
         
         
         # Retrieve custom `cache_dir` filepath if set:
@@ -76,7 +78,7 @@ class ESBDatasetWithAMITest(BaseDatasetGroup):
                     if dataset_name == "ami":
                         self.str2dataset["ami"] = load_dataset("edinburghcstr/ami",
                                                                name="ihm",
-                                                               split="test",
+                                                               split="test" if not self.is_ami_10h else "test[:10%]",
                                                                cache_dir=self.cache_dir_ami)
                     else:
                         # For all other datasets, load the validation splits:
@@ -93,7 +95,7 @@ class ESBDatasetWithAMITest(BaseDatasetGroup):
                     if dataset_name == "ami":
                         self.str2dataset["ami"] = load_dataset("edinburghcstr/ami",
                                                                name="ihm",
-                                                               split="test",
+                                                               split="test" if not self.is_ami_10h else "test[:10%]",
                                                                cache_dir=self.cache_dir_ami)
                     else:
                         self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
