@@ -51,13 +51,13 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py checkpoints/finetune_configs/experiments/compare_freezing/freeze_encoder/checkpoint-800 >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py checkpoints/finetune_configs/experiments/compare_freezing/freeze_decoder/checkpoint-800 >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py checkpoints/finetune_configs/experiments/compare_freezing/no_frozen_layer/checkpoint-800 >> $LOG 2> $ERR
+# python scripts/eval_whisper.py checkpoints/finetune_configs/experiments/compare_freezing/freeze_encoder/checkpoint-800 --dataset-name esb_librispeech >> $LOG 2> $ERR
+# python scripts/eval_whisper.py checkpoints/finetune_configs/experiments/compare_freezing/freeze_decoder/checkpoint-800 --dataset-name esb_librispeech >> $LOG 2> $ERR
+# python scripts/eval_whisper.py checkpoints/finetune_configs/experiments/compare_freezing/no_frozen_layer/checkpoint-800 --dataset-name esb_librispeech >> $LOG 2> $ERR
 
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 >> $LOG 2> $ERR
+# python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 --dataset-name esb_librispeech >> $LOG 2> $ERR
 
-python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py checkpoints/finetuning/english_model/finetune-whisper_tiny_en-librispeech_clean_100h-freeze_encoder/checkpoint-2500 >> $LOG 2> $ERR
+# python scripts/eval_whisper.py checkpoints/finetuning/english_model/finetune-whisper_tiny_en-librispeech_clean_100h-freeze_encoder/checkpoint-2500 --dataset-name esb_librispeech >> $LOG 2> $ERR
 
 #! #############################################
 
