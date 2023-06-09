@@ -20,8 +20,9 @@ from normalization.whisper_normalization import get_whisper_normalizer
 
 def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   ds_group: BaseDatasetGroup,
-                                  batch_size: int,
-                                  task: str="transcribe") -> pd.Series:
+                                  task: str = "transcribe",
+                                  batch_size: int = 16,
+                                  num_beams: int = 1) -> pd.Series:
     
     assert ds_group.is_preprocessed, "The dataset group must be preprocessed."
     
@@ -73,7 +74,9 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         predictions = []
         references = []
         
-        for out in whisper_asr(gen_from_dataset(dataset), batch_size=batch_size):  # type: ignore
+        for out in whisper_asr(gen_from_dataset(dataset),
+                               batch_size=batch_size,
+                               generate_kwargs={"num_beams": num_beams}):
             if not out["reference"][0].strip():  # type: ignore
                 continue  # skip empty references to avoid error in WER computation
             predictions.append(whisper_norm(out["text"]))  # type: ignore
