@@ -70,6 +70,7 @@ def preprocess_dataset(dataset_dict: DatasetDict,
     """
     
     for split in dataset_dict:
+        print(f"Preprocessing the {split} set...")
         dataset_dict[split] = dataset_dict[split].cast_column("audio", Audio(sampling_rate=feature_extractor.sampling_rate))
         
         if augment and split == "train":  # only augment the training set
@@ -100,5 +101,6 @@ def preprocess_dataset(dataset_dict: DatasetDict,
         dataset_dict[split] = filter_audio_length(dataset_dict[split], verbose=True)
         dataset_dict[split] = filter_labels(dataset_dict[split], verbose=True)
         
+        print(f"Number of samples in the {split} set: {len(dataset_dict[split])}")
     
     return dataset_dict

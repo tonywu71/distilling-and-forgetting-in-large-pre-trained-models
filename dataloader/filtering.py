@@ -72,6 +72,6 @@ def filter_labels(dataset: Dataset,
     n_rows_after = len(dataset)
     
     if verbose:
-        print(f"Removed {n_rows_before - n_rows_after} examples (labels that contained less than {min_nb_words} words).")
+        print(f"Removed {n_rows_before - n_rows_after} examples (labels that contained stricly less than {min_nb_words} words).")
         
     return dataset
