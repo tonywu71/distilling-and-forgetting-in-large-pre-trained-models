@@ -47,8 +47,8 @@ class FinetuneConfig:
     force_reprocess_dataset: bool = False
     eval_first_step: bool = True
     log_preds_to_wandb: bool = True
-    n_samples_per_wandb_logging_step: int = 8
     log_raw_str: bool = False
+    n_samples_per_wandb_logging_step: int = 8
     
     experimental_train_implicit_lm: bool = False
     
