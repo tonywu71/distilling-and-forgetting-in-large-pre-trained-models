@@ -14,6 +14,7 @@ class AMITestSet(BaseDatasetGroup):
     
     def __init__(self,
                  streaming: bool=False,
+                 is_ami_10h: bool = True,
                  subset: Optional[List[str]]=None) -> None:
         
         self.available_datasets = [
@@ -22,6 +23,7 @@ class AMITestSet(BaseDatasetGroup):
         
         self.is_multilingual = False
         self.language = "english"
+        self.is_ami_10h = is_ami_10h
         
         # Retrieve custom `cache_dir` filepath if set:
         self.cache_dir_ami = os.environ.get("CACHE_DIR_AMI", None)
@@ -37,21 +39,6 @@ class AMITestSet(BaseDatasetGroup):
         self.str2dataset = {
             "ami_test": load_dataset("edinburghcstr/ami",
                                      name="ihm",
-                                     split="test",
+                                     split="test" if not self.is_ami_10h else "test[:10%]",
                                      cache_dir=self.cache_dir_ami)
-        }
-
-
-class AMITestSet1H(AMITestSet):
-    def __init__(self,
-                 streaming: bool=False,
-                 subset: Optional[List[str]]=None) -> None:
-        super().__init__(streaming=streaming, subset=subset)
-    
-    def _prepare_str2dataset(self) -> None:
-        self.str2dataset = {
-            "ami_test": load_dataset("edinburghcstr/ami",
-                                    name="ihm",
-                                    split="test[:10%]",
-                                    cache_dir=self.cache_dir_ami)
         }

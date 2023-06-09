@@ -18,11 +18,10 @@ from dataloader.datasets.base_dataset_group import BaseDatasetGroup
 from normalization.whisper_normalization import get_whisper_normalizer
 
 
-
-def eval_whisper_on_dataset(pretrained_model_name_or_path: str,
-                            ds_group: BaseDatasetGroup,
-                            batch_size: int,
-                            task: str="transcribe") -> pd.Series:
+def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
+                                  ds_group: BaseDatasetGroup,
+                                  batch_size: int,
+                                  task: str="transcribe") -> pd.Series:
     
     assert ds_group.is_preprocessed, "The dataset group must be preprocessed."
     
