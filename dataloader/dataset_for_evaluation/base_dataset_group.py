@@ -1,6 +1,7 @@
 from typing import Optional, List, Dict
 from abc import ABC, abstractmethod
 
+from dataloader.filtering import filter_audio_length, filter_labels
 from normalization.whisper_normalization import get_whisper_normalizer
 from utils.constants import DEFAULT_NUM_PROC
 
@@ -64,7 +65,12 @@ class BaseDatasetGroup(ABC):
                 return batch
         
             # Loop over all the datasets:
-            for dataset_name, dataset in self.str2dataset.items():
+            for dataset_name in self.str2dataset.items():
+                # Filter audio length and labels:
+                dataset = filter_audio_length(dataset)
+                dataset = filter_labels(dataset)
+                
+                # Normalize the labels:
                 if normalize:
                     if not self.streaming:
                         dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)  # type: ignore
@@ -77,6 +83,9 @@ class BaseDatasetGroup(ABC):
         else:  # If multilingual...
             # Loop over all the datasets:
             for dataset_name, dataset in self.str2dataset.items():
+                # Filter audio length and labels:
+                dataset = filter_audio_length(dataset)
+                dataset = filter_labels(dataset)
                 
                 # Load normalizer depending on the language:
                 whisper_norm = get_whisper_normalizer(language=self.ds_name_to_lang[dataset_name])
@@ -84,6 +93,7 @@ class BaseDatasetGroup(ABC):
                     batch["text"] = whisper_norm(batch["text"])
                     return batch
                 
+                # Normalize the labels:
                 if not self.streaming:
                     dataset = dataset.map(normalize_fct, num_proc=DEFAULT_NUM_PROC)  # type: ignore
                 else:
