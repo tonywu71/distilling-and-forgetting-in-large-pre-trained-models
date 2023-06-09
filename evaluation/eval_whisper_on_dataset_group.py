@@ -32,10 +32,8 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
     # Load model:
     model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path)
     
-    
     # Load metric:
     wer_metric = evaluate.load("wer")
-    
     
     # Loop over the datasets:
     wer_results = []
@@ -87,7 +85,6 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         wer = 100 * wer  # type: ignore
         
         wer_results.append(wer)
-    
     
     # Save the results:
     results = pd.Series(wer_results, index=list(ds_group.keys()), name="WER (%)")

@@ -25,7 +25,7 @@ from utils.constants import DEFAULT_EVAL_NUM_BEAMS
 
 
 def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to the pretrained model."),
-         dataset_name: str = typer.Argument(..., help="Name of the dataset to evaluate on."),
+         dataset_name: str = typer.Option(..., help="Name of the dataset to evaluate on."),
          streaming: bool = typer.Option(False, help="Whether to use streaming inference."),
          subset: Optional[List[str]] = typer.Option(None, help="Subset of the ESB dataset to evaluate on."),
          task: str = typer.Option("transcribe", help="Task to evaluate on."),
@@ -40,7 +40,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     assert dataset_name in DATASET_NAME_TO_DATASET_GROUP.keys(), f"Dataset name must be one of {list(DATASET_NAME_TO_DATASET_GROUP.keys())}."
     
     # Load dataset:
-    dataset_group: BaseDatasetGroup = DATASET_NAME_TO_DATASET_GROUP["dataset_name"](streaming=streaming, subset=subset)
+    dataset_group: BaseDatasetGroup = DATASET_NAME_TO_DATASET_GROUP[dataset_name](streaming=streaming, subset=subset)
     
     # Create config for wandb:
     config = {

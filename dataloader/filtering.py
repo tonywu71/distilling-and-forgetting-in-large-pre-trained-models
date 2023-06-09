@@ -48,7 +48,7 @@ def filter_labels(dataset: Dataset,
                   label_col: str = DEFAULT_LABEL_STR_COL,
                   verbose: bool = False) -> Dataset:
     """
-    Filter out examples with less than `min_nb_words` words in the label.
+    Filter out examples with stricly less than `min_nb_words` words in the label.
     """
     
     # Sanity checks:
