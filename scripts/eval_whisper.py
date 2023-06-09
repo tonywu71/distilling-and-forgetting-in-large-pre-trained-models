@@ -15,7 +15,7 @@ from typing import List, Optional
 
 import wandb
 
-from dataloader.datasets.base_dataset_group import BaseDatasetGroup
+from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 
 from evaluation.eval_whisper_on_dataset_group import eval_whisper_on_dataset_group
 from utils.file_io import extract_exp_name_from_model_path, extract_output_savepath_from_model_path
@@ -77,7 +77,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     print(f"Loaded datasets: {list(dataset_group.keys())}")
     
     # Preprocess:
-    print("Preprocessing datasets...")
+    print("Preprocessing the datasets...")
     dataset_group.preprocess_datasets(normalize=True)
     
     # Evaluate:

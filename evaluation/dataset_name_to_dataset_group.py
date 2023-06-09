@@ -1,7 +1,7 @@
 from functools import partial
 from typing import Dict
 
-from dataloader.datasets.base_dataset_group import BaseDatasetGroup
+from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 
 from dataloader.datasets.esb_dataset import ESBDataset
 from dataloader.datasets.esb_dataset_with_ami_test import ESBDatasetWithAMITest

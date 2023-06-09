@@ -14,7 +14,7 @@ from transformers import (pipeline,
 import evaluate
 
 from dataloader.dataloader import gen_from_dataset
-from dataloader.datasets.base_dataset_group import BaseDatasetGroup
+from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from normalization.whisper_normalization import get_whisper_normalizer
 
 
