@@ -9,7 +9,13 @@ DEFAULT_NUM_PROC = 8  # see https://docs.hpc.cam.ac.uk/hpc/user-guide/a100.html#
 # ------ Constants ------
 DEFAULT_LABEL_STR_COL = "text"
 DEFAULT_LABEL_TOKENIZED_COL = "labels"  # default column name used by the HuggingFace Trainer
+
+DEFAULT_LABELS_MIN_NB_WORDS = 3
+MIN_INPUT_LENGTH = 0.0
+MAX_INPUT_LENGTH = 30.0
+
 DEFAULT_EVAL_NUM_BEAMS = 5
+
 LOSS_MASK_IDX = -100  # see https://huggingface.co/docs/transformers/model_doc/whisper#transformers.WhisperForConditionalGeneration.forward for the `labels` argument
 GEN_MAX_LENGTH = 225
 

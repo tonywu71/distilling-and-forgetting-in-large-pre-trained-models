@@ -1,17 +1,14 @@
 from functools import partial
 from typing import Any, Dict
+
 from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift
 
 from transformers import WhisperFeatureExtractor, WhisperTokenizer
 from datasets import Audio, DatasetDict
+from dataloader.filtering import filter_audio_length, filter_labels
 from normalization.whisper_normalization import get_whisper_normalizer
 
 from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL, DEFAULT_NUM_PROC
-
-
-# Both in seconds:
-MIN_INPUT_LENGTH = 0.0
-MAX_INPUT_LENGTH = 30.0
 
 
 # Audio augmentation object to map over the dataset:
@@ -54,12 +51,6 @@ def prepare_dataset_fct(batch: Dict[str, Any],
     batch[DEFAULT_LABEL_TOKENIZED_COL] = tokenizer(batch[DEFAULT_LABEL_STR_COL]).input_ids  # type: ignore
     
     return batch
-
-
-def is_in_length_range(audio: Dict[str, Any], untokenized_text_label: list) -> bool:
-    # Compute input length of audio sample in seconds:
-    input_length = len(audio["array"]) / audio["sampling_rate"]  # type: ignore
-    return MIN_INPUT_LENGTH < input_length < MAX_INPUT_LENGTH and 0 < len(untokenized_text_label)
 
 
 def preprocess_dataset(dataset_dict: DatasetDict,
@@ -106,10 +97,8 @@ def preprocess_dataset(dataset_dict: DatasetDict,
         dataset_dict[split] = dataset_dict[split].map(prepare_dataset, num_proc=DEFAULT_NUM_PROC)
         
         print("Filtering the dataset...")
-        dataset_dict[split] = dataset_dict[split].filter(
-            is_in_length_range,
-            input_columns=["audio", DEFAULT_LABEL_STR_COL],
-            num_proc=DEFAULT_NUM_PROC
-        )
+        dataset_dict[split] = filter_audio_length(dataset_dict[split], verbose=True)
+        dataset_dict[split] = filter_labels(dataset_dict[split], verbose=True)
+        
     
     return dataset_dict
