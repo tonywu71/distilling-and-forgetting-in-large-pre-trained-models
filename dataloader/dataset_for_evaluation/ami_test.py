@@ -4,7 +4,7 @@ import os
 
 from datasets import load_dataset
 
-from dataloader.datasets.base_dataset_group import BaseDatasetGroup
+from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 
 
 class AMITestSet(BaseDatasetGroup):

@@ -16,7 +16,7 @@ from typing import List, Optional
 
 import wandb
 
-from dataloader.datasets.fab_dataset import FABDataset
+from dataloader.dataset_for_evaluation.fab_dataset import FABDataset
 from evaluation.eval_whisper_implicit_lm_on_dataset import eval_whisper_implicit_lm_on_dataset
 from utils.file_io import extract_exp_name_from_model_path, extract_output_savepath_from_model_path
 

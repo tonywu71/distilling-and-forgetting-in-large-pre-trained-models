@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 
 from transformers import WhisperProcessor
 
-from dataloader.datasets.base_dataset_group import BaseDatasetGroup
+from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
 from normalization.whisper_normalization import get_whisper_normalizer

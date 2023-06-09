@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from utils.initialize import initialize_env, print_envs
 initialize_env()
 
-from dataloader.datasets.esb_dataset import ESBDataset
+from dataloader.dataset_for_evaluation.esb_dataset import ESBDataset
 
 
 def main():

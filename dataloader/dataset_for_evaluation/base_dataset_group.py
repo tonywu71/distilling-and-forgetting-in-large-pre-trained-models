@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from normalization.whisper_normalization import get_whisper_normalizer
 from utils.constants import DEFAULT_NUM_PROC
 
+
 class BaseDatasetGroup(ABC):
     """
     Base class used to handle a group of datasets.
