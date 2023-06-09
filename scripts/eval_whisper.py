@@ -45,12 +45,13 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     # Create config for wandb:
     config = {
         "pretrained_model_name_or_path": pretrained_model_name_or_path,
+        "dataset_name": dataset_name,
         "language": dataset_group.language,
-        "task": task,
-        "dataset": "esb_ami",
         "streaming": streaming,
         "subset": subset,
+        "task": task,
         "batch_size": batch_size,
+        "num_beams": num_beams,
     }
     
     # If `dataset` has a `load_diagnostic` attribute, add it to the config:
