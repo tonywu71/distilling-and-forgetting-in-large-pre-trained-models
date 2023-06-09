@@ -2,8 +2,8 @@ import os
 
 from typing import Optional, List
 from datasets import load_dataset
-
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
+from dataloader.dataloader_for_training.dataloader_ami import remove_unnecessary_cols_for_ami
 
 
 class ESBDatasetWithAMITest(BaseDatasetGroup):
@@ -80,6 +80,8 @@ class ESBDatasetWithAMITest(BaseDatasetGroup):
                                                                name="ihm",
                                                                split="test" if not self.is_ami_10h else "test[:10%]",
                                                                cache_dir=self.cache_dir_ami)
+                        # Remove unnecessary columns from the dataset:
+                        self.str2dataset["ami"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami"])
                     else:
                         # For all other datasets, load the validation splits:
                         self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
@@ -97,6 +99,8 @@ class ESBDatasetWithAMITest(BaseDatasetGroup):
                                                                name="ihm",
                                                                split="test" if not self.is_ami_10h else "test[:10%]",
                                                                cache_dir=self.cache_dir_ami)
+                        # Remove unnecessary columns from the dataset:
+                        self.str2dataset["ami"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami"])
                     else:
                         self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
                                                                       name=dataset_name,

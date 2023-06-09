@@ -2,8 +2,8 @@ import os
 
 from typing import Optional, List
 from datasets import load_dataset
-
-from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
+from dataloader.datasetfor_evaluation.base_dataset_group import BaseDatasetGroup
+from dataloader.dataloader_for_training.dataloader_librispeech import remove_unnecessary_cols_for_librispeech
 
 
 class FABDataset(BaseDatasetGroup):
@@ -90,3 +90,9 @@ class FABDataset(BaseDatasetGroup):
                                            streaming=self.streaming,
                                            use_auth_token=True)
         }
+        
+        # Remove unnecessary columns from the datasets:
+        self.str2dataset["librispeech_en_clean"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_en_clean"])
+        self.str2dataset["librispeech_en_other"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_en_other"])
+        
+        return

@@ -3,7 +3,12 @@ Note: For each dataset, the label column must be renamed to the value stored in 
 """
 
 import os
-from datasets import DatasetDict, load_dataset
+from datasets import Dataset, DatasetDict, load_dataset
+
+
+def remove_unnecessary_cols_for_ami(dataset: Dataset | DatasetDict) -> Dataset | DatasetDict:
+    """Remove unnecessary columns from the AMI dataset."""
+    return dataset.remove_columns(column_names=["meeting_id ", "audio_id", "begin_time", "end_time", "microphone_id", "speaker_id"])
 
 
 def load_ami_100h() -> DatasetDict:
@@ -29,6 +34,9 @@ def load_ami_100h() -> DatasetDict:
                                         split="test",
                                         cache_dir=cache_dir_ami)
     dataset_dict = DatasetDict(dataset_dict)
+    
+    # Remove unnecessary columns from the dataset:
+    dataset_dict = remove_unnecessary_cols_for_ami(dataset_dict)
     
     # Column renaming is not necessary here because the AMI dataset already has the correct column name.    
     # dataset_dict = rename_label_col(dataset_dict,
@@ -63,6 +71,9 @@ def load_ami_10h() -> DatasetDict:
                                         split="test[:10%]",
                                         cache_dir=cache_dir_ami)
     dataset_dict = DatasetDict(dataset_dict)
+    
+    # Remove unnecessary columns from the dataset:
+    dataset_dict = remove_unnecessary_cols_for_ami(dataset_dict)
     
     # Column renaming is not necessary here because the AMI dataset already has the correct column name.    
     # dataset_dict = rename_label_col(dataset_dict,

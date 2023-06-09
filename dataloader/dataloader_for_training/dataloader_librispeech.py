@@ -3,7 +3,12 @@ Note: For each dataset, the label column must be renamed to the value stored in 
 """
 
 import os
-from datasets import DatasetDict, load_dataset
+from datasets import Dataset, DatasetDict, load_dataset
+
+
+def remove_unnecessary_cols_for_librispeech(dataset: Dataset | DatasetDict) -> Dataset | DatasetDict:
+    """Remove unnecessary columns from the LibriSpeech dataset."""
+    return dataset.remove_columns(column_names=["file", "speaker_id", "chapter_id", "id"])
 
 
 def load_librispeech_dummy() -> DatasetDict:
@@ -30,6 +35,9 @@ def load_librispeech_dummy() -> DatasetDict:
                                         split="validation",
                                         cache_dir=cache_dir_librispeech)
     dataset_dict = DatasetDict(dataset_dict)
+    
+    # Remove unnecessary columns from the dataset:
+    dataset_dict = remove_unnecessary_cols_for_librispeech(dataset_dict)
     
     # Column renaming is not necessary here because the dummy dataset already has the correct column name.
     # dataset_dict = rename_label_col(dataset_dict,
@@ -62,6 +70,9 @@ def load_librispeech(train_split: str="train.100") -> DatasetDict:
                                         split="test",
                                         cache_dir=cache_dir_librispeech)
     dataset_dict = DatasetDict(dataset_dict)
+    
+    # Remove unnecessary columns from the dataset:
+    dataset_dict = remove_unnecessary_cols_for_librispeech(dataset_dict)
     
     # Column renaming is not necessary here because the LibriSpeech dataset already has the correct column name.
     # dataset_dict = rename_label_col(dataset_dict,

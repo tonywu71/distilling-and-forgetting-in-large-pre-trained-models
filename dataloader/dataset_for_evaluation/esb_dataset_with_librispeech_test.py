@@ -4,6 +4,7 @@ from typing import Optional, List
 from datasets import load_dataset
 
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
+from dataloader.dataloader_for_training.dataloader_librispeech import remove_unnecessary_cols_for_librispeech
 
 
 class ESBDatasetWithLibriSpeechTest(BaseDatasetGroup):
@@ -74,7 +75,6 @@ class ESBDatasetWithLibriSpeechTest(BaseDatasetGroup):
         if not self.load_diagnostic:  # If `load_diagnostic` default ESB dataset...
             for dataset_name in self.available_datasets:
                 if dataset_name in self.subset:  # type: ignore
-                    
                     if dataset_name == "librispeech":
                         # Load the 2 test splits of LibriSpeech from the original HF dataset as
                         # `esb/datasets` does not provide the text annotations for the test set.
@@ -92,7 +92,9 @@ class ESBDatasetWithLibriSpeechTest(BaseDatasetGroup):
                                                                              cache_dir=self.dataset_name_to_cache_dir["librispeech"],
                                                                              streaming=False,
                                                                              use_auth_token=True)
-                    
+                        # Remove unnecessary columns from the datasets:
+                        self.str2dataset["librispeech_clean"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_clean"])
+                        self.str2dataset["librispeech_other"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_other"])
                     else:
                         # For all other datasets, load the validation splits:
                         self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
@@ -105,7 +107,6 @@ class ESBDatasetWithLibriSpeechTest(BaseDatasetGroup):
         else:  # If load diagnostic dataset...
             for dataset_name in self.available_datasets:
                 if dataset_name in self.subset:  # type: ignore
-                    
                     if dataset_name == "librispeech":
                         # Load the 2 splits of LibriSpeech from the original HF test dataset
                         # because LibriSpeech is our main dataset of interest (used for fine-tuning):
@@ -121,7 +122,9 @@ class ESBDatasetWithLibriSpeechTest(BaseDatasetGroup):
                                                                              cache_dir=self.dataset_name_to_cache_dir["librispeech"],
                                                                              streaming=self.streaming,
                                                                              use_auth_token=True)
-                    
+                        # Remove unnecessary columns from the datasets:
+                        self.str2dataset["librispeech_clean"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_clean"])
+                        self.str2dataset["librispeech_other"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_other"])
                     else:
                         self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
                                                                       name=dataset_name,
