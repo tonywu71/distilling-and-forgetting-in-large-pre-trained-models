@@ -11,9 +11,9 @@ from transformers import (PreTrainedModel,
                           TrainerState,
                           TrainerControl)
 from datasets import Dataset
-import evaluate
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from evaluation.string_edit_metrics import get_string_edit_metrics
 from callbacks.base_training_callback import BaseWandbTrainingCallback
 from utils.distil_config import DistilConfig
 from utils.constants import GEN_MAX_LENGTH, LOSS_MASK_IDX, DEFAULT_LABEL_TOKENIZED_COL
@@ -41,8 +41,6 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         self.table_name = "sample_predictions-distill"
         self.data_collator_no_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
                                                                             add_k_beam_features=False)
-
-        self.wer_metric = evaluate.load("wer")
         
         self.is_seq_level = (self.config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"])
         
@@ -122,8 +120,8 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             curr_pred_student_str = self.records["pred_student"][-1]
             
             # Compute the WER of both the teacher and the student:
-            self.records["wer_teacher"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_teacher_str]))  # type: ignore
-            self.records["wer_student"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_student_str]))  # type: ignore
+            self.records["wer_teacher"].append(100 * get_string_edit_metrics(references=[curr_label_str], predictions=[curr_pred_teacher_str])["wer"])  # type: ignore
+            self.records["wer_student"].append(100 * get_string_edit_metrics(references=[curr_label_str], predictions=[curr_pred_student_str])["wer"])  # type: ignore
             
             # Add boolean flag to indicate whether the prediction is correct:
             self.records["is_student_correct_wrt_teacher"].append(curr_pred_student_str == curr_pred_teacher_str)
@@ -187,7 +185,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
     
     
     def compute_wer_sequence_level_and_log(self, args: TrainingArguments, model: PreTrainedModel, state: TrainerState) -> None:
-        total_wer = 0
+        string_edit_metrics_total = pd.Series({"wer": 0.0, "sub": 0.0, "ins": 0.0, "del": 0.0})
         count = 0
         
         # Print and log the WER of the student model every `eval_steps`:
@@ -212,18 +210,26 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
                 # Decode the labels:
                 label_str = self.processor.tokenizer.batch_decode(label_ids, skip_special_tokens=True, normalize=True)  # type: ignore
 
-                # Compute the WER in percent:
-                # for current_label_str, current_pred_str in zip(label_str, pred_str_student):
-                    # total_wer += 100 * self.wer_metric.compute(references=current_label_str, predictions=current_pred_str)  # type: ignore
-                total_wer += 100 * self.wer_metric.compute(references=label_str, predictions=pred_str_student)  # type: ignore
+                # Compute the string edit metrics and add them to the total:
+                string_edit_metrics_total += pd.Series(get_string_edit_metrics(references=label_str, predictions=pred_str_student))
+                
+                # Increment the count:
                 count += 1
             
-            # Compute the average WER:
-            avg_wer = total_wer / count
+            # Compute the average string edit metrics and multiply by 100 to get percentages:
+            string_edit_metrics = 100 * (string_edit_metrics_total / count)
             
-            # Print and log the average WER:
-            print(f"Student WER: {avg_wer:.3f}%")
-            self._wandb.log({"validation/wer_student_%": avg_wer})
+            # Print the string edit metrics:
+            print(f"Current step: {state.global_step}:")
+            print(f"WER: {string_edit_metrics['wer']:.2f}%")
+            print(f"Sub: {string_edit_metrics['sub']:.2f}%")
+            print(f"Ins: {string_edit_metrics['ins']:.2f}%")
+            print(f"Del: {string_edit_metrics['del']:.2f}%")
+            
+            # Log the string edit metrics to wandb:
+            self._wandb.log({"validation/wer_student_%": string_edit_metrics["wer"]})
+            self._wandb.log({"validation/sub_student_%": string_edit_metrics["sub"]})
+            self._wandb.log({"validation/ins_student_%": string_edit_metrics["ins"]})
+            self._wandb.log({"validation/del_student_%": string_edit_metrics["del"]})
         
         return
-    

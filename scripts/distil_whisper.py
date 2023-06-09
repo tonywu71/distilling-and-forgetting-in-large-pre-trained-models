@@ -1,3 +1,4 @@
+from sympy import true
 import typer
 
 import os, sys
@@ -28,7 +29,7 @@ import wandb
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from evaluation.metrics import compute_wer_fct_distil
+from evaluation.wer_metric import compute_wer_fct_distil
 from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
 from callbacks.eval_first_step_callback import EvalFirstStepCallback
@@ -46,6 +47,8 @@ def main(config_filepath: str):
     # --------------------   Load config   --------------------
     config = DistilConfig.from_yaml(config_filepath)
     distillation_sanity_check(config)
+    
+    is_seq_level = config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]
     
     # If a previous run has its checkpoints saved in the same directory,
     # add a timestamp to the model directory. This is to avoid overwriting
@@ -90,7 +93,7 @@ def main(config_filepath: str):
     )
     
     # Create the data collator that will be used to prepare the data for training:
-    if config.method == "word_level":
+    if not is_seq_level:  # If word-level...
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor)
     else:
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
@@ -111,7 +114,7 @@ def main(config_filepath: str):
     
     print("\n-----------------------\n")
     
-    if config.method != "word_level":
+    if is_seq_level:
         # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
         dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
                                                              dataset_dict=dataset_dict)  # type: ignore
@@ -122,7 +125,7 @@ def main(config_filepath: str):
     print("\n-----------------------\n")
     
     # Initialize the models from pretrained checkpoints:
-    if config.method == "word_level":
+    if not is_seq_level:  # If word-level...
         print(f"Loading teacher model `{config.teacher_model_name_or_path}`...")
         teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
         # Freeze the teacher model:
@@ -202,20 +205,22 @@ def main(config_filepath: str):
         save_strategy="steps",
         save_steps=config.save_steps,
         save_total_limit=config.save_total_limit,
-        remove_unused_columns=False,  # keep the K-beam search features
+        remove_unused_columns=not(is_seq_level),  # keep the K-beam features if sequence-level, remove them if word-level
         load_best_model_at_end=True,
-        metric_for_best_model="wer" if config.method == "word_level" else "eval_loss",
+        metric_for_best_model="wer" if not is_seq_level else "eval_loss",
         greater_is_better=False,  # the lower the WER, the better (same for the loss)
         report_to="wandb"  # type: ignore
     )
     
     
     # Define the compute_metrics function:
-    if config.method == "word_level":
+    if not is_seq_level:  # If word-level...
         compute_wer = partial(compute_wer_fct_distil,
-                            processor=student_processor,
-                            normalize=True)
-        
+                              processor=student_processor,
+                              normalize=True,
+                              log_string_edit_metrics_on_wandb=True)
+    else:  # If sequence-level...
+        pass  # `compute_metrics` will be set to `None` in the trainer
     
     # Define callbacks:
     callbacks: List[TrainerCallback] = []
@@ -244,7 +249,7 @@ def main(config_filepath: str):
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
-        compute_metrics=compute_wer if config.method == "word_level" else None,
+        compute_metrics=compute_wer if not is_seq_level else None,
         tokenizer=student_processor,  # type: ignore
         callbacks=callbacks
     )

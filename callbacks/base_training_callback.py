@@ -14,7 +14,6 @@ from transformers import (PreTrainedModel,
 from transformers.generation.utils import GenerateOutput
 from transformers.integrations import WandbCallback
 from datasets import Dataset
-import evaluate
 
 import wandb
 
@@ -50,7 +49,6 @@ class BaseWandbTrainingCallback(WandbCallback, ABC):
         self.eval_dataset.set_format("torch")
                 
         self.n_samples = n_samples
-        self.wer_metric = evaluate.load("wer")
         
         # Save records as a class attribute. Doing so will allow to keep appending rows at each step,
         # and finally to relog the wandb tabel at the end of each step:

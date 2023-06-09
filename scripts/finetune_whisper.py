@@ -29,7 +29,7 @@ import wandb
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from evaluation.metrics import compute_wer_fct
+from evaluation.wer_metric import compute_wer_fct
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
 from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from callbacks.finetune_callback import WandbFinetuneCallback
@@ -181,7 +181,8 @@ def main(config_filepath: str):
     # Define the compute_metrics function:
     compute_wer = partial(compute_wer_fct,
                           processor=processor,
-                          normalize=True)
+                          normalize=True,
+                          log_string_edit_metrics_on_wandb=True)
     
     
     # Define callbacks:

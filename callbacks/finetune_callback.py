@@ -10,6 +10,7 @@ from transformers import (PreTrainedModel,
                           TrainerState,
                           TrainerControl)
 from datasets import Dataset
+import evaluate
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from callbacks.base_training_callback import BaseWandbTrainingCallback
@@ -38,6 +39,8 @@ class WandbFinetuneCallback(BaseWandbTrainingCallback):
         
         self.table_name = "sample_predictions-finetune"
         self.data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor)
+        
+        self.wer_metric = evaluate.load("wer")
     
     
     def log_records_to_wandb(self) -> None:

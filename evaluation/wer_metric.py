@@ -1,17 +1,22 @@
 from typing import Dict
 
+import pandas as pd
 import torch
-
 from transformers import WhisperProcessor, EvalPrediction
-import evaluate
 
+import wandb
+
+from evaluation.string_edit_metrics import get_string_edit_metrics
 from utils.constants import LOSS_MASK_IDX
 
 
-def compute_wer_fct(pred: EvalPrediction, processor: WhisperProcessor, normalize: bool=True) -> Dict[str, float]:
+def compute_wer_fct(pred: EvalPrediction,
+                    processor: WhisperProcessor,
+                    normalize: bool = True,
+                    log_string_edit_metrics_on_wandb: bool = False) -> Dict[str, float]:
     """
     Compute the WER metric in percent for the given predictions and labels.
-    Note: Setting `normalize` to `True` (default) will use the Whisper text normalizer.
+    Setting `normalize` to `True` (default) will use the Whisper text normalizer.
     
     IMPORTANT: Due to a bug in the HuggingFace implementation of the Whisper, using
     `batch_decode` with `normalize=True` will always use the English normalizer even
@@ -19,8 +24,6 @@ def compute_wer_fct(pred: EvalPrediction, processor: WhisperProcessor, normalize
     For the moment, this is not a problem as we are always fine-tuning on English data, and
     the evaluation script doesn't use `batch_decode`.
     """
-    
-    wer_metric = evaluate.load("wer")
     
     pred_ids = pred.predictions
     label_ids = pred.label_ids
@@ -35,21 +38,28 @@ def compute_wer_fct(pred: EvalPrediction, processor: WhisperProcessor, normalize
     # Decode the labels:
     label_str = processor.tokenizer.batch_decode(label_ids, skip_special_tokens=True, normalize=normalize)  # type: ignore
 
-    # Compute the WER in percent:
-    wer = 100 * wer_metric.compute(references=label_str, predictions=pred_str)  # type: ignore
-
-    return {"wer": wer}
-
-
-def compute_wer_fct_distil(pred: EvalPrediction, processor: WhisperProcessor, normalize: bool=True) -> Dict[str, float]:
-    """
-    Compute the WER metric in percent for the given predictions and labels.
-    Note: Setting `normalize` to `True` (default) will use the Whisper text normalizer.
+    # Compute the string edit metrics in percent:
+    string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=label_str, predictions=pred_str))
     
-    This function should be used for distillation.
-    """
+    # Log the string edit metrics to wandb:
+    if log_string_edit_metrics_on_wandb:
+        wandb.log({"validation/sub_student_%": string_edit_metrics["sub"]})
+        wandb.log({"validation/ins_student_%": string_edit_metrics["ins"]})
+        wandb.log({"validation/del_student_%": string_edit_metrics["del"]})
     
-    wer_metric = evaluate.load("wer")
+    return {"wer": string_edit_metrics["wer"]}
+
+
+def compute_wer_fct_distil(pred: EvalPrediction,
+                           processor: WhisperProcessor,
+                           normalize: bool=True,
+                           log_string_edit_metrics_on_wandb: bool = False) -> Dict[str, float]:
+    """
+    Compute the WER metric in percent for the given predictions and labels for distillation.
+    Setting `normalize` to `True` (default) will use the Whisper text normalizer.
+    
+    Note: This function cannot be used for sequence-level distillation as the 
+    """
     
     # `pred` has the following attributes:
     # - predictions: Predictions of the model.
@@ -74,7 +84,13 @@ def compute_wer_fct_distil(pred: EvalPrediction, processor: WhisperProcessor, no
     # Decode the labels:
     label_str = processor.tokenizer.batch_decode(label_ids, skip_special_tokens=True, normalize=normalize)  # type: ignore
 
-    # Compute the WER in percent:
-    wer = 100 * wer_metric.compute(references=label_str, predictions=pred_str)  # type: ignore
-
-    return {"wer": wer}
+    # Compute the string edit metrics in percent:
+    string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=label_str, predictions=pred_str))
+    
+    # Log the string edit metrics to wandb:
+    if log_string_edit_metrics_on_wandb:
+        wandb.log({"validation/sub_student_%": string_edit_metrics["sub"]})
+        wandb.log({"validation/ins_student_%": string_edit_metrics["ins"]})
+        wandb.log({"validation/del_student_%": string_edit_metrics["del"]})
+    
+    return {"wer": string_edit_metrics["wer"]}
