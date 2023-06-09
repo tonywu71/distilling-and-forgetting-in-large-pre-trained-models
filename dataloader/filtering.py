@@ -58,11 +58,11 @@ def filter_labels(dataset: Dataset,
     n_rows_before = len(dataset)
     
     # Compute label length:
-    dataset = dataset.map(partial(compute_label_length_fct, label_col=label_col),
+    dataset = dataset.map(partial(compute_label_length_fct),
                           input_columns=[label_col])
     
-    # Filter out examples with less than `min_nb_words` words:
-    dataset = dataset.filter(lambda x: (x > min_nb_words),
+    # Filter out examples with stricly less than `min_nb_words` words:
+    dataset = dataset.filter(lambda x: (x >= min_nb_words),
                              input_columns=["label_length"],
                              num_proc=DEFAULT_NUM_PROC)
     

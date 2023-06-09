@@ -3,14 +3,14 @@ from typing import Dict
 
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 
-from dataloader.datasets.esb_dataset import ESBDataset
-from dataloader.datasets.esb_dataset_with_ami_test import ESBDatasetWithAMITest
-from dataloader.datasets.esb_dataset_with_librispeech_test import ESBDatasetWithLibriSpeechTest
-from dataloader.datasets.fab_dataset import FABDataset
-from dataloader.datasets.mls_dataset import MLSDataset
+from dataloader.dataset_for_evaluation.esb_dataset import ESBDataset
+from dataloader.dataset_for_evaluation.esb_dataset_with_ami_test import ESBDatasetWithAMITest
+from dataloader.dataset_for_evaluation.esb_dataset_with_librispeech_test import ESBDatasetWithLibriSpeechTest
+from dataloader.dataset_for_evaluation.fab_dataset import FABDataset
+from dataloader.dataset_for_evaluation.mls_dataset import MLSDataset
 
-from dataloader.datasets.ami_test import AMITestSet
-from dataloader.datasets.librispeech_clean_test import LibriSpeechCleanTestSet
+from dataloader.dataset_for_evaluation.ami_test import AMITestSet
+from dataloader.dataset_for_evaluation.librispeech_clean_test import LibriSpeechCleanTestSet
 
 
 DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
