@@ -1,5 +1,5 @@
-# With batch_size = 32, gradient_accumulation_steps = 2, and num_train_epochs = 3:
-# -> global_step = 87
+# With batch_size = 32 and num_train_epochs = 3:
+# -> global_step = 357
 experiment_name: exp_2-seq_level_uniform-alpha_0
 lang_name: english
 task: transcribe
