@@ -228,8 +228,8 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             
             # Log the string edit metrics to wandb:
             self._wandb.log({"eval/wer_student_%": string_edit_metrics["wer"]})
-            self._wandb.log({"eval/sub_student_%": string_edit_metrics["sub"]})
-            self._wandb.log({"eval/ins_student_%": string_edit_metrics["ins"]})
-            self._wandb.log({"eval/del_student_%": string_edit_metrics["del"]})
+            self._wandb.log({"eval/substitutions_student_%": string_edit_metrics["sub"]})
+            self._wandb.log({"eval/insertions_student_%": string_edit_metrics["ins"]})
+            self._wandb.log({"eval/deletions_student_%": string_edit_metrics["del"]})
         
         return
