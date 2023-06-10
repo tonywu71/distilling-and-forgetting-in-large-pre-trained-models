@@ -15,7 +15,7 @@ class ESBDatasetWithAMITest(BaseDatasetGroup):
     def __init__(self,
                  streaming: bool = False,
                  load_diagnostic: bool = True,
-                 is_ami_10h: bool = True,
+                 is_ami_10h: bool = False,
                  subset: Optional[List[str]] = None) -> None:
         
         self.dataset_path = "esb/datasets" if not load_diagnostic else "esb/diagnostic-dataset"
