@@ -24,7 +24,7 @@ def get_string_edit_metrics(predictions: str, references: str) -> Dict[str, floa
     string_edit_metrics = {
         "wer": incorrect / total,
         "sub": measures["substitutions"] / total,
-        "def": measures["deletions"] / total,
+        "del": measures["deletions"] / total,
         "ins": measures["insertions"] / total
     }
     
