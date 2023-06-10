@@ -172,7 +172,7 @@ def main(config_filepath: str):
         save_total_limit=config.save_total_limit,
         predict_with_generate=True,
         generation_max_length=GEN_MAX_LENGTH,
-        load_best_model_at_end=True,
+        load_best_model_at_end=False,
         metric_for_best_model="wer",
         greater_is_better=False,  # the lower the WER, the better
         report_to="wandb"  # type: ignore
@@ -214,12 +214,20 @@ def main(config_filepath: str):
         callbacks=callbacks
     )
     
+    trainer.state.global_step = config.global_step
+    
     print("Starting training...")
         
     # Train the model:
     trainer.train()
     
     print("Training finished.")
+    
+    # Save the model:
+    final_model_dir = Path(config.model_dir) / f"checkpoint-{trainer.state.global_step}"
+    trainer.save_model(final_model_dir)
+    
+    print(f"Model saved to `{final_model_dir}`.")
     
     wandb.finish()
     

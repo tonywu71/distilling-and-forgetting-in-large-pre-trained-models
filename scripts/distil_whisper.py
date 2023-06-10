@@ -1,4 +1,3 @@
-from sympy import true
 import typer
 
 import os, sys
@@ -49,6 +48,11 @@ def main(config_filepath: str):
     distillation_sanity_check(config)
     
     is_seq_level = config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+    
+    if is_seq_level:
+        print(f"Sequence-level distillation will be performed. Although the batch size is set to {config.batch_size}, " + \
+              f", because {config.distillation_num_beams} beams will be used for distillation, " + \
+              f"the actual batch size will {config.batch_size * config.distillation_num_beams}.")
     
     # If a previous run has its checkpoints saved in the same directory,
     # add a timestamp to the model directory. This is to avoid overwriting
@@ -119,10 +123,10 @@ def main(config_filepath: str):
         dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
                                                              dataset_dict=dataset_dict)  # type: ignore
     
-    # Note: Technically, the K-beam search features are not needed for the word-level distillation. However,
-    #       we still load them for simplicity and because they are needed for `WandbDistillationCallback`.
+        # Note: Technically, the K-beam search features are not needed for the word-level distillation. However,
+        #       we still load them for simplicity and because they are needed for `WandbDistillationCallback`.
     
-    print("\n-----------------------\n")
+        print("\n-----------------------\n")
     
     # Initialize the models from pretrained checkpoints:
     if not is_seq_level:  # If word-level...
@@ -206,7 +210,7 @@ def main(config_filepath: str):
         save_steps=config.save_steps,
         save_total_limit=config.save_total_limit,
         remove_unused_columns=not(is_seq_level),  # keep the K-beam features if sequence-level, remove them if word-level
-        load_best_model_at_end=True,
+        load_best_model_at_end=False,
         metric_for_best_model="wer" if not is_seq_level else "eval_loss",
         greater_is_better=False,  # the lower the WER, the better (same for the loss)
         report_to="wandb"  # type: ignore
@@ -260,6 +264,12 @@ def main(config_filepath: str):
     distillation_trainer.train()
     
     print("Distillation finished.")
+    
+    # Save the model:
+    final_model_dir = Path(config.model_dir) / f"checkpoint-{trainer.state.global_step}"
+    trainer.save_model(final_model_dir)
+    
+    print(f"Model saved to `{final_model_dir}`.")
     
     wandb.finish()
     
