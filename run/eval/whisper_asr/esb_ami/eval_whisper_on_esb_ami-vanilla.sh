@@ -53,7 +53,7 @@ echo "python `which python`": >> $LOG
 
 # python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_ami >> $LOG 2> $ERR
 # python scripts/eval_whisper.py openai/whisper-base --dataset-name esb_ami >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-small --dataset-name esb_ami >> $LOG 2> $ERRR
+# python scripts/eval_whisper.py openai/whisper-small --dataset-name esb_ami >> $LOG 2> $ERR
 # python scripts/eval_whisper.py openai/whisper-medium --dataset-name esb_ami >> $LOG 2> $ERR
 # python scripts/eval_whisper.py openai/whisper-large-v2 --dataset-name esb_ami >> $LOG 2> $ERR
 

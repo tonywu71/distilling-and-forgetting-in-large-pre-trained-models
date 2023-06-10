@@ -52,7 +52,8 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 # python scripts/distil_whisper.py configs/distill_configs/seq_level_k_best_uniform/distil_medium_to_tiny-ami_10h-seq_level_k_best_uniform-k_3.yaml >> $LOG 2> $ERR
-python scripts/distil_whisper.py configs/distill_configs/seq_level_k_best_uniform/distil_medium_to_tiny-ami_10h-seq_level_k_best_uniform-k_5.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/seq_level_k_best_uniform/distil_medium_to_tiny-ami_10h-seq_level_k_best_uniform-k_5.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distill_configs/seq_level_k_best_uniform/distil_medium_to_tiny-ami_100h-seq_level_k_best_uniform-k_5.yaml >> $LOG 2> $ERR
 
 #! #############################################
 
