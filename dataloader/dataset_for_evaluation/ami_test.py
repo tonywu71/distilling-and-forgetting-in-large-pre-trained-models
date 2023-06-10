@@ -14,7 +14,7 @@ class AMITestSet(BaseDatasetGroup):
     
     def __init__(self,
                  streaming: bool=False,
-                 is_ami_10h: bool = True,
+                 is_ami_10h: bool = False,
                  subset: Optional[List[str]]=None) -> None:
         
         self.available_datasets = [
