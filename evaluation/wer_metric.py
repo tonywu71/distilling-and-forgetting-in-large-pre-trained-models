@@ -43,9 +43,9 @@ def compute_wer_fct(pred: EvalPrediction,
     
     # Log the string edit metrics to wandb:
     if log_string_edit_metrics_on_wandb:
-        wandb.log({"validation/sub_student_%": string_edit_metrics["sub"]})
-        wandb.log({"validation/ins_student_%": string_edit_metrics["ins"]})
-        wandb.log({"validation/del_student_%": string_edit_metrics["del"]})
+        wandb.log({"eval/sub_student_%": string_edit_metrics["sub"]})
+        wandb.log({"eval/ins_student_%": string_edit_metrics["ins"]})
+        wandb.log({"eval/del_student_%": string_edit_metrics["del"]})
     
     return {"wer": string_edit_metrics["wer"]}
 
@@ -89,8 +89,8 @@ def compute_wer_fct_distil(pred: EvalPrediction,
     
     # Log the string edit metrics to wandb:
     if log_string_edit_metrics_on_wandb:
-        wandb.log({"validation/sub_student_%": string_edit_metrics["sub"]})
-        wandb.log({"validation/ins_student_%": string_edit_metrics["ins"]})
-        wandb.log({"validation/del_student_%": string_edit_metrics["del"]})
+        wandb.log({"eval/sub_student_%": string_edit_metrics["sub"]})
+        wandb.log({"eval/ins_student_%": string_edit_metrics["ins"]})
+        wandb.log({"eval/del_student_%": string_edit_metrics["del"]})
     
     return {"wer": string_edit_metrics["wer"]}
