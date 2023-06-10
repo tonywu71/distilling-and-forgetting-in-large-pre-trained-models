@@ -210,7 +210,7 @@ def main(config_filepath: str):
         save_steps=config.save_steps,
         save_total_limit=config.save_total_limit,
         remove_unused_columns=not(is_seq_level),  # keep the K-beam features if sequence-level, remove them if word-level
-        load_best_model_at_end=False,
+        load_best_model_at_end=True,
         metric_for_best_model="wer" if not is_seq_level else "eval_loss",
         greater_is_better=False,  # the lower the WER, the better (same for the loss)
         report_to="wandb"  # type: ignore
@@ -266,8 +266,8 @@ def main(config_filepath: str):
     print("Distillation finished.")
     
     # Save the model:
-    final_model_dir = Path(config.model_dir) / f"checkpoint-{trainer.state.global_step}"
-    trainer.save_model(final_model_dir)
+    final_model_dir = Path(config.model_dir) / "final"
+    distillation_trainer.save_model(final_model_dir)
     
     print(f"Model saved to `{final_model_dir}`.")
     
