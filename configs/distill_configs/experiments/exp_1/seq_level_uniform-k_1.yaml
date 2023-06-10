@@ -1,11 +1,11 @@
-experiment_name: exp_1-seq_level-1_best
+experiment_name: exp_1-seq_level_uniform-k_1
 lang_name: english
 task: transcribe
 method: seq_level_k_best_uniform
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/exp_1-seq_level-1_best
+model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/exp_1-seq_level_uniform-k_1
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -26,7 +26,7 @@ save_total_limit: 2
 num_train_epochs: 5
 early_stopping_patience: -1
 
-ce_alpha: 0.
+alpha_ce: 0.
 distillation_num_beams: 1
 
 smart_load: True

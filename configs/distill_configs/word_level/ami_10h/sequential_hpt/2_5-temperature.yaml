@@ -35,4 +35,4 @@ n_samples_per_wandb_logging_step: 16
 is_hpt: True
 learning_rate: 1e-4  # optimized
 temperature: 50  # current
-ce_alpha: 0.5
+alpha_ce: 0.5

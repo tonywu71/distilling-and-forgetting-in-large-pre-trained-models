@@ -26,9 +26,9 @@ save_total_limit: 2
 num_train_epochs: 1.0
 early_stopping_patience: -1
 
-ce_alpha: 0.5
+alpha_ce: 0.5
 distillation_num_beams: 3
-decay_beta: 2.0
+beta_decay: 2.0
 
 smart_load: True
 log_preds_to_wandb: True

@@ -50,7 +50,7 @@ class DistilConfig:
     
     # ======== Knowledge distillation hyperparameters ========
     # General:
-    ce_alpha: float = 0.5
+    alpha_ce: float = 0.5
     
     # `word_level`:
     temperature: float = 2
@@ -59,7 +59,7 @@ class DistilConfig:
     distillation_num_beams: Optional[int] = None
     
     # `seq_level_k_best_ranked`:
-    decay_beta: Optional[float] = 2.
+    beta_decay: Optional[float] = 2.
     
     
     # ======== Other ========
@@ -100,9 +100,9 @@ class DistilConfig:
                 "The `distillation_num_beams` must be set to a value greater than 1 for " + \
                 "`seq_level_k_best_uniform` and `seq_level_k_best_ranked` distillation methods."
         if self.method == "seq_level_k_best_ranked":
-            assert self.decay_beta is not None, \
+            assert self.beta_decay is not None, \
                 "The `decay_beta` must be set for `seq_level_k_best_ranked` distillation."
-            assert self.decay_beta > 0, \
+            assert self.beta_decay > 0, \
                 "The `decay_beta` must be greater than 0 for `seq_level_k_best_ranked` distillation."
     
     

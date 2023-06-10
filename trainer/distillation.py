@@ -20,18 +20,18 @@ class DistillationTrainingArguments(TrainingArguments):
     """
     def __init__(self,
                  method: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"],
-                 ce_alpha: float,
+                 alpha_ce: float,
                  temperature: Optional[float] = None,
                  distillation_num_beams: Optional[int] = None,
-                 decay_beta: Optional[float] = None,
+                 beta_decay: Optional[float] = None,
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.method = method
-        self.ce_alpha = ce_alpha
+        self.alpha_ce = alpha_ce
         self.temperature = temperature
         self.distillation_num_beams = distillation_num_beams
-        self.decay_beta = decay_beta
+        self.beta_decay = beta_decay
 
 
 class DistillationTrainer(Trainer):
@@ -103,7 +103,7 @@ class DistillationTrainer(Trainer):
             F.softmax(logits_teacher / self.args.temperature, dim=-1))
         
         # Return weighted student loss
-        loss = self.args.ce_alpha * loss_ce + (1. - self.args.ce_alpha) * loss_kd
+        loss = self.args.alpha_ce * loss_ce + (1. - self.args.alpha_ce) * loss_kd
         
         return loss, output_student
 
@@ -191,20 +191,6 @@ class DistillationTrainer(Trainer):
         student_log_prob_all_mask = teacher_sequences_attention_mask[:, :-1, None].expand(-1, -1, vocab_size)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         
-        # ========== DEBUG ==========
-        # # TODO: Decode a few rows from 'output_log_prob_all_masked' using greedy decoding:
-        # # Check student preds
-        # import pdb; pdb.set_trace()
-        # max_indices = torch.argmax(output_log_prob_all_masked, dim=-1)  # (batch_size * distillation_num_beams, n_tokens-1)
-        # res_student = self.student_tokenizer.batch_decode(max_indices, skip_special_tokens=True, normalize=True)  # type: ignore
-        
-        # # Check teacher preds
-        # res_teacher = self.student_tokenizer.batch_decode(teacher_sequences, skip_special_tokens=True, normalize=True)
-        
-        # # Check labels
-        # res_true = self.student_tokenizer.batch_decode(labels, skip_special_tokens=True, normalize=True)
-        # ========================
-        
         # Get log-probabilities for each generation step:
         log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences[:, 1:, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens-1, 1)
         
@@ -222,7 +208,7 @@ class DistillationTrainer(Trainer):
         # Output:
         # - weights * teacher_sequences_prob * loss_kd -> (batch_size, distillation_num_beams) [broadcasting]
         if rank_weighting:
-            weights = self.get_rank_based_exp_decay_weights(K=self.args.distillation_num_beams, beta=self.args.decay_beta)
+            weights = self.get_rank_based_exp_decay_weights(K=self.args.distillation_num_beams, beta=self.args.beta_decay)
             loss_kd = torch.sum(weights * teacher_sequences_prob * loss_kd, axis=-1)  # (batch_size,)
         else:
             loss_kd = torch.sum(teacher_sequences_prob * loss_kd, axis=-1)  # (batch_size,)
@@ -232,7 +218,7 @@ class DistillationTrainer(Trainer):
         loss_kd = torch.mean(loss_kd,)  # (1,)
         
         # Return weighted student loss
-        loss = self.args.ce_alpha * loss_ce + (1. - self.args.ce_alpha) * loss_kd
+        loss = self.args.alpha_ce * loss_ce + (1. - self.args.alpha_ce) * loss_kd
         
         return loss, student_output_wrt_teacher
     

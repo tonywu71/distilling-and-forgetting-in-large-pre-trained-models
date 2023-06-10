@@ -186,10 +186,10 @@ def main(config_filepath: str):
     
     training_args = DistillationTrainingArguments(
         method=config.method,
-        ce_alpha=config.ce_alpha,
+        alpha_ce=config.alpha_ce,
         temperature=config.temperature,
         distillation_num_beams=config.distillation_num_beams,
-        decay_beta=config.decay_beta,
+        beta_decay=config.beta_decay,
         output_dir=config.model_dir,
         per_device_train_batch_size=config.batch_size,
         per_device_eval_batch_size=config.batch_size,
