@@ -1,11 +1,11 @@
-experiment_name: exp_1-seq_level_uniform-alpha_0
+experiment_name: exp_2-seq_level_uniform-alpha_0
 lang_name: english
 task: transcribe
 method: seq_level_k_best_uniform
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/exp_1-seq_level_uniform-k_1
+model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/exp_2-seq_level_uniform-alpha_0
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -17,17 +17,17 @@ dataset_name: ami_10h
 force_reprocess_dataset: False
 optim: adamw_torch
 learning_rate: 1e-5
-warmup_steps: 50
+warmup_steps: 25
 eval_steps: 50
 generation_num_beams: 5
 logging_steps: 50
 save_steps: 100000  # do not save the model
 save_total_limit: 2
-num_train_epochs: 5
+num_train_epochs: 1
 early_stopping_patience: -1
 
 alpha_ce: 0.
-distillation_num_beams: 1
+distillation_num_beams: 1  # arbitrary as alpha_ce = 0
 
 smart_load: True
 log_preds_to_wandb: True
