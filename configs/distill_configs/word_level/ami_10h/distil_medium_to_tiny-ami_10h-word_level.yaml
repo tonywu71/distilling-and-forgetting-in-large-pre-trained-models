@@ -1,0 +1,35 @@
+experiment_name: distil_whisper_medium_to_tiny-ami_10h-word_level
+lang_name: english
+task: transcribe
+method: word_level
+teacher_model_name_or_path: openai/whisper-medium
+student_model_name_or_path: openai/whisper-tiny
+is_tokenizer_multilingual: True
+model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/word_level
+freeze_encoder: True
+freeze_decoder: False
+batch_size: 16
+gradient_accumulation_steps: 4
+eval_accumulation_steps: 40
+gradient_checkpointing: True
+data_augmentation: False
+dataset_name: ami_10h
+force_reprocess_dataset: False
+optim: adamw_torch
+learning_rate: 1e-4
+warmup_steps: 50
+eval_steps: 50
+generation_num_beams: 5
+logging_steps: 50
+save_steps: 50
+save_total_limit:
+num_train_epochs: 1
+early_stopping_patience: 3
+
+ce_alpha: 0.9
+temperature: 5.0
+
+smart_load: True
+log_preds_to_wandb: True
+log_raw_str: True
+n_samples_per_wandb_logging_step: 16
