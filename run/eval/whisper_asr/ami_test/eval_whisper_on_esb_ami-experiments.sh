@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_esb_ami-finetuned
+#SBATCH -J eval_whisper_on_ami_test-experiments
 #! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper.py checkpoints/distillation/whisper_medium_to_tiny/ami_10h/word_level/checkpoint-250 --dataset-name esb_ami >> $LOG 2> $ERR
+python scripts/eval_whisper.py INSERT_CHECKPOINT_DIRPATH --dataset-name ami_test >> $LOG 2> $ERR
 
 #! #############################################
 
