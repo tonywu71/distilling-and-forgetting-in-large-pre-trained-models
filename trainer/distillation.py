@@ -1,6 +1,7 @@
 from typing import Optional, Literal
 
 import numpy as np
+from einops import rearrange
 
 import torch
 import torch.nn as nn
@@ -8,6 +9,9 @@ import torch.nn.functional as F
 
 from transformers import TrainingArguments, Trainer, PreTrainedModel, WhisperTokenizer
 from transformers.modeling_outputs import Seq2SeqLMOutput
+
+from trainer.prompting import get_labels_with_prompt, get_attention_mask_with_prompt
+from utils.constants import LOSS_MASK_IDX
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -82,25 +86,57 @@ class DistillationTrainer(Trainer):
             "The `teacher_model` must be set for word-level distillation."
         
         # Move inputs to device:
-        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels']
+        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels', 'attention_mask_labels']
+        
+        input_features = inputs["input_features"]  # (batch_size, 80, 3000)
+        labels = inputs["labels"]  # (batch_size, n_tokens_labels)
+        attention_mask_labels = inputs["attention_mask_labels"]  # (batch_size, n_tokens_labels)
+        
+        # Add prompt to labels and attention mask:
+        labels_with_prompt, n_prefix_tokens, n_suffix_tokens = get_labels_with_prompt(labels,
+                                                                                      tokenizer=self.processor.tokenizer,
+                                                                                      language="en",
+                                                                                      task="transcribe",
+                                                                                      no_timestamps=True)
+        attention_mask_labels_with_prompt = get_attention_mask_with_prompt(attention_mask_labels,
+                                                                           n_prefix_tokens=n_prefix_tokens,
+                                                                           n_suffix_tokens=n_suffix_tokens)
+        
         
         # Forward pass through student:
-        output_student: Seq2SeqLMOutput = student_model(**inputs)
+        output_student: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
+                                                                decoder_input_ids=labels_with_prompt[:, :-1],  # don't predict when current token is EOS
+                                                                decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
         
-        # Extract cross-entropy loss and logits from student
-        loss_ce = output_student.loss
-        logits_student = output_student.logits
+        # Remove what the model tried to predict for the special tokens at the beginning of the sequence:
+        logits_student = output_student.logits[:, n_prefix_tokens-1:, :]
+        
+        # Compute cross-entropy loss:
+        # Note: To be used with categorical targets, `F.cross_entropy` needs to be used with a tensor for which the 2nd dimension is the class dimension.
+        #       See https://pytorch.org/docs/stable/generated/torch.nn.functional.cross_entropy.html for more information.
+        loss_ce = F.cross_entropy(input=rearrange(logits_student, pattern="b n v -> b v n"),  # (batch_size, vocab_size, n_tokens_labels)
+                                  target=labels_with_prompt[:, n_prefix_tokens:],
+                                  ignore_index=self.processor.tokenizer.pad_token_id)
         
         # Extract logits from teacher
         with torch.no_grad():
-            output_teacher: Seq2SeqLMOutput = self.teacher_model(**inputs)
+            output_teacher: Seq2SeqLMOutput = self.teacher_model.forward(input_features=input_features,
+                                                                         decoder_input_ids=labels_with_prompt[:, :-1],  # don't predict when current token is EOS
+                                                                         decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
             logits_teacher = output_teacher.logits
         
-        # Soften probabilities and compute distillation loss
+        # Initialize KL-divergence loss:
         kl_div_loss = nn.KLDivLoss(reduction="batchmean")
+        
+        # Important:
+        # - `KLDivLoss` argument order is the opposite of the one for the KL(·||·) methematical notation
+        # - `KLDivLoss` expects log-probabilities for `input` to avoid underflow issues
+        
+        # Soften probabilities and compute distillation loss:
+        # Note: `input` should be log-probabilities according to the documentation of `KLDivLoss`.
         loss_kd = self.args.temperature ** 2 * kl_div_loss(
-            F.log_softmax(logits_student / self.args.temperature, dim=-1),
-            F.softmax(logits_teacher / self.args.temperature, dim=-1))
+            input=F.log_softmax(logits_student / self.args.temperature, dim=-1),
+            target=F.softmax(logits_teacher / self.args.temperature, dim=-1))
         
         # Return weighted student loss
         loss = self.args.alpha_ce * loss_ce + (1. - self.args.alpha_ce) * loss_kd
@@ -117,29 +153,28 @@ class DistillationTrainer(Trainer):
         """
         
         # Move inputs to device:
-        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels', 'teacher_sequences', 'teacher_sequences_scores']
-         
+        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels', 'attention_mask_labels', 'teacher_sequences',
+                                    #                 'attention_mask_teacher_sequences', 'teacher_sequences_scores']
+        
         input_features = inputs["input_features"]  # (batch_size, 80, 3000)
         labels = inputs["labels"]  # (batch_size, n_tokens_labels)
+        attention_mask_labels = inputs["attention_mask_labels"]  # (batch_size, n_tokens_labels)
         teacher_sequences = inputs["teacher_sequences"]  # (batch_size, num_beams, n_tokens)
+        attention_mask_teacher_sequences = inputs["attention_mask_teacher_sequences"]  # (batch_size, num_beams, n_tokens)
         teacher_sequences_scores = inputs["teacher_sequences_scores"]  # (batch_size, num_beams)
         
         batch_size = input_features.shape[0]
         distillation_num_beams = self.args.distillation_num_beams
         n_tokens = teacher_sequences.shape[-1]
         
-        # Get attention mask for teacher sequences:
-        # Note that `get_attention_mask_from_tensor` expects a 2D tensor. Thus we will have to temporarily reshape `teacher_sequences`.
-        teacher_sequences_attention_mask = self.get_attention_mask_from_tensor(teacher_sequences.reshape(-1, n_tokens))  # (batch_size * num_beams, n_tokens)
-        teacher_sequences_attention_mask = teacher_sequences_attention_mask.reshape(batch_size, -1, n_tokens)  # (batch_size, num_beams, n_tokens)
-        
+        # Sanity check:
         assert distillation_num_beams <= teacher_sequences.shape[1], \
             f"The number of beams for distillation must be <= the number of beams used for generation. " \
             f"Got {distillation_num_beams} beams for distillation and {teacher_sequences.shape[1]} beams for generation."
         
         # Retrieve only the beams of interest:
         teacher_sequences = teacher_sequences[:, :distillation_num_beams, :]  # (batch_size, distillation_num_beams, n_tokens)
-        teacher_sequences_attention_mask = teacher_sequences_attention_mask[:, :distillation_num_beams, :]  # (batch_size, distillation_num_beams, n_tokens)
+        attention_mask_teacher_sequences = attention_mask_teacher_sequences[:, :distillation_num_beams, :]  # (batch_size, distillation_num_beams, n_tokens)
         teacher_sequences_scores = teacher_sequences_scores[:, :distillation_num_beams]  # (batch_size, distillation_num_beams)
         
         # Re-normalize scores using only the K-best sequences by applying a softmax over the beam dimension:
@@ -149,15 +184,16 @@ class DistillationTrainer(Trainer):
         # Important note: Technically, the student model should be able to process the entire batch of size `batch_size * distillation_num_beams`. If
         #                 this is not the case, we need to reduce the batch size accordingly.
         teacher_sequences = teacher_sequences.reshape(batch_size * distillation_num_beams, n_tokens)  # (batch_size * distillation_num_beams, n_tokens)
-        teacher_sequences_attention_mask = teacher_sequences_attention_mask.reshape(batch_size * distillation_num_beams, n_tokens)  # (batch_size * distillation_num_beams, n_tokens)
+        attention_mask_teacher_sequences = attention_mask_teacher_sequences.reshape(batch_size * distillation_num_beams, n_tokens)  # (batch_size * distillation_num_beams, n_tokens)
         
         # Get the cross-entropy loss from student output wrt to the labels:
         # Notes: - The teacher model is not used in the cross-entropy loss computation.
         #        - We don't have to handle padding tokens as the cross-entropy loss will ignore them (see `preprocess_tokenized_labels` in `DataCollatorSpeechSeq2SeqWithPadding`).
         #        - We have to get the CE loss now because we will need to repeat the input features for the number of beams.
+        #        - When `labels` is given, `forward` implements teacher-forced decoding
         student_output_wrt_label: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                          decoder_input_ids=labels.masked_fill(labels.eq(-100), self.student_tokenizer.eos_token_id)[:, :-1],
-                                                                          labels=labels[:, 1:])
+                                                                          labels=labels[:, 1:],  # TODO: add EOT token ??
+                                                                          attention_mask=attention_mask_labels[:, 1:])
         loss_ce = student_output_wrt_label.loss  # mean cross-entropy -> (1,)
         
         # Repeat input features for the number of beams. The resulting tensor will have shape (batch_size * distillation_num_beams, dim_features).
@@ -167,7 +203,7 @@ class DistillationTrainer(Trainer):
         # Note that we excluded the EOT token "<|endoftext|>" as generation is supposed to stop here.
         student_output_wrt_teacher: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
                                                                             decoder_input_ids=teacher_sequences[:, :-1],
-                                                                            decoder_attention_mask=teacher_sequences_attention_mask[:, :-1])
+                                                                            decoder_attention_mask=attention_mask_teacher_sequences[:, :-1])
         
         student_logits = student_output_wrt_teacher.logits  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         vocab_size = student_logits.shape[-1]
@@ -188,7 +224,7 @@ class DistillationTrainer(Trainer):
         #       a sufficient method to ignore the padded values is to set them to 0.
         
         # Repeat attention_mask for the n_vocab dimension:
-        student_log_prob_all_mask = teacher_sequences_attention_mask[:, :-1, None].expand(-1, -1, vocab_size)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
+        student_log_prob_all_mask = attention_mask_teacher_sequences[:, :-1, None].expand(-1, -1, vocab_size)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         
         # Get log-probabilities for each generation step:
@@ -244,7 +280,7 @@ class DistillationTrainer(Trainer):
     def get_attention_mask_from_tensor(self, tensor: torch.Tensor) -> torch.Tensor:
         """
         Returns the attention mask from a tensor of shape (batch_size, n_tokens).
-        Convention:
+        Convention for Whisper:
         - 1 for tokens that are not masked
         - 0 for tokens that are masked.
         

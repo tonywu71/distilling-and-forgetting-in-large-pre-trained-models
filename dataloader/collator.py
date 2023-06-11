@@ -36,7 +36,15 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         The DataCollator will then return a batch of the following form:
         {
             "input_features": [...],
-            DEFAULT_LABEL_TOKENIZED_COL: [...]
+            DEFAULT_LABEL_TOKENIZED_COL: [...],
+            "attention_mask_labels": [...]
+        }
+        
+        with the extra following keys if `add_k_beam_features` is True:
+        {
+            "teacher_sequences": [...],
+            "attention_mask_teacher_sequences": [...],
+            "teacher_sequences_scores": [...]
         }
         """
         
@@ -49,8 +57,9 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         
         # --- Labels (tokenized) ---
         label_features = [{"input_ids": feature[DEFAULT_LABEL_TOKENIZED_COL]} for feature in features]  # get only the feature of interest
-        labels = self.preprocess_tokenized_labels(label_features, replace_padded_with_loss_mask=True, discard_first_bos_token=True)
-        batch[DEFAULT_LABEL_TOKENIZED_COL] = labels
+        labels, attention_mask_labels = self.preprocess_tokenized_labels(label_features, replace_padded_with_loss_mask=True, discard_first_bos_token=True)
+        batch[DEFAULT_LABEL_TOKENIZED_COL] = labels  # (batch_size, n_tokens)
+        batch["attention_mask_labels"] = attention_mask_labels  # (batch_size, n_tokens)
         
         
         # Add K-beam features if distillation:
@@ -60,6 +69,10 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             #       However, we can take advantage of the fact that batch and beam dimensions are indifferent. Hence, we can simply
             #       iterate over the batch dimension and pad each tensor individually.
             batch_size = len(features)
+            
+            # Note: `teacher_sequences_features` contains the teacher sequences of all beams for all samples in the batch.
+            #       This has nothing to do with the input features.
+            
             teacher_sequences_features = []
             for feature in features:
                 for row in feature["teacher_sequences"]:
@@ -67,10 +80,10 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             
             # Important: We should not use the loss mask here as `teacher_sequences_features` will only be used as the reference sequence and
             #            thus cannot contain the special token `LOSS_MASK_IDX`.
-            labels = self.preprocess_tokenized_labels(teacher_sequences_features, replace_padded_with_loss_mask=False, discard_first_bos_token=False)  # (batch_size * num_beams, n_tokens)
+            teacher_sequences, attention_mask_teacher_sequences = self.preprocess_tokenized_labels(teacher_sequences_features, replace_padded_with_loss_mask=False, discard_first_bos_token=False)  # (batch_size * num_beams, n_tokens)
             
-            labels = labels.reshape(batch_size, -1, labels.shape[-1])  # (batch_size, num_beams, n_tokens)
-            batch["teacher_sequences"] = labels
+            batch["teacher_sequences"] = teacher_sequences.reshape(batch_size, -1, teacher_sequences.shape[-1])  # (batch_size, num_beams, n_tokens)
+            batch["attention_mask_teacher_sequences"] = attention_mask_teacher_sequences.reshape(batch_size, -1, teacher_sequences.shape[-1])  # (batch_size, num_beams, n_tokens)
             
             # --- Teacher sequences scores ---
             # No need to pad the scores as they are already of the same shape:
@@ -82,7 +95,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     def preprocess_tokenized_labels(self,
                                     features: List[Dict[str, Union[List[int], torch.Tensor]]],
                                     replace_padded_with_loss_mask: bool = True,
-                                    discard_first_bos_token: bool = True) -> torch.Tensor:
+                                    discard_first_bos_token: bool = True) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Tokenize, pad, and replace padding with correct token for correct loss computation.
         
@@ -107,4 +120,4 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             if (labels[:, 0] == self.processor.tokenizer.bos_token_id).all().cpu().item():  # type: ignore
                 labels = labels[:, 1:]
         
-        return labels
+        return labels, attention_mask
