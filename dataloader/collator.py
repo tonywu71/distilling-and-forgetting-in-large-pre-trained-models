@@ -1,4 +1,4 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Tuple, Union
 
 import torch
 from transformers import WhisperProcessor
@@ -13,7 +13,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     
     def __init__(self,
                  processor: WhisperProcessor,
-                 add_k_beam_features: bool=False):
+                 add_k_beam_features: bool = False):
         self.processor = processor
         self.add_k_beam_features = add_k_beam_features
     
@@ -49,7 +49,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         
         # --- Labels (tokenized) ---
         label_features = [{"input_ids": feature[DEFAULT_LABEL_TOKENIZED_COL]} for feature in features]  # get only the feature of interest
-        labels = self.preprocess_tokenized_labels(label_features, use_loss_mask=True, discard_first_bos_token=True)
+        labels = self.preprocess_tokenized_labels(label_features, replace_padded_with_loss_mask=True, discard_first_bos_token=True)
         batch[DEFAULT_LABEL_TOKENIZED_COL] = labels
         
         
@@ -67,7 +67,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             
             # Important: We should not use the loss mask here as `teacher_sequences_features` will only be used as the reference sequence and
             #            thus cannot contain the special token `LOSS_MASK_IDX`.
-            labels = self.preprocess_tokenized_labels(teacher_sequences_features, use_loss_mask=False, discard_first_bos_token=False)  # (batch_size * num_beams, n_tokens)
+            labels = self.preprocess_tokenized_labels(teacher_sequences_features, replace_padded_with_loss_mask=False, discard_first_bos_token=False)  # (batch_size * num_beams, n_tokens)
             
             labels = labels.reshape(batch_size, -1, labels.shape[-1])  # (batch_size, num_beams, n_tokens)
             batch["teacher_sequences"] = labels
@@ -81,8 +81,8 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     
     def preprocess_tokenized_labels(self,
                                     features: List[Dict[str, Union[List[int], torch.Tensor]]],
-                                    use_loss_mask: bool=True,
-                                    discard_first_bos_token: bool=True) -> torch.Tensor:
+                                    replace_padded_with_loss_mask: bool = True,
+                                    discard_first_bos_token: bool = True) -> torch.Tensor:
         """
         Tokenize, pad, and replace padding with correct token for correct loss computation.
         
@@ -94,12 +94,12 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         labels_batch = self.processor.tokenizer.pad(features, return_tensors="pt")  # type: ignore
         
         # Note: The output `labels_batch` contains the following keys: ["input_ids", "attention_mask"].
+        labels = labels_batch["input_ids"]
+        attention_mask = labels_batch["attention_mask"]
         
-        if use_loss_mask:
+        if replace_padded_with_loss_mask:
             # Replace padding with correct token for correct loss computation:
-            labels = labels_batch["input_ids"].masked_fill(labels_batch["attention_mask"].ne(1), LOSS_MASK_IDX)
-        else:
-            labels = labels_batch["input_ids"]
+            labels = labels.masked_fill(attention_mask.ne(1), LOSS_MASK_IDX)
         
         if discard_first_bos_token:
             # If a BOS ("Beginning Of Sequence") token was appended in previous tokenization step,
