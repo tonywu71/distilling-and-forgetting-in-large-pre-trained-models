@@ -1,10 +1,10 @@
-from pathlib import Path
-from pprint import pprint
 import typer
 
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from pathlib import Path
+from pprint import pprint
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
 
@@ -29,8 +29,9 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
          streaming: bool = typer.Option(False, help="Whether to use streaming inference."),
          subset: Optional[List[str]] = typer.Option(None, help="Subset of the ESB dataset to evaluate on."),
          task: str = typer.Option("transcribe", help="Task to evaluate on."),
-         batch_size: int = typer.Option(16, help="Batch size for the ASR pipeline."),
          num_beams: int = typer.Option(DEFAULT_EVAL_NUM_BEAMS, help="Number of beams for the ASR pipeline."),
+         batch_size: int = typer.Option(16, help="Batch size for the ASR pipeline."),
+         all_edit_metrics: bool = typer.Option(False, "-a", "--all", help="Whether to save and log all edit metrics on top of the WER."),
          savepath: Optional[str] = typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
     """
@@ -83,16 +84,25 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     
     # Evaluate:
     print("Evaluating...")
-    results = eval_whisper_on_dataset_group(pretrained_model_name_or_path=pretrained_model_name_or_path,
+    df_edit_metrics = eval_whisper_on_dataset_group(pretrained_model_name_or_path=pretrained_model_name_or_path,
                                             ds_group=dataset_group,
                                             task=task,
                                             batch_size=batch_size,
                                             num_beams=num_beams)
     
+    # Save the WER metrics:
+    wer_metrics = df_edit_metrics["WER (%)"]
+    
+    # Compute the average WER:
+    wer_metrics["Average"] = wer_metrics.mean()
+    
+    # Round the results:
+    wer_metrics = wer_metrics.round(2)
+    
     print("\n-----------------------\n")
     
     print("Results:")
-    print(results)
+    print(wer_metrics)
     
     print("\n-----------------------\n")
     
@@ -100,15 +110,41 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     if savepath is None:
         savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}.csv"
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
-    results.to_csv(f"{savepath}")
-    print(f"Results saved to `{savepath}`.")
+    wer_metrics.to_csv(f"{savepath}")
+    print(f"WER metrics saved to `{savepath}`.")
     
     # Log results to W&B:
-    barplot = wandb.plot.bar(wandb.Table(dataframe=results.to_frame().reset_index()),  # type: ignore
-                             label=results.index.name,
-                             value=str(results.name),
+    barplot = wandb.plot.bar(wandb.Table(dataframe=wer_metrics.to_frame().reset_index()),  # type: ignore
+                             label=wer_metrics.index.name,
+                             value=str(wer_metrics.name),
                              title="Per dataset WER (%)")
-    wandb.log({"wer_for_dataset_group": barplot})
+    wandb.log({"WER (%) for dataset group": barplot})
+    
+    if all_edit_metrics:
+        # Save all edit metrics:
+        savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-edit_metrics.csv"
+        Path(savepath).parent.mkdir(exist_ok=True, parents=True)
+        df_edit_metrics.to_csv(f"{savepath}")
+        print(f"Edit metrics saved to `{savepath}`.")
+        
+        # Log all edit metrics to W&B:
+        print("\n-----------------------\n")
+        
+        print("All edit metrics:")
+        print(df_edit_metrics)
+        
+        print("\n-----------------------\n")
+        
+        for edit_metric in df_edit_metrics.columns:
+            if edit_metric == "WER (%)":  # skip WER as it is already logged
+                continue
+            curr_metric = df_edit_metrics[edit_metric]
+            barplot = wandb.plot.bar(wandb.Table(dataframe=curr_metric.to_frame().reset_index()),  # type: ignore
+                                    label=curr_metric.index.name,
+                                    value=str(curr_metric.name),
+                                    title=f"Per dataset f{edit_metric}")
+            wandb.log({f"{edit_metric} for dataset group": barplot})
+    
     wandb.finish()
     
     return

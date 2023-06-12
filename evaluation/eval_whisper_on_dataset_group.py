@@ -2,6 +2,8 @@ import os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from collections import defaultdict
+
 import torch
 assert torch.cuda.is_available(), "This script requires a GPU."
 
@@ -11,18 +13,18 @@ from tqdm.auto import tqdm
 from transformers import (pipeline,
                           WhisperProcessor,
                           WhisperForConditionalGeneration)
-import evaluate
 
 from dataloader.dataloader import gen_from_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
+from evaluation.string_edit_metrics import get_string_edit_metrics
 from normalization.whisper_normalization import get_whisper_normalizer
 
 
 def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   ds_group: BaseDatasetGroup,
                                   task: str = "transcribe",
-                                  batch_size: int = 16,
-                                  num_beams: int = 1) -> pd.Series:
+                                  num_beams: int = 1,
+                                  batch_size: int = 16) -> pd.DataFrame:
     
     assert ds_group.is_preprocessed, "The dataset group must be preprocessed."
     
@@ -32,11 +34,9 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
     # Load model:
     model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path)
     
-    # Load metric:
-    wer_metric = evaluate.load("wer")
-    
     # Loop over the datasets:
-    wer_results = []
+    dict_string_edit_metrics = defaultdict(list)
+    
     tbar = tqdm(ds_group.items())
     
     for dataset_name, dataset in tbar:
@@ -81,19 +81,15 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
             references.append(out["reference"][0])  # type: ignore
         
         # Compute the WER in percent:
-        wer = wer_metric.compute(references=references, predictions=predictions)
-        wer = 100 * wer  # type: ignore
+        string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=references, predictions=predictions))
         
-        wer_results.append(wer)
+        dict_string_edit_metrics["WER (%)"].append(string_edit_metrics["wer"])
+        dict_string_edit_metrics["Sub (%)"].append(string_edit_metrics["sub"])
+        dict_string_edit_metrics["Del (%)"].append(string_edit_metrics["del"])
+        dict_string_edit_metrics["Ins (%)"].append(string_edit_metrics["ins"])
     
-    # Save the results:
-    results = pd.Series(wer_results, index=list(ds_group.keys()), name="WER (%)")
-    results.index.name = "Dataset"
+    # Create a DataFrame with the results:
+    df_edit_metrics = pd.DataFrame(dict_string_edit_metrics, index=list(ds_group.keys()))
+    df_edit_metrics.index.name = "Dataset"
     
-    # Compute the average WER:
-    results["Average"] = results.mean()
-    
-    # Round the results:
-    results = results.round(2)
-    
-    return results
+    return df_edit_metrics

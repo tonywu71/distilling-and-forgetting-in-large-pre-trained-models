@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper.py INSERT_CHECKPOINT_DIRPATH --dataset-name ami_test >> $LOG 2> $ERR
+python scripts/eval_whisper.py INSERT_CHECKPOINT_DIRPATH --dataset-name ami_test --all >> $LOG 2> $ERR
 
 #! #############################################
 
