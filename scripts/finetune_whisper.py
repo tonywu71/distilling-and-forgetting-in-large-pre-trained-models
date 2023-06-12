@@ -83,7 +83,8 @@ def main(config_filepath: str):
     )
 
     # Create the data collator that will be used to prepare the data for training:
-    data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
+    data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor,
+                                                         replace_padded_with_loss_mask_for_labels=True)
 
     
     # Load the dataset and preprocess it:
