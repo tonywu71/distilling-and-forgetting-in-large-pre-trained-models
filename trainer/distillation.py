@@ -107,16 +107,12 @@ class DistillationTrainer(Trainer):
         output_student: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
                                                                 decoder_input_ids=labels_with_prompt[:, :-1],  # don't predict when current token is EOS
                                                                 decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
+        logits_student = output_student.logits  # (batch_size, n_tokens_labels, vocab_size)
         
-        # Remove what the model tried to predict for the special tokens at the beginning of the sequence:
-        logits_student = output_student.logits[:, n_prefix_tokens-1:, :]
-        
-        # Compute cross-entropy loss:
-        # Note: To be used with categorical targets, `F.cross_entropy` needs to be used with a tensor for which the 2nd dimension is the class dimension.
-        #       See https://pytorch.org/docs/stable/generated/torch.nn.functional.cross_entropy.html for more information.
-        loss_ce = F.cross_entropy(input=rearrange(logits_student, pattern="b n v -> b v n"),  # (batch_size, vocab_size, n_tokens_labels)
-                                  target=labels_with_prompt[:, n_prefix_tokens:],
-                                  ignore_index=self.processor.tokenizer.pad_token_id)
+        # Compute the cross-entropy loss:
+        loss_ce = self.compute_cross_entropy_loss(output_student=output_student,
+                                                  labels_with_prompt=labels_with_prompt,
+                                                  n_prefix_tokens=n_prefix_tokens)
         
         # Extract logits from teacher
         with torch.no_grad():
@@ -186,24 +182,43 @@ class DistillationTrainer(Trainer):
         teacher_sequences = teacher_sequences.reshape(batch_size * distillation_num_beams, n_tokens)  # (batch_size * distillation_num_beams, n_tokens)
         attention_mask_teacher_sequences = attention_mask_teacher_sequences.reshape(batch_size * distillation_num_beams, n_tokens)  # (batch_size * distillation_num_beams, n_tokens)
         
-        # Get the cross-entropy loss from student output wrt to the labels:
-        # Notes: - The teacher model is not used in the cross-entropy loss computation.
-        #        - We don't have to handle padding tokens as the cross-entropy loss will ignore them (see `preprocess_tokenized_labels` in `DataCollatorSpeechSeq2SeqWithPadding`).
-        #        - We have to get the CE loss now because we will need to repeat the input features for the number of beams.
-        #        - When `labels` is given, `forward` implements teacher-forced decoding
-        student_output_wrt_label: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                          labels=labels[:, 1:],  # TODO: add EOT token ??
-                                                                          attention_mask=attention_mask_labels[:, 1:])
-        loss_ce = student_output_wrt_label.loss  # mean cross-entropy -> (1,)
+        # Add prompt to labels and attention mask:
+        labels_with_prompt, n_prefix_tokens_labels, n_suffix_tokens_labels = get_labels_with_prompt(labels,
+                                                                                                    tokenizer=self.processor.tokenizer,
+                                                                                                    language="en",
+                                                                                                    task="transcribe",
+                                                                                                    no_timestamps=True)
+        attention_mask_labels_with_prompt = get_attention_mask_with_prompt(attention_mask_labels,
+                                                                           n_prefix_tokens=n_prefix_tokens_labels,
+                                                                           n_suffix_tokens=n_suffix_tokens_labels)
+        
+        # Forward pass through student with labels as decoder input:
+        student_output_wrt_labels: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
+                                                                           decoder_input_ids=labels_with_prompt[:, :-1],
+                                                                           decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
+        
+        # Compute the cross-entropy loss:
+        loss_ce = self.compute_cross_entropy_loss(output_student=student_output_wrt_labels,
+                                                  labels_with_prompt=labels_with_prompt,
+                                                  n_prefix_tokens=n_prefix_tokens_labels)
         
         # Repeat input features for the number of beams. The resulting tensor will have shape (batch_size * distillation_num_beams, dim_features).
         input_features = input_features.repeat_interleave(distillation_num_beams, dim=0)  # (batch_size * distillation_num_beams, 80, 3000)
         
+        # Add prompt to labels and attention mask:
+        teacher_sequences_with_prompt, n_prefix_tokens_teacher_seq, n_suffix_tokens_teacher_seq = get_labels_with_prompt(teacher_sequences,
+                                                                                                                         tokenizer=self.processor.tokenizer,
+                                                                                                                         language="en",
+                                                                                                                         task="transcribe",
+                                                                                                                         no_timestamps=True)
+        attention_mask_teacher_sequences_with_prompt = get_attention_mask_with_prompt(attention_mask_labels,
+                                                                                      n_prefix_tokens=n_prefix_tokens_teacher_seq,
+                                                                                      n_suffix_tokens=n_suffix_tokens_teacher_seq)
+        
         # Forward pass through student:
-        # Note that we excluded the EOT token "<|endoftext|>" as generation is supposed to stop here.
         student_output_wrt_teacher: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                            decoder_input_ids=teacher_sequences[:, :-1],
-                                                                            decoder_attention_mask=attention_mask_teacher_sequences[:, :-1])
+                                                                            decoder_input_ids=teacher_sequences_with_prompt[:, :-1],
+                                                                            decoder_attention_mask=attention_mask_teacher_sequences_with_prompt[:, :-1])
         
         student_logits = student_output_wrt_teacher.logits  # (batch_size * distillation_num_beams, n_tokens-1, vocab_size)
         vocab_size = student_logits.shape[-1]
@@ -276,35 +291,23 @@ class DistillationTrainer(Trainer):
         """
         return self._compute_loss_seq_level_k_best(student_model, inputs, rank_weighting=True)
     
-    
-    def get_attention_mask_from_tensor(self, tensor: torch.Tensor) -> torch.Tensor:
-        """
-        Returns the attention mask from a tensor of shape (batch_size, n_tokens).
-        Convention for Whisper:
-        - 1 for tokens that are not masked
-        - 0 for tokens that are masked.
+
+    def compute_cross_entropy_loss(self,
+                                   output_student: Seq2SeqLMOutput,
+                                   labels_with_prompt: torch.Tensor,
+                                   n_prefix_tokens: int) -> torch.Tensor:
+        # Remove what the model tried to predict for the special tokens at the beginning of the sequence:
+        logits_student = output_student.logits[:, n_prefix_tokens-1:, :]
         
-        Example:
-        - Input: tensor([[50257.,  50362.,     76.,    1694.,    627.,   50256.],
-                         [50257.,  50362.,  13099.,   50256.,  50256.,   50256.]])
+        # To be used with categorical targets, `F.cross_entropy` needs to be used with a tensor for which the 2nd dimension is the class dimension.
+        # See https://pytorch.org/docs/stable/generated/torch.nn.functional.cross_entropy.html for more information.
+        logits_student = rearrange(logits_student, "b s v -> b v s")  # (batch_size, vocab_size, n_tokens_labels)
         
-        - Output: tensor([[0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 1, 1]])
-        
-        Note: The padding token is the same as the end-of-text (EOT) token. Therefore,
-              we should turn off the attention for all the EOT tokens at the exception
-              of the first EOT token of each row (see example above).
-        """
-        
-        assert tensor.ndim == 2, \
-            f"The tensor must be 2D. Got {tensor.ndim} dimensions."
-        
-        pad_token_id = self.student_tokenizer.pad_token_id
-        indices = (tensor == pad_token_id).long().argmax(dim=-1)
-        attention_mask = torch.ones_like(tensor, dtype=torch.long)
-        for idx, row in zip(indices, attention_mask):
-            row[idx+1:] = 0  # ignore the first EOT token of each row
-        return attention_mask
+        # Compute cross-entropy loss:
+        loss_ce = F.cross_entropy(input=logits_student,
+                                  target=labels_with_prompt[:, n_prefix_tokens:],
+                                  ignore_index=self.processor.tokenizer.pad_token_id)  # (1,)
+        return loss_ce
     
     
     @staticmethod
