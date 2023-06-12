@@ -11,7 +11,6 @@ from transformers import TrainingArguments, Trainer, PreTrainedModel, WhisperTok
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
 from trainer.prompting import get_labels_with_prompt, get_attention_mask_with_prompt
-from utils.constants import LOSS_MASK_IDX
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -94,7 +93,7 @@ class DistillationTrainer(Trainer):
         
         # Add prompt to labels and attention mask:
         labels_with_prompt, n_prefix_tokens, n_suffix_tokens = get_labels_with_prompt(labels,
-                                                                                      tokenizer=self.processor.tokenizer,
+                                                                                      tokenizer=self.student_tokenizer,
                                                                                       language="en",
                                                                                       task="transcribe",
                                                                                       no_timestamps=True)
@@ -184,7 +183,7 @@ class DistillationTrainer(Trainer):
         
         # Add prompt to labels and attention mask:
         labels_with_prompt, n_prefix_tokens_labels, n_suffix_tokens_labels = get_labels_with_prompt(labels,
-                                                                                                    tokenizer=self.processor.tokenizer,
+                                                                                                    tokenizer=self.student_tokenizer,
                                                                                                     language="en",
                                                                                                     task="transcribe",
                                                                                                     no_timestamps=True)
@@ -207,7 +206,7 @@ class DistillationTrainer(Trainer):
         
         # Add prompt to labels and attention mask:
         teacher_sequences_with_prompt, n_prefix_tokens_teacher_seq, n_suffix_tokens_teacher_seq = get_labels_with_prompt(teacher_sequences,
-                                                                                                                         tokenizer=self.processor.tokenizer,
+                                                                                                                         tokenizer=self.student_tokenizer,
                                                                                                                          language="en",
                                                                                                                          task="transcribe",
                                                                                                                          no_timestamps=True)
@@ -306,7 +305,7 @@ class DistillationTrainer(Trainer):
         # Compute cross-entropy loss:
         loss_ce = F.cross_entropy(input=logits_student,
                                   target=labels_with_prompt[:, n_prefix_tokens:],
-                                  ignore_index=self.processor.tokenizer.pad_token_id)  # (1,)
+                                  ignore_index=self.student_tokenizer.pad_token_id)  # (1,)
         return loss_ce
     
     

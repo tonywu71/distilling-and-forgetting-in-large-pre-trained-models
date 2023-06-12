@@ -7,7 +7,7 @@ def get_labels_with_prompt(labels: torch.Tensor,
                            tokenizer: WhisperTokenizer,
                            language: str = "en",
                            task: str = "transcribe",
-                           no_timestamps: bool = True) -> Tuple[torch.Tensor, int, int]:
+                           no_timestamps: bool = True)-> Tuple[torch.Tensor, int, int]:
     """
     Returns the labels with the prefix and suffix tokens, as well as the number of prefix and suffix tokens.
     `labels_with_prompt` should be used as the `decoder_input_ids` argument for the `forward` method of the model.
@@ -31,7 +31,11 @@ def get_labels_with_prompt(labels: torch.Tensor,
     n_prefix_tokens = prefix_tokens.shape[1]  # n_prefix_tokens
     n_suffix_tokens = suffix_tokens.shape[1]  # n_suffix_tokens
     
-    # Concatenate the prefix tensor with the original tensor along the second dimension
+    # Send tensors to the same device as the `labels` tensor:
+    prefix_tokens = prefix_tokens.to(labels.device)
+    suffix_tokens = suffix_tokens.to(labels.device)
+    
+    # Concatenate the prefix tensor with the original tensor along the second dimension:
     labels_with_prompt = torch.cat((prefix_tokens, labels, suffix_tokens), dim=1)  # (batch_size, n_tokens_labels + n_prefix_tokens + n_suffix_tokens)
 
     return labels_with_prompt, n_prefix_tokens, n_suffix_tokens
@@ -44,10 +48,17 @@ def get_attention_mask_with_prompt(attention_mask_labels: torch.Tensor,
     Returns the attention mask for which the correct mask was added for the prefix and suffix tokens.
     """
     
+    # Get batch size:
     batch_size = attention_mask_labels.shape[0]
     
+    # Get prefix and suffix attention masks:
     attention_prefix = torch.ones(batch_size, n_prefix_tokens)  # (batch_size, n_prefix_tokens)
     attention_suffix = torch.ones(batch_size, n_suffix_tokens)  # (batch_size, n_suffix_tokens)
+    
+    # Send tensors to the same device as the `labels` tensor:
+    attention_prefix = attention_prefix.to(attention_mask_labels.device)
+    attention_suffix = attention_suffix.to(attention_mask_labels.device)
+    
     attention_mask_labels_with_prompt = torch.cat([attention_prefix, attention_mask_labels, attention_suffix], dim=1)  # (batch_size, n_tokens_labels + n_prefix_tokens + n_suffix_tokens)
     
     return attention_mask_labels_with_prompt
