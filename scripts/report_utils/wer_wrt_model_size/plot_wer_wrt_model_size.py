@@ -66,12 +66,16 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
         df = pd.concat([df, row_expected])  # type: ignore
         markers["Expected distilled model"] = "^"
     
+    # fig, ax = plt.subplots(figsize=(7, 3))  # for the poster
+    fig, ax = plt.subplots(figsize=(8, 6))
+    
     if regression:
         sns.regplot(data=df, x="Size (M parameters)", y="WER (%)",
-                    logx=log, ci=None, scatter_kws={"s": 400})  # type: ignore
+                    logx=log, ci=None, scatter_kws={"s": 400},
+                    ax=ax)
     else:
         sns.scatterplot(data=df, x="Size (M parameters)", y="WER (%)", hue="Model",
-                        s=400, style="Model", markers=markers)  # type: ignore
+                        s=400, style="Model", markers=markers, ax=ax)  # type: ignore
         if log:
             plt.xscale("log")
         
