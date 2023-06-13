@@ -40,12 +40,14 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         
         self.table_name = "sample_predictions-distill"
         self.data_collator_no_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
+                                                                            replace_padded_with_loss_mask_for_labels=False,
                                                                             add_k_beam_features=False)
         
         self.is_seq_level = (self.config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"])
         
         if self.is_seq_level:  # If sequence-level distillation...
             self.data_collator_with_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
+                                                                                  replace_padded_with_loss_mask_for_labels=False,
                                                                                   add_k_beam_features=True)
             self.eval_dataloader = DataLoader(self.eval_dataset,
                                               batch_size=self.config.batch_size,
