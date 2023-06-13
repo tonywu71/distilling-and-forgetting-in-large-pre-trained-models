@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_esb_ami-vanilla
+#SBATCH -J eval_whisper_on_ami_test-vanilla
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,14 +51,8 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_ami >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-base --dataset-name esb_ami >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-small --dataset-name esb_ami >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-medium --dataset-name esb_ami >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-large-v2 --dataset-name esb_ami >> $LOG 2> $ERR
-
-python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_ami --all >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-medium --dataset-name esb_ami >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name ami_test --all >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-medium --dataset-name ami_test --all >> $LOG 2> $ERR
 
 #! #############################################
 
