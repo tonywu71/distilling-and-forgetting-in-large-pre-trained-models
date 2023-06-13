@@ -115,8 +115,8 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     
     # Log results to W&B:
     barplot = wandb.plot.bar(wandb.Table(dataframe=wer_metrics.to_frame().reset_index()),  # type: ignore
-                             label=wer_metrics.index.name,
-                             value=str(wer_metrics.name),
+                             label=wer_metrics.index.name,  # "Dataset"
+                             value=str(wer_metrics.name),  # "WER (%)"
                              title="Per dataset WER (%)")
     wandb.log({"WER (%) for dataset group": barplot})
     
@@ -135,15 +135,14 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
         
         print("\n-----------------------\n")
         
-        for edit_metric in df_edit_metrics.columns:
-            if edit_metric == "WER (%)":  # skip WER as it is already logged
-                continue
-            curr_metric = df_edit_metrics[edit_metric]
-            barplot = wandb.plot.bar(wandb.Table(dataframe=curr_metric.to_frame().reset_index()),  # type: ignore
-                                    label=curr_metric.index.name,
-                                    value=str(curr_metric.name),
-                                    title=f"Per dataset f{edit_metric}")
-            wandb.log({f"{edit_metric} for dataset group": barplot})
+        df_edit_metrics_per_dataset = df_edit_metrics.T
+        df_edit_metrics_per_dataset.index.name = "Metric"
+        for dataset_name in df_edit_metrics_per_dataset.columns:
+            barplot = wandb.plot.bar(wandb.Table(dataframe=df_edit_metrics_per_dataset[dataset_name].to_frame().reset_index()),  # type: ignore
+                                     label=df_edit_metrics_per_dataset.index.name,  # "Metric"
+                                     value=dataset_name,  # should be equal to `df_edit_metrics_per_dataset.name`ß
+                                     title=f"String edit metrics for {dataset_name}")
+            wandb.log({f"String edit metrics for {dataset_name}": barplot})
     
     wandb.finish()
     
