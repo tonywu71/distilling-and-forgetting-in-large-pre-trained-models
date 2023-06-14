@@ -15,10 +15,12 @@ class DataCollatorSpeechSeq2SeqWithPadding:
                  processor: WhisperProcessor,
                  return_attention_mask: bool = False,
                  replace_padded_with_loss_mask_for_labels: bool = False,
+                 discard_first_bos_token: bool = False,
                  add_k_beam_features: bool = False):
         self.processor = processor
         self.return_attention_mask = return_attention_mask
         self.replace_padded_with_loss_mask_for_labels = replace_padded_with_loss_mask_for_labels
+        self.discard_first_bos_token = discard_first_bos_token
         self.add_k_beam_features = add_k_beam_features
     
     
@@ -55,7 +57,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         label_features = [{"input_ids": feature[DEFAULT_LABEL_TOKENIZED_COL]} for feature in features]  # get only the feature of interest
         labels, attention_mask_labels = self.preprocess_tokenized_labels(label_features,
                                                                          replace_padded_with_loss_mask=self.replace_padded_with_loss_mask_for_labels,
-                                                                         discard_first_bos_token=True)
+                                                                         discard_first_bos_token=self.discard_first_bos_token)  # (batch_size, n_tokens)
         batch[DEFAULT_LABEL_TOKENIZED_COL] = labels  # (batch_size, n_tokens)
         
         if self.return_attention_mask:
@@ -121,5 +123,6 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             # discard it as it will get appended later anyway:
             if (labels[:, 0] == self.processor.tokenizer.bos_token_id).all().cpu().item():  # type: ignore
                 labels = labels[:, 1:]
+                attention_mask = attention_mask[:, 1:]
         
         return labels, attention_mask
