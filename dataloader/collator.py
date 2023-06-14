@@ -9,20 +9,15 @@ from utils.constants import DEFAULT_LABEL_TOKENIZED_COL, LOSS_MASK_IDX
 class DataCollatorSpeechSeq2SeqWithPadding:
     """
     Class to collate data for speech seq2seq models with padding.
-    
-    For fine-tuning, we should have:
-    - `replace_padded_with_loss_mask_for_labels = True`
-    - `add_k_beam_features = False`.
-    For distillation, we should have:
-    - `replace_padded_with_loss_mask_for_labels = False`
-    - `add_k_beam_features = True`.
     """
     
     def __init__(self,
                  processor: WhisperProcessor,
+                 return_attention_mask: bool = False,
                  replace_padded_with_loss_mask_for_labels: bool = False,
                  add_k_beam_features: bool = False):
         self.processor = processor
+        self.return_attention_mask = return_attention_mask
         self.replace_padded_with_loss_mask_for_labels = replace_padded_with_loss_mask_for_labels
         self.add_k_beam_features = add_k_beam_features
     
@@ -33,33 +28,25 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         Split inputs and labels since they have to be of different lengths and need different padding methods.
         
         We expect `features` to be as such:
-        [
-            {
-                "input_features": [...],
-                "labels": [...],
-                "input_ids": [...]
-            },
-            ...
-        ]
+        >> [
+        >>     {
+        >>         "input_features": [...],
+        >>         "labels": [...],
+        >>         "input_ids": [...]
+        >>     },
+        >>     ...
+        >> ]
         
-        The DataCollator will then return a batch of the following form:
-        {
-            "input_features": [...],
-            DEFAULT_LABEL_TOKENIZED_COL: [...],
-            "attention_mask_labels": [...]
-        }
-        
-        with the extra following keys if `add_k_beam_features` is True:
-        {
-            "teacher_sequences": [...],
-            "attention_mask_teacher_sequences": [...],
-            "teacher_sequences_scores": [...]
-        }
+        The default `features` are:
+        >> {
+        >>     "input_features": [...],
+        >>     DEFAULT_LABEL_TOKENIZED_COL: [...]
+        >> }
         """
         
-        # features -> list of `batch_size` dicts (each key is a column name)
         
         # --- Input features ---
+        # `features`: list of `batch_size` dicts (each key is a column name)
         input_features = [{"input_features": feature["input_features"]} for feature in features]  # get only the feature of interest
         batch = self.processor.feature_extractor.pad(input_features, return_tensors="pt")  # type: ignore
         
@@ -70,7 +57,9 @@ class DataCollatorSpeechSeq2SeqWithPadding:
                                                                          replace_padded_with_loss_mask=self.replace_padded_with_loss_mask_for_labels,
                                                                          discard_first_bos_token=True)
         batch[DEFAULT_LABEL_TOKENIZED_COL] = labels  # (batch_size, n_tokens)
-        batch["attention_mask_labels"] = attention_mask_labels  # (batch_size, n_tokens)
+        
+        if self.return_attention_mask:
+            batch["attention_mask_labels"] = attention_mask_labels  # (batch_size, n_tokens)
         
         
         # Add K-beam features if distillation:

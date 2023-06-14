@@ -99,10 +99,9 @@ def main(config_filepath: str):
     # Create the data collator that will be used to prepare the data for training:
     if not is_seq_level:  # If word-level...
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
-                                                             replace_padded_with_loss_mask_for_labels=False)
+                                                             add_k_beam_features=False)
     else:
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
-                                                             replace_padded_with_loss_mask_for_labels=False,
                                                              add_k_beam_features=True)
     
     # Load the dataset and preprocess it:
@@ -123,7 +122,7 @@ def main(config_filepath: str):
     if is_seq_level:
         # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
         dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
-                                                             dataset_dict=dataset_dict)  # type: ignore
+                                                             dataset_dict=dataset_dict)
     
         # Note: Technically, the K-beam search features are not needed for the word-level distillation. However,
         #       we still load them for simplicity and because they are needed for `WandbDistillationCallback`.
@@ -137,7 +136,7 @@ def main(config_filepath: str):
         # Freeze the teacher model:
         for param in teacher_model.parameters():
             param.requires_grad = False
-        teacher_model._requires_grad = False  # type: ignore
+        teacher_model._requires_grad = False
     else:
         teacher_model = None  # the teacher model is not needed for sequence-level distillation as we already have its K-beam search outputs laoded
     
@@ -175,12 +174,12 @@ def main(config_filepath: str):
     for model in [teacher_model, student_model]:
         if model is not None:  # ignore teacher model if not used
             if config.is_tokenizer_multilingual:
-                model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+                model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)
             else:
                 model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=None, task=config.task)
-            model.config.suppress_tokens = []  # type: ignore
+            model.config.suppress_tokens = []
             if config.gradient_checkpointing:
-                model.config.use_cache = False  # type: ignore
+                model.config.use_cache = False
     
     
     # Prepare training:

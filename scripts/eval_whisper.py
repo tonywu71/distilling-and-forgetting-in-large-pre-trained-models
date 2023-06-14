@@ -85,10 +85,10 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     # Evaluate:
     print("Evaluating...")
     df_edit_metrics = eval_whisper_on_dataset_group(pretrained_model_name_or_path=pretrained_model_name_or_path,
-                                            ds_group=dataset_group,
-                                            task=task,
-                                            batch_size=batch_size,
-                                            num_beams=num_beams)
+                                                    ds_group=dataset_group,
+                                                    task=task,
+                                                    batch_size=batch_size,
+                                                    num_beams=num_beams)
     
     # Save the WER metrics:
     wer_metrics = df_edit_metrics["WER (%)"]
