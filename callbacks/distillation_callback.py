@@ -23,6 +23,12 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class WandbDistillationCallback(BaseWandbTrainingCallback):
+    """
+    A callback for distillation that logs the first `n_samples` of the evaluation dataset to W&B.
+    Also computes the WER of the student model's predictions (because `compute_metrics` is not
+    called during distillation).
+    """
+    
     def __init__(self,
                  config: DistilConfig,
                  processor: WhisperProcessor,
@@ -92,7 +98,9 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         return
 
     
-    def predict_and_log_preds_to_wandb(self, model: PreTrainedModel, state: TrainerState) -> None:
+    def predict_and_log_preds_to_wandb(self,
+                                       model: PreTrainedModel,
+                                       state: TrainerState) -> None:
         # Iterate through the first n samples:
         for idx, data in enumerate(self.eval_dataset):
             if idx >= self.n_samples:
@@ -138,10 +146,12 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         return
 
 
-    def get_labels_and_preds(self, student_model: PreTrainedModel, data) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def get_labels_and_preds(self,
+                             student_model: PreTrainedModel,
+                             data) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        Returns the labels and the teacher and student predictions.
-        Automatically handles both word-level and sequence-level distillation.
+        Returns the labels and the teacher and student predictions. Automatically handles both word-level and
+        sequence-level distillation.
         """
         if self.is_seq_level:  # If sequence-level distillation...
             # Collate the data into batches of size 1:
@@ -185,7 +195,10 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         return label_ids, pred_ids_teacher, pred_ids_student
     
     
-    def compute_wer_sequence_level_and_log(self, args: TrainingArguments, model: PreTrainedModel, state: TrainerState) -> None:
+    def compute_wer_sequence_level_and_log(self,
+                                           args: TrainingArguments,
+                                           model: PreTrainedModel,
+                                           state: TrainerState) -> None:
         """
         Computes the WER of the student model and logs it to wandb.
         """

@@ -23,8 +23,12 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class WandbFinetuneCallback(BaseWandbTrainingCallback):
+    """
+    A callback for fine-tuning that logs the first `n_samples` of the evaluation dataset to W&B.
+    """
+    
     def __init__(self,
-                 config: FinetuneConfig | DistilConfig,
+                 config: FinetuneConfig,
                  processor: WhisperProcessor,
                  eval_dataset: Dataset,
                  n_samples: int,
