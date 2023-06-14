@@ -15,7 +15,7 @@ from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGrou
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
 from normalization.whisper_normalization import get_whisper_normalizer
-from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL
+from utils.constants import DEFAULT_LABEL_TOKENIZED_COL
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

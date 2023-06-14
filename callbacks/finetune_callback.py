@@ -38,7 +38,7 @@ class WandbFinetuneCallback(BaseWandbTrainingCallback):
         assert isinstance(self.config, FinetuneConfig), "config must be `FinetuneConfig`"
         
         self.table_name = "sample_predictions-finetune"
-        self.data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor, replace_padded_with_loss_mask_for_labels=False)
+        self.data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor)
         
         self.wer_metric = evaluate.load("wer")
     

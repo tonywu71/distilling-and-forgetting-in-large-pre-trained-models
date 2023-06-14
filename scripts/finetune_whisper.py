@@ -225,7 +225,7 @@ def main(config_filepath: str):
     
     
     # Save the model:
-    final_model_dir = Path(config.model_dir) / "final"
+    final_model_dir = str(Path(config.model_dir) / "final")
     trainer.save_model(final_model_dir)
     
     print(f"Model saved to `{final_model_dir}`.")

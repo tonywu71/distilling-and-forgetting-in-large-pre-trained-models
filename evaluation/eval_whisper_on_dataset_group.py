@@ -74,7 +74,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         
         for out in whisper_asr(gen_from_dataset(dataset),
                                batch_size=batch_size,
-                               generate_kwargs={"num_beams": num_beams}):
+                               generate_kwargs={"num_beams": num_beams}):  # type: ignore
             if not out["reference"][0].strip():  # type: ignore
                 continue  # skip empty references to avoid error in WER computation
             predictions.append(whisper_norm(out["text"]))  # type: ignore

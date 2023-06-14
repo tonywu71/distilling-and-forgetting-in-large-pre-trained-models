@@ -102,7 +102,7 @@ class DistillationTrainer(Trainer):
                                                                            n_suffix_tokens=n_suffix_tokens)  # (batch_size, n_tokens_labels + n_prefix_tokens + n_suffix_tokens)
         
         
-        # Forward pass through student:
+        # Forward pass through student (teacher-forced):
         output_student: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
                                                                 decoder_input_ids=labels_with_prompt[:, :-1],  # don't predict when current token is EOS
                                                                 decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
@@ -115,6 +115,7 @@ class DistillationTrainer(Trainer):
         
         # Extract logits from teacher
         with torch.no_grad():
+            # Forward pass through teacher (teacher-forced):
             output_teacher: Seq2SeqLMOutput = self.teacher_model.forward(input_features=input_features,
                                                                          decoder_input_ids=labels_with_prompt[:, :-1],  # don't predict when current token is EOS
                                                                          decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
