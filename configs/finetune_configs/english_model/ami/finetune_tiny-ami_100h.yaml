@@ -1,6 +1,5 @@
 # Total training steps:
-# - 574 steps for batch_size = 128 and gradient_accumulation_steps = 2
-# - 287 steps for batch_size = 256 and gradient_accumulation_steps = 2
+# - 4600 for batch_size = 32 and num_train_epochs = 1
 experiment_name: finetune_whisper_tiny-ami_100h
 lang_name: english
 task: transcribe
@@ -9,8 +8,8 @@ is_tokenizer_multilingual: True
 model_dir: /home/tw581/rds/hpc-work/checkpoints/finetuning/whisper_tiny/ami_100h/
 freeze_encoder: True
 freeze_decoder: False
-batch_size: 256
-gradient_accumulation_steps: 2
+batch_size: 16
+gradient_accumulation_steps: 1
 eval_accumulation_steps:
 gradient_checkpointing: True
 data_augmentation: False
@@ -18,17 +17,17 @@ dataset_name: ami_100h
 force_reprocess_dataset: False
 optim: adamw_torch
 learning_rate: 1e-5
-warmup_steps: 25
-eval_steps: 100
+warmup_steps: 460
+eval_steps: 900
 generation_num_beams: 5
-logging_steps: 50
-save_steps: 100
+logging_steps: 450
+save_steps: 900
 save_total_limit: 2
 num_train_epochs: 2
-early_stopping_patience: 3
+early_stopping_patience: -1
 
 smart_load: True
-eval_first_step: False
+eval_first_step: True
 log_preds_to_wandb: True
 log_raw_str: True
 n_samples_per_wandb_logging_step: 32
