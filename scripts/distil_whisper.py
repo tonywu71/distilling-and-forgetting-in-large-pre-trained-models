@@ -193,7 +193,7 @@ def main(config_filepath: str):
         beta_decay=config.beta_decay,
         output_dir=config.model_dir,
         per_device_train_batch_size=config.batch_size,
-        per_device_eval_batch_size=config.batch_size,
+        per_device_eval_batch_size=config.eval_batch_size,
         gradient_accumulation_steps=config.gradient_accumulation_steps,
         eval_accumulation_steps=config.eval_accumulation_steps,
         gradient_checkpointing=config.gradient_checkpointing,

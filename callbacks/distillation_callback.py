@@ -54,7 +54,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             self.data_collator_with_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
                                                                                   add_k_beam_features=True)
             self.eval_dataloader = DataLoader(self.eval_dataset,
-                                              batch_size=self.config.batch_size,
+                                              batch_size=self.config.eval_batch_size,
                                               shuffle=False,
                                               collate_fn=self.data_collator_no_k_beam)
         else:  # If word-level distillation...

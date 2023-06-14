@@ -13,6 +13,7 @@ class DistilConfig:
     Config class for distillation experiments.
     
     Notes:
+    - If not defined in the config, `eval_batch_size` will be set to `batch_size`.
     - `is_tokenizer_multilingual` is used to identify the saved/loaded preprocessed datasets
       as there are two different tokenizers (one for English and one for multilingual) and no
       way to know which one was used to preprocess the dataset if a dir checkpoint is provided.
@@ -31,6 +32,7 @@ class DistilConfig:
     freeze_encoder: bool
     freeze_decoder: bool
     batch_size: int
+    eval_batch_size: Optional[int]
     gradient_accumulation_steps: int  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-accumulation
     eval_accumulation_steps: Optional[int]  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     gradient_checkpointing: bool  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-checkpointing
@@ -122,6 +124,8 @@ class DistilConfig:
             config_dict["model_dir"] = config_dict["model_dir"] + "/"
         
         # Set defaults:
+        if config_dict["eval_batch_size"] is None:
+            config_dict["eval_batch_size"] = config_dict["batch_size"]
         if config_dict["early_stopping_patience"] is None:
             config_dict["early_stopping_patience"] = -1
         
