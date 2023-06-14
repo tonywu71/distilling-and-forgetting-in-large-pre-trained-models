@@ -124,7 +124,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
         # Save all edit metrics:
         savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-edit_metrics.csv"
         Path(savepath).parent.mkdir(exist_ok=True, parents=True)
-        df_edit_metrics.to_csv(f"{savepath}")
+        df_edit_metrics.to_csv(savepath)
         print(f"Edit metrics saved to `{savepath}`.")
         
         # Log all edit metrics to W&B:
