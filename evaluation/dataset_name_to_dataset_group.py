@@ -13,7 +13,7 @@ from dataloader.dataset_for_evaluation.ami_test import AMITestSet
 from dataloader.dataset_for_evaluation.librispeech_clean_test import LibriSpeechCleanTestSet
 
 
-DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
+DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {  # type: ignore
     "esb": partial(ESBDataset, load_diagnostic=True),
     "esb_librispeech": partial(ESBDatasetWithLibriSpeechTest, load_diagnostic=True),
     "esb_ami": partial(ESBDatasetWithAMITest, load_diagnostic=True),
