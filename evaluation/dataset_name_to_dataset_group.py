@@ -19,6 +19,7 @@ DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
     "esb_ami": partial(ESBDatasetWithAMITest, load_diagnostic=True),
     "fab": FABDataset,
     "mls": partial(MLSDataset, load_diagnostic=True),
-    "ami_test": partial(AMITestSet),
+    "ami_test": AMITestSet,
+    "ami_10h_test": partial(AMITestSet, is_ami_10h=True),
     "librispeech_test": LibriSpeechCleanTestSet
 }
