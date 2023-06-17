@@ -1,5 +1,4 @@
-from datasets import DatasetDict, load_dataset
-from utils.constants import DEFAULT_LABEL_STR_COL
+from datasets import DatasetDict
 
 
 def rename_label_col(dataset_dict: DatasetDict,

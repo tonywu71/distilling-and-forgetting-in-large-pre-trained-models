@@ -44,7 +44,7 @@ def load_librispeech_dummy() -> DatasetDict:
     #                                 old_label_col="text",
     #                                 new_label_col=DEFAULT_LABEL_STR_COL)
     
-    return dataset_dict
+    return dataset_dict  # type: ignore
 
 
 def load_librispeech(train_split: str="train.100") -> DatasetDict:
@@ -79,4 +79,4 @@ def load_librispeech(train_split: str="train.100") -> DatasetDict:
     #                                 old_label_col="text",
     #                                 new_label_col=DEFAULT_LABEL_STR_COL)
     
-    return dataset_dict
+    return dataset_dict  # type: ignore
