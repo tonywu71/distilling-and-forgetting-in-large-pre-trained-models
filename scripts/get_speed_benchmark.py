@@ -21,7 +21,6 @@ from datasets import load_dataset
 
 import wandb
 
-from dataloader.dataloader import gen_from_dataset
 from benchmark.speed_benchmark import get_speed_benchmark
 from utils.file_io import extract_exp_name_from_model_path, extract_output_savepath_from_model_path
 

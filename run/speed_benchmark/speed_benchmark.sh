@@ -55,6 +55,7 @@ echo "python `which python`": >> $LOG
 # python scripts/get_speed_benchmark.py openai/whisper-base >> $LOG 2> $ERR
 # python scripts/get_speed_benchmark.py openai/whisper-small >> $LOG 2> $ERR
 # python scripts/get_speed_benchmark.py openai/whisper-medium >> $LOG 2> $ERR
+# python scripts/get_speed_benchmark.py openai/whisper-large-v2 >> $LOG 2> $ERR
 
 #! #############################################
 
