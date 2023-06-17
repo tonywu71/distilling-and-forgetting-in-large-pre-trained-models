@@ -32,9 +32,7 @@ class DistilConfig:
     freeze_encoder: bool
     freeze_decoder: bool
     batch_size: int
-    eval_batch_size: Optional[int]
     gradient_accumulation_steps: int  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-accumulation
-    eval_accumulation_steps: Optional[int]  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     gradient_checkpointing: bool  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-checkpointing
     data_augmentation: bool
     dataset_name: str
@@ -44,10 +42,15 @@ class DistilConfig:
     eval_steps: int
     generation_num_beams: int
     save_steps: int
-    save_total_limit: Optional[int]
     logging_steps: int
     num_train_epochs: int
-    early_stopping_patience: Optional[int]
+    
+    
+    # ======== Optional ========
+    eval_batch_size: Optional[int] = None
+    eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
+    save_total_limit: Optional[int] = None
+    early_stopping_patience: Optional[int] = None
     
     
     # ======== Knowledge distillation hyperparameters ========
@@ -77,7 +80,13 @@ class DistilConfig:
     
     
     def __post_init__(self) -> None:
-        """Post-initialization checks."""
+        """Set default values and run sanity checks after initialization."""
+        
+        # Set defaults:
+        if self.eval_batch_size is None:
+            self.eval_batch_size = self.batch_size
+        if self.early_stopping_patience is None:
+            self.early_stopping_patience = -1
         
         assert self.save_total_limit is None or self.save_total_limit >= 2, \
             "The `save_total_limit` must be at least 2, or None."
@@ -122,11 +131,5 @@ class DistilConfig:
         if config_dict["model_dir"] and not config_dict["model_dir"].endswith("/"):
             # The model_dir must end with a slash:
             config_dict["model_dir"] = config_dict["model_dir"] + "/"
-        
-        # Set defaults:
-        if config_dict["eval_batch_size"] is None:
-            config_dict["eval_batch_size"] = config_dict["batch_size"]
-        if config_dict["early_stopping_patience"] is None:
-            config_dict["early_stopping_patience"] = -1
         
         return DistilConfig(**config_dict)
