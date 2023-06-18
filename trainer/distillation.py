@@ -221,17 +221,17 @@ class DistillationTrainer(Trainer):
                                                                             decoder_attention_mask=attention_mask_teacher_sequences_with_prompt[:, :-1])
         
         # Remove the first logits for the special tokens:
-        student_logits = student_output_wrt_teacher.logits[:, n_prefix_tokens_teacher_seq:]  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size) as n_suffix_tokens = 1
-        vocab_size = student_logits.shape[-1]
+        student_logits = student_output_wrt_teacher.logits[:, n_prefix_tokens_teacher_seq-1:]  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
+        _, n_tokens_student_seq, vocab_size = student_logits.shape  # n_student_tokens = n_tokens_teacher_seq + 1 + n_suffix_tokens (the 1 corresponds to the prediction wrt to the BOS token)
         
         # Temporarily reshape logits to be able to properly use softmax along the last dimension:
-        student_logits = student_logits.reshape(batch_size, distillation_num_beams, n_tokens_teacher_seq, -1)  # (batch_size, distillation_num_beams, n_tokens_teacher_seq, vocab_size)
+        student_logits = student_logits.reshape(batch_size, distillation_num_beams, n_tokens_student_seq, -1)  # (batch_size, distillation_num_beams, n_tokens_student_seq, vocab_size)
         
         # Normalize logits:
-        student_log_prob_all = torch.nn.functional.log_softmax(student_logits, dim=-1)  # (batch_size, distillation_num_beams, n_tokens_teacher_seq, vocab_size)
+        student_log_prob_all = torch.nn.functional.log_softmax(student_logits, dim=-1)  # (batch_size, distillation_num_beams, n_tokens_student_seq, vocab_size)
         
         # Reshape back to original shape:
-        student_log_prob_all = student_log_prob_all.reshape(batch_size * distillation_num_beams, n_tokens_teacher_seq, -1)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
+        student_log_prob_all = student_log_prob_all.reshape(batch_size * distillation_num_beams, n_tokens_student_seq, -1)  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
         
         # Note: The first `K = distillation_num_beams` rows of output_log_prob_all_masked correspond to the same example but with different beams.
         
@@ -240,14 +240,14 @@ class DistillationTrainer(Trainer):
         #       a sufficient method to ignore the padded values is to set them to 0.
         
         # Repeat attention_mask for the n_vocab dimension:
-        student_log_prob_all_mask = attention_mask_teacher_sequences[:, :, None].expand(-1, -1, vocab_size)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
-        output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
+        student_log_prob_all_mask = attention_mask_teacher_sequences[:, :, None].expand(-1, -1, vocab_size)  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
+        output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
         
         # Get log-probabilities for each generation step:
-        log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences[:, :, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, 1)
+        log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences[:, :, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens_student_seq, 1)
         
         # Compute the sequence negative log-probability of `y_hat`, which is equal to `loss_kd`:
-        # log_prob_t_hat_step_wise.squeeze() -> (batch_size * distillation_num_beams, n_tokens_teacher_seq)
+        # log_prob_t_hat_step_wise.squeeze() -> (batch_size * distillation_num_beams, n_tokens_student_seq)
         # Hence we need to sum over the last dimension to get the sequence log-probability.
         loss_kd = - torch.sum(log_prob_t_hat_step_wise.squeeze(), axis=-1)  # (batch_size * distillation_num_beams,)
         loss_kd = loss_kd.reshape(batch_size, distillation_num_beams)  # (batch_size, distillation_num_beams)
