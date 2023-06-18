@@ -3,6 +3,9 @@ import torch
 from transformers import WhisperTokenizer
 
 
+BOS_TOKEN_ID = 50258
+
+
 def get_labels_with_prompt(labels: torch.Tensor,
                            tokenizer: WhisperTokenizer,
                            language: str = "en",
@@ -20,7 +23,7 @@ def get_labels_with_prompt(labels: torch.Tensor,
 
     # Get prefix tokens:
     forced_decoder_ids = tokenizer.get_decoder_prompt_ids(language=language, task=task, no_timestamps=no_timestamps)  # language, task, if_timestamps
-    prefix_tokens = torch.IntTensor([tokenizer.bos_token_id] + [token_id for idx, token_id in forced_decoder_ids])  # (n_prefix_tokens, )
+    prefix_tokens = torch.IntTensor([BOS_TOKEN_ID] + [token_id for idx, token_id in forced_decoder_ids])  # (n_prefix_tokens, )
     prefix_tokens = prefix_tokens.expand(batch_size, -1)  # (batch_size, n_prefix_tokens)
 
     # Get suffix tokens:
