@@ -22,7 +22,7 @@ logging_steps: 200
 save_steps: 400
 num_train_epochs: 1
 
-zero_shot: True
+zero_shot: False
 eval_batch_size: 128
 eval_accumulation_steps:
 save_total_limit: 2
