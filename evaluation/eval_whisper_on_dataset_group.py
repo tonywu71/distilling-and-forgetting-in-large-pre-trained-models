@@ -18,6 +18,7 @@ from dataloader.dataloader import gen_from_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from evaluation.string_edit_metrics import get_string_edit_metrics
 from normalization.whisper_normalization import get_whisper_normalizer
+from utils.constants import DEFAULT_LABEL_STR_COL
 
 
 def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
@@ -84,8 +85,8 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                generate_kwargs={"num_beams": num_beams}):  # type: ignore
             if not out["reference"][0].strip():  # type: ignore
                 continue  # skip empty references to avoid error in WER computation
-            predictions.append(whisper_norm(out["text"]))  # type: ignore
-            references.append(out["reference"][0])  # type: ignore
+            predictions.append(whisper_norm(out[DEFAULT_LABEL_STR_COL]))
+            references.append(out["reference"][0]) # the labels have already been normalized
         
         # Compute the WER in percent:
         string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=references, predictions=predictions))

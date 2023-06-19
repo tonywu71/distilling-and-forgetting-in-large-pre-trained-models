@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from dataloader.filtering import filter_audio_length, filter_labels
 from normalization.whisper_normalization import get_whisper_normalizer
-from utils.constants import DEFAULT_NUM_PROC
+from utils.constants import DEFAULT_NUM_PROC, DEFAULT_LABEL_STR_COL
 
 
 class BaseDatasetGroup(ABC):
@@ -61,7 +61,7 @@ class BaseDatasetGroup(ABC):
             whisper_norm = get_whisper_normalizer(language=self.language)
             
             def normalize_fct(batch):
-                batch["text"] = whisper_norm(batch["text"])
+                batch[DEFAULT_LABEL_STR_COL] = whisper_norm(batch[DEFAULT_LABEL_STR_COL])
                 return batch
         
             for dataset_name in self.str2dataset:  # Loop over all the datasets...
@@ -85,7 +85,7 @@ class BaseDatasetGroup(ABC):
                 # Load normalizer depending on the language:
                 whisper_norm = get_whisper_normalizer(language=self.ds_name_to_lang[dataset_name])
                 def normalize_fct(batch):
-                    batch["text"] = whisper_norm(batch["text"])
+                    batch[DEFAULT_LABEL_STR_COL] = whisper_norm(batch[DEFAULT_LABEL_STR_COL])
                     return batch
                 
                 # Normalize the labels:
