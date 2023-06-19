@@ -23,6 +23,7 @@ from normalization.whisper_normalization import get_whisper_normalizer
 def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   ds_group: BaseDatasetGroup,
                                   task: str = "transcribe",
+                                  zero_shot: bool = False,
                                   num_beams: int = 1,
                                   batch_size: int = 16) -> pd.DataFrame:
     
@@ -59,7 +60,13 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                                      language=language,
                                                      task=task)
         
-        model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=language, task=task)  # type: ignore
+        # The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
+        # These token ids control the transcription language and task for zero-shot ASR. If `zero_shot` is enabled in config, we will set
+        # these ids to None, as we will evaluate the model on predicting the correct language and task (which are provided in the tokenized input).
+        if zero_shot:
+            model.config.forced_decoder_ids = []
+        else:
+            model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=language, task=task)  # type: ignore
         
         whisper_asr = pipeline(task="automatic-speech-recognition",
                                model=model,

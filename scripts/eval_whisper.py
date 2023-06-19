@@ -29,6 +29,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
          streaming: bool = typer.Option(False, help="Whether to use streaming inference."),
          subset: Optional[List[str]] = typer.Option(None, help="Subset of the ESB dataset to evaluate on."),
          task: str = typer.Option("transcribe", help="Task to evaluate on."),
+         zero_shot: bool = typer.Option(False, help="Whether to use zero-shot inference. Defaults to False."),
          num_beams: int = typer.Option(DEFAULT_EVAL_NUM_BEAMS, help="Number of beams for the ASR pipeline."),
          batch_size: int = typer.Option(16, help="Batch size for the ASR pipeline."),
          all_edit_metrics: bool = typer.Option(False, "-a", "--all", help="Whether to save and log all edit metrics on top of the WER."),
@@ -51,6 +52,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
         "streaming": streaming,
         "subset": subset,
         "task": task,
+        "zero_shot": zero_shot,
         "batch_size": batch_size,
         "num_beams": num_beams,
     }
@@ -87,6 +89,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     df_edit_metrics = eval_whisper_on_dataset_group(pretrained_model_name_or_path=pretrained_model_name_or_path,
                                                     ds_group=dataset_group,
                                                     task=task,
+                                                    zero_shot=zero_shot,
                                                     batch_size=batch_size,
                                                     num_beams=num_beams)
     
