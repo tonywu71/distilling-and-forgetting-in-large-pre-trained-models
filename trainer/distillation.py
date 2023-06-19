@@ -104,22 +104,22 @@ class DistillationTrainer(Trainer):
         
         # Forward pass through student (teacher-forced):
         output_student: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                decoder_input_ids=labels_with_prompt[:, :-1],  # don't predict when current token is EOS
-                                                                decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
-        logits_student = output_student.logits  # (batch_size, n_tokens_labels, vocab_size) as n_suffix_tokens = 1
+                                                                decoder_input_ids=labels_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
+                                                                decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1],
+                                                                labels=labels_with_prompt[:, 1:]  # right-shifted labels
+        )
+        logits_student = output_student.logits  # (batch_size, n_tokens_labels, vocab_size)
         
         # Compute the cross-entropy loss:
-        loss_ce = self.compute_cross_entropy_loss(output_student=output_student,
-                                                  labels_with_prompt=labels_with_prompt,
-                                                  n_prefix_tokens=n_prefix_tokens)  # (1,)
+        loss_ce = output_student.loss  # (1,)
         
         # Extract logits from teacher
         with torch.no_grad():
             # Forward pass through teacher (teacher-forced):
             output_teacher: Seq2SeqLMOutput = self.teacher_model.forward(input_features=input_features,
-                                                                         decoder_input_ids=labels_with_prompt[:, :-1],  # don't predict when current token is EOS
+                                                                         decoder_input_ids=labels_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
                                                                          decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
-            logits_teacher = output_teacher.logits  # (batch_size, n_tokens_labels, vocab_size) as n_suffix_tokens = 1
+            logits_teacher = output_teacher.logits  # (batch_size, n_tokens_labels + n_prefix_tokens, vocab_size) as n_suffix_tokens = 1
         
         # Initialize KL-divergence loss:
         kl_div_loss = nn.KLDivLoss(reduction="batchmean")
@@ -194,13 +194,13 @@ class DistillationTrainer(Trainer):
         
         # Forward pass through student with labels as decoder input:
         student_output_wrt_labels: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                           decoder_input_ids=labels_with_prompt[:, :-1],
+                                                                           decoder_input_ids=labels_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
                                                                            decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
         
         # Compute the cross-entropy loss:
         loss_ce = self.compute_cross_entropy_loss(output_student=student_output_wrt_labels,
-                                                  labels_with_prompt=labels_with_prompt,
-                                                  n_prefix_tokens=n_prefix_tokens_labels)  # (1,)
+                                                  labels_tokenized=labels_with_prompt[:, 1:]  # right-shifted labels
+        )  # (1,)
         
         # Repeat input features for the number of beams. The resulting tensor will have shape (batch_size * distillation_num_beams, dim_features).
         input_features = input_features.repeat_interleave(distillation_num_beams, dim=0)  # (batch_size * distillation_num_beams, 80, 3000)
@@ -217,12 +217,12 @@ class DistillationTrainer(Trainer):
         
         # Forward pass through student with respect to teacher sequences as decoder input:
         student_output_wrt_teacher: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                            decoder_input_ids=teacher_sequences_with_prompt[:, :-1],
+                                                                            decoder_input_ids=teacher_sequences_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
                                                                             decoder_attention_mask=attention_mask_teacher_sequences_with_prompt[:, :-1])
         
         # Remove the first logits for the special tokens:
-        student_logits = student_output_wrt_teacher.logits[:, n_prefix_tokens_teacher_seq-1:]  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
-        _, n_tokens_student_seq, vocab_size = student_logits.shape  # n_student_tokens = n_tokens_teacher_seq + 1 + n_suffix_tokens (the 1 corresponds to the prediction wrt to the BOS token)
+        student_logits = student_output_wrt_teacher.logits  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
+        _, n_tokens_student_seq, vocab_size = student_logits.shape  # n_tokens_student_seq = n_tokens_teacher_seq + n_prefix_tokens - 1 + n_suffix_tokens (the 1 corresponds to the prediction wrt to the BOS token)
         
         # Temporarily reshape logits to be able to properly use softmax along the last dimension:
         student_logits = student_logits.reshape(batch_size, distillation_num_beams, n_tokens_student_seq, -1)  # (batch_size, distillation_num_beams, n_tokens_student_seq, vocab_size)
@@ -295,18 +295,18 @@ class DistillationTrainer(Trainer):
 
     def compute_cross_entropy_loss(self,
                                    output_student: Seq2SeqLMOutput,
-                                   labels_with_prompt: torch.Tensor,
-                                   n_prefix_tokens: int) -> torch.Tensor:
-        # Remove what the model tried to predict for the special tokens at the beginning of the sequence:
-        logits_student = output_student.logits[:, n_prefix_tokens-1:, :]
+                                   labels_tokenized: torch.Tensor) -> torch.Tensor:
+        """
+        Compute the cross-entropy loss between the student logits and the labels. Always zero-shot.
+        """
         
         # To be used with categorical targets, `F.cross_entropy` needs to be used with a tensor for which the 2nd dimension is the class dimension.
         # See https://pytorch.org/docs/stable/generated/torch.nn.functional.cross_entropy.html for more information.
-        logits_student = rearrange(logits_student, "b s v -> b v s")  # (batch_size, vocab_size, n_tokens_labels)
+        logits_student = rearrange(output_student.logits, "b s v -> b v s")  # (batch_size, vocab_size, n_tokens_labels)
         
         # Compute cross-entropy loss:
         loss_ce = F.cross_entropy(input=logits_student,
-                                  target=labels_with_prompt[:, n_prefix_tokens:],
+                                  target=labels_tokenized,
                                   ignore_index=self.student_tokenizer.pad_token_id)  # (1,)
         return loss_ce
     

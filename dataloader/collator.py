@@ -13,12 +13,12 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     
     def __init__(self,
                  processor: WhisperProcessor,
-                 return_attention_mask: bool = False,
+                 return_attention_mask_labels: bool = False,
                  replace_padded_with_loss_mask_for_labels: bool = False,
                  discard_first_bos_token: bool = False,
                  add_k_beam_features: bool = False):
         self.processor = processor
-        self.return_attention_mask = return_attention_mask
+        self.return_attention_mask = return_attention_mask_labels
         self.replace_padded_with_loss_mask_for_labels = replace_padded_with_loss_mask_for_labels
         self.discard_first_bos_token = discard_first_bos_token
         self.add_k_beam_features = add_k_beam_features

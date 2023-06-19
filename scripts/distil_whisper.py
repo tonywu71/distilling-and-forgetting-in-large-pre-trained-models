@@ -99,9 +99,11 @@ def main(config_filepath: str):
     # Create the data collator that will be used to prepare the data for training:
     if not is_seq_level:  # If word-level...
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
+                                                             return_attention_mask_labels=True,
                                                              add_k_beam_features=False)
     else:
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
+                                                             return_attention_mask_labels=True,
                                                              add_k_beam_features=True)
     
     # Load the dataset and preprocess it:
