@@ -1,11 +1,11 @@
 # Total training steps:
 # - 2300 for batch_size = 32 and num_train_epochs = 1
-experiment_name: finetune_whisper_tiny-ami_100h
+experiment_name: finetune_whisper_tiny-ami_100h-no_zero_shot
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/finetuning/whisper_tiny/ami_100h/
+model_dir: ./checkpoints/finetuning/whisper_tiny/ami_100h-no_zero_shot/
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
