@@ -10,12 +10,11 @@ from transformers import (PreTrainedModel,
                           TrainerState,
                           TrainerControl)
 from datasets import Dataset
-import evaluate
 
-from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from callbacks.base_training_callback import BaseWandbTrainingCallback
+from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from evaluation.string_edit_metrics import get_string_edit_metrics
 from utils.finetune_config import FinetuneConfig
-from utils.distil_config import DistilConfig
 from utils.constants import GEN_MAX_LENGTH, LOSS_MASK_IDX, DEFAULT_LABEL_TOKENIZED_COL
 
 
@@ -43,8 +42,6 @@ class WandbFinetuneCallback(BaseWandbTrainingCallback):
         
         self.table_name = "sample_predictions-finetune"
         self.data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor)
-        
-        self.wer_metric = evaluate.load("wer")
     
     
     def log_records_to_wandb(self) -> None:
@@ -109,7 +106,7 @@ class WandbFinetuneCallback(BaseWandbTrainingCallback):
             curr_pred_str = self.records["pred"][-1]
             
             # Compute the WER:
-            self.records["wer"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_str]))  # type: ignore
+            self.records["wer"].append(100 * get_string_edit_metrics(references=[curr_label_str], predictions=[curr_pred_str])["wer"])
             
             # Add boolean flag to indicate whether the prediction is correct:
             self.records["is_correct"].append(curr_label_str == curr_pred_str)
