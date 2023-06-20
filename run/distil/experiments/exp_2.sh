@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/finetune_whisper.py configs/distill_configs/experiments/exp_2/finetune_tiny-ami_10h.yaml >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/distill_configs/experiments/exp_2/finetune_tiny-ami_10h-exp_2.yaml >> $LOG 2> $ERR
 # python scripts/distil_whisper.py configs/distill_configs/experiments/exp_2/seq_level_uniform-alpha_0.yaml >> $LOG 2> $ERR
 
 #! #############################################
