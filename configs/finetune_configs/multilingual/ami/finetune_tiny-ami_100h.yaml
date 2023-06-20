@@ -1,32 +1,31 @@
 # Total training steps:
-# - 2300 for batch_size = 32 and num_train_epochs = 1
+# - 5088 for batch_size = 64 and num_train_epochs = 3
 experiment_name: finetune_whisper_tiny-ami_100h
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/finetuning/whisper_tiny/ami_100h/
+model_dir: ./checkpoints/finetuning/whisper_tiny/ami_100h-no_zero_shot/
 freeze_encoder: True
 freeze_decoder: False
-batch_size: 32
+batch_size: 64
 gradient_accumulation_steps: 1
 gradient_checkpointing: True
-data_augmentation: False
 dataset_name: ami_100h
 optim: adamw_torch
 learning_rate: 1e-5
-warmup_steps: 200
-eval_steps: 400
+warmup_steps: 500
+eval_steps: 1600
 generation_num_beams: 1  # to speed up eval
-logging_steps: 200
-save_steps: 400
-num_train_epochs: 1
+logging_steps: 800
+save_steps: 1600
+num_train_epochs: 3
 
-zero_shot: True
-eval_batch_size: 128
+zero_shot: False
+eval_batch_size: 256
 eval_accumulation_steps:
 save_total_limit: 2
-early_stopping_patience: -1
+early_stopping_patience: 3
 
 smart_load: True
 force_reprocess_dataset: False
