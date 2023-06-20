@@ -43,7 +43,7 @@ def preprocess_dataset(dataset_dict: DatasetDict,
     - Augment the dataset (optional)
     - Lowercase the text labels (optional)
     - Prepare the dataset (extract features and tokenize labels)
-    - Filter the dataset (remove empty samples and samples that are too long).
+    - Filter the dataset (remove samples with audio with not suitable length and samples with an empty label).
     
     Important: Make sure that the label column has the the same name as `DEFAULT_LABEL_STR_COL`
                ("text" by default).
@@ -74,7 +74,7 @@ def preprocess_dataset(dataset_dict: DatasetDict,
         
         print("Filtering the dataset...")
         dataset_dict[split] = filter_audio_length(dataset_dict[split], verbose=True)
-        dataset_dict[split] = filter_labels(dataset_dict[split], verbose=True)
+        dataset_dict[split] = filter_labels(dataset_dict[split], min_nb_words=1, verbose=True)  # filter out empty labels
         
         print(f"Number of samples in the {split} set: {len(dataset_dict[split])}")
     

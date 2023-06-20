@@ -3,7 +3,6 @@ from functools import partial
 from datasets import Dataset
 
 from utils.constants import (DEFAULT_LABEL_STR_COL,
-                             DEFAULT_LABELS_MIN_NB_WORDS,
                              MIN_INPUT_LENGTH,
                              MAX_INPUT_LENGTH,
                              DEFAULT_NUM_PROC)
@@ -44,7 +43,7 @@ def compute_label_length_fct(label: str) -> Dict[str, int]:
 
 
 def filter_labels(dataset: Dataset,
-                  min_nb_words: int = DEFAULT_LABELS_MIN_NB_WORDS,
+                  min_nb_words: int = 1,
                   label_col: str = DEFAULT_LABEL_STR_COL,
                   verbose: bool = False) -> Dataset:
     """

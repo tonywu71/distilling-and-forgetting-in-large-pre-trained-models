@@ -10,7 +10,6 @@ DEFAULT_NUM_PROC = 8  # see https://docs.hpc.cam.ac.uk/hpc/user-guide/a100.html#
 DEFAULT_LABEL_STR_COL = "text"
 DEFAULT_LABEL_TOKENIZED_COL = "labels"  # default column name used by the HuggingFace Trainer
 
-DEFAULT_LABELS_MIN_NB_WORDS = 2
 MIN_INPUT_LENGTH = 0.0
 MAX_INPUT_LENGTH = 30.0
 
