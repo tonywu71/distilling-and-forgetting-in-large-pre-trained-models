@@ -34,7 +34,6 @@ class DistilConfig:
     batch_size: int
     gradient_accumulation_steps: int  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-accumulation
     gradient_checkpointing: bool  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-checkpointing
-    data_augmentation: bool
     dataset_name: str
     optim: str
     learning_rate: float
@@ -46,7 +45,12 @@ class DistilConfig:
     num_train_epochs: int
     
     
-    # ======== Optional ========
+    # ======== Optional (data preprocessing) ========
+    data_augmentation: bool = False
+    lowercase: bool = True  # set to False if and only if the text is not fully uppercased
+    
+    
+    # ======== Optional (training) ========
     zero_shot: bool = True
     eval_batch_size: Optional[int] = None
     eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps

@@ -213,7 +213,7 @@ class DistillationTrainer(Trainer):
                                                                                                                          no_timestamps=True)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq + n_prefix_tokens + n_suffix_tokens)
         attention_mask_teacher_sequences_with_prompt = get_attention_mask_with_prompt(attention_mask_teacher_sequences,
                                                                                       n_prefix_tokens=n_prefix_tokens_teacher_seq,
-                                                                                      n_suffix_tokens=n_suffix_tokens_teacher_seq)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq + n_prefix_tokens + n_suffix_tokens)
+                                                                                      n_suffix_tokens=n_suffix_tokens_teacher_seq)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq + n_prefix_tokens_teacher_seq + n_suffix_tokens_teacher_seq)
         
         # Forward pass through student with respect to teacher sequences as decoder input:
         student_output_wrt_teacher: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
@@ -225,13 +225,13 @@ class DistillationTrainer(Trainer):
         _, n_tokens_student_seq, vocab_size = student_logits.shape  # n_tokens_student_seq = n_tokens_teacher_seq + n_prefix_tokens - 1 + n_suffix_tokens (the 1 corresponds to the prediction wrt to the BOS token)
         
         # Temporarily reshape logits to be able to properly use softmax along the last dimension:
-        student_logits = student_logits.reshape(batch_size, distillation_num_beams, n_tokens_student_seq, -1)  # (batch_size, distillation_num_beams, n_tokens_student_seq, vocab_size)
+        student_logits = student_logits.reshape(batch_size, distillation_num_beams, n_tokens_student_seq, vocab_size)  # (batch_size, distillation_num_beams, n_tokens_student_seq, vocab_size)
         
         # Normalize logits:
         student_log_prob_all = torch.nn.functional.log_softmax(student_logits, dim=-1)  # (batch_size, distillation_num_beams, n_tokens_student_seq, vocab_size)
         
         # Reshape back to original shape:
-        student_log_prob_all = student_log_prob_all.reshape(batch_size * distillation_num_beams, n_tokens_student_seq, -1)  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
+        student_log_prob_all = student_log_prob_all.reshape(batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
         
         # Note: The first `K = distillation_num_beams` rows of output_log_prob_all_masked correspond to the same example but with different beams.
         
@@ -240,11 +240,11 @@ class DistillationTrainer(Trainer):
         #       a sufficient method to ignore the padded values is to set them to 0.
         
         # Repeat attention_mask for the n_vocab dimension:
-        student_log_prob_all_mask = attention_mask_teacher_sequences[:, :, None].expand(-1, -1, vocab_size)  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
+        student_log_prob_all_mask = attention_mask_teacher_sequences_with_prompt[:, 1:, None].expand(-1, -1, vocab_size)  # right-shifted -> (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
         output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
         
         # Get log-probabilities for each generation step:
-        log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences[:, :, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens_student_seq, 1)
+        log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences_with_prompt[:, 1:, None], dim=-1)  # right-shifted -> (batch_size * distillation_num_beams, n_tokens_student_seq, 1)
         
         # Compute the sequence negative log-probability of `y_hat`, which is equal to `loss_kd`:
         # log_prob_t_hat_step_wise.squeeze() -> (batch_size * distillation_num_beams, n_tokens_student_seq)

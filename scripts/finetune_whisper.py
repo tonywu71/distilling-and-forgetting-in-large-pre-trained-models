@@ -17,7 +17,7 @@ from pathlib import Path
 from pprint import pprint
 
 from dataloader.dataloader import load_dataset_dict
-from dataloader.preprocessing import preprocess_dataset
+from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from transformers import (WhisperForConditionalGeneration,
                           WhisperProcessor,
                           Seq2SeqTrainingArguments,
@@ -99,6 +99,7 @@ def main(config_filepath: str):
         dataset_dict = preprocess_dataset(dataset_dict,  # type: ignore
                                           tokenizer=processor.tokenizer,  # type: ignore
                                           feature_extractor=processor.feature_extractor,  # type: ignore
+                                          lowercase=config.lowercase,
                                           augment=config.data_augmentation)
     
     print("\n-----------------------\n")

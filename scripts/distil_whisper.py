@@ -18,7 +18,7 @@ from pathlib import Path
 from pprint import pprint
 
 from dataloader.dataloader import load_dataset_dict
-from dataloader.preprocessing import preprocess_dataset
+from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from transformers import (WhisperForConditionalGeneration,
                           WhisperProcessor,
                           EarlyStoppingCallback,

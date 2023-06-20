@@ -1,37 +1,16 @@
 from functools import partial
 from typing import Any, Dict
 
-from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift
-
 from transformers import WhisperFeatureExtractor, WhisperTokenizer
 from datasets import Audio, DatasetDict
 from dataloader.filtering import filter_audio_length, filter_labels
-from normalization.whisper_normalization import get_whisper_normalizer
 
+from dataloader.preprocessing_train.augmentation import augment_audio_fct
 from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL, DEFAULT_NUM_PROC
 
 
-# Audio augmentation object to map over the dataset:
-AUGMENT_WAVEFORM = Compose([
-    AddGaussianNoise(min_amplitude=0.005, max_amplitude=0.015, p=0.3),
-    TimeStretch(min_rate=0.8, max_rate=1.25, p=0.3, leave_length_unchanged=False),
-    PitchShift(min_semitones=-4, max_semitones=4, p=0.3)
-])
-
-
-def augment_dataset_fct(batch, sample_rate: int):
-    """
-    Perform data augmentation for audio.
-    
-    Notes:
-        - `extract_audio` must be called before this function
-        - should only be applied to the train set
-    """
-    audio = batch["audio"]["array"]
-    augmented_audio = AUGMENT_WAVEFORM(samples=audio, sample_rate=sample_rate)
-    batch["audio"]["array"] = augmented_audio
-    return batch
-
+def lowercase_fct(example: Dict[str, str]) -> Dict[str, str]:
+    return {DEFAULT_LABEL_STR_COL: example[DEFAULT_LABEL_STR_COL].upper()}
 
 
 def prepare_dataset_fct(batch: Dict[str, Any],
@@ -56,14 +35,18 @@ def prepare_dataset_fct(batch: Dict[str, Any],
 def preprocess_dataset(dataset_dict: DatasetDict,
                        tokenizer: WhisperTokenizer,
                        feature_extractor: WhisperFeatureExtractor,
-                       augment: bool=False) -> DatasetDict:
+                       lowercase: bool = True,
+                       augment: bool = False) -> DatasetDict:
     """
     Preprocess the dataset:
     - Extract audio from the dataset
     - Augment the dataset (optional)
-    - Normalize the labels
+    - Lowercase the text labels (optional)
     - Prepare the dataset (extract features and tokenize labels)
     - Filter the dataset (remove empty samples and samples that are too long).
+    
+    Important: Make sure that the label column has the the same name as `DEFAULT_LABEL_STR_COL`
+               ("text" by default).
     
     Note: We deliberately chose to keep the audio features to be able to plot
           to log them in the wandb callback.
@@ -71,30 +54,22 @@ def preprocess_dataset(dataset_dict: DatasetDict,
     
     for split in dataset_dict:
         print(f"Preprocessing the {split} set...")
+        
+        print("Extracting audio from the dataset...")
         dataset_dict[split] = dataset_dict[split].cast_column("audio", Audio(sampling_rate=feature_extractor.sampling_rate))
         
         if augment and split == "train":  # only augment the training set
             print("Augmenting the training set...")
-            augment_dataset = partial(augment_dataset_fct, sample_rate=feature_extractor.sampling_rate)
+            augment_dataset = partial(augment_audio_fct, sample_rate=feature_extractor.sampling_rate)
             dataset_dict[split] = dataset_dict[split].map(augment_dataset, num_proc=DEFAULT_NUM_PROC)
         
-        # Apply Whisper's normalization to the labels:
-        # This operation must be done before the dataset is prepared as the
-        # tokenizer should be applied to the normalized text.
-        whisper_norm = get_whisper_normalizer(language=tokenizer.language)
+        if lowercase:
+            dataset_dict[split] = dataset_dict[split].map(lowercase_fct, num_proc=DEFAULT_NUM_PROC)
         
-        def normalize_fct(batch):
-            batch[DEFAULT_LABEL_STR_COL] = whisper_norm(batch[DEFAULT_LABEL_STR_COL])
-            return batch
-        
-        print("Normalizing the labels...")
-        dataset_dict[split] = dataset_dict[split].map(normalize_fct, num_proc=DEFAULT_NUM_PROC)
-        
+        print("Preparing the dataset...")
         prepare_dataset = partial(prepare_dataset_fct,
                                   tokenizer=tokenizer,
                                   feature_extractor=feature_extractor)
-                
-        print("Preparing the dataset...")
         dataset_dict[split] = dataset_dict[split].map(prepare_dataset, num_proc=DEFAULT_NUM_PROC)
         
         print("Filtering the dataset...")
