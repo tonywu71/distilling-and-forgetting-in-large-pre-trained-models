@@ -64,6 +64,7 @@ def preprocess_dataset(dataset_dict: DatasetDict,
             dataset_dict[split] = dataset_dict[split].map(augment_dataset, num_proc=DEFAULT_NUM_PROC)
         
         if lowercase:
+            print("Lowercasing the dataset...")
             dataset_dict[split] = dataset_dict[split].map(lowercase_fct, num_proc=DEFAULT_NUM_PROC)
         
         print("Preparing the dataset...")

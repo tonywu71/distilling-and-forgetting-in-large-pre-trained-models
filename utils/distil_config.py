@@ -77,7 +77,7 @@ class DistilConfig:
     smart_load: bool = True
     force_reprocess_dataset: bool = False
     force_reprocess_k_best: bool = False
-    eval_first_step: bool = True
+    eval_first_step: bool = False
     log_preds_to_wandb: bool = True
     log_raw_str: bool = False
     n_samples_per_wandb_logging_step: int = 8
