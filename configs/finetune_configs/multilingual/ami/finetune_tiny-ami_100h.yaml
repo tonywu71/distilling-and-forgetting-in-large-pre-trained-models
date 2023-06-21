@@ -5,7 +5,7 @@ lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/finetuning/whisper_tiny/ami_100h-no_zero_shot/
+model_dir: ./checkpoints/finetuning/whisper_tiny/ami_100h/
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 64

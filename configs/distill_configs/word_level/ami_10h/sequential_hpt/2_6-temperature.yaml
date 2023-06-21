@@ -18,7 +18,7 @@ force_reprocess_dataset: False
 optim: adamw_torch
 warmup_steps: 50
 eval_steps: 50
-generation_num_beams: 5
+generation_num_beams: 3
 logging_steps: 50
 save_steps: 100000  # do not save the model
 save_total_limit: 2

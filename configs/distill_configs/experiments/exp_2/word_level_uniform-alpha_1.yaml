@@ -1,20 +1,18 @@
 # With batch_size = 32 and num_train_epochs = 1:
 # -> global_step = 340
-experiment_name: exp_1-word_level-temperature_0
+experiment_name: exp_2-seq_level_uniform-alpha_1
 lang_name: english
 task: transcribe
 method: word_level
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/experiments/exp_1-word_level-temperature_0
+model_dir: ./checkpoints/experiments/exp_2-word_level_uniform-alpha_1
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
-gradient_accumulation_steps: 4
-eval_accumulation_steps: 40
+gradient_accumulation_steps: 2
 gradient_checkpointing: True
-data_augmentation: False
 dataset_name: ami_10h
 force_reprocess_dataset: False
 optim: adamw_torch
@@ -24,12 +22,16 @@ eval_steps: 68
 generation_num_beams: 1
 logging_steps: 34
 save_steps: 680  # do not save the model
-save_total_limit: 2
 num_train_epochs: 1
+
+zero_shot: True
+eval_batch_size: 256
+eval_accumulation_steps:
+save_total_limit: 2
 early_stopping_patience: -1
 
-alpha_ce: 0.
-temperature: 0.0001
+alpha_ce: 1.
+distillation_num_beams: 1  # arbitrary as alpha_ce = 0
 
 smart_load: True
 eval_first_step: False

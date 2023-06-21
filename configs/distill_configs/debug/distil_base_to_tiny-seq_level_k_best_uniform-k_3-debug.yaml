@@ -19,7 +19,7 @@ optim: adamw_torch
 learning_rate: 1e-5
 warmup_steps: 5
 eval_steps: 5
-generation_num_beams: 5
+generation_num_beams: 3
 logging_steps: 5
 save_steps: 100
 save_total_limit: 2
