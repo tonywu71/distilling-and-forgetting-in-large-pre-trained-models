@@ -140,7 +140,7 @@ def main(config_filepath: str):
             param.requires_grad = False
         teacher_model._requires_grad = False
     else:
-        teacher_model = None  # the teacher model is not needed for sequence-level distillation as we already have its K-beam search outputs laoded
+        teacher_model = None  # the teacher model is not needed for sequence-level distillation as we already have its K-beam search outputs loaded
     
     print(f"Loading student model `{config.student_model_name_or_path}`...")
     student_model = WhisperForConditionalGeneration.from_pretrained(config.student_model_name_or_path).to(device)  # type: ignore
