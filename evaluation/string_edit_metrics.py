@@ -30,11 +30,19 @@ def get_string_edit_metrics(references: List[str], predictions: List[str]) -> Di
         insertions += measures["insertions"]
         total += measures["substitutions"] + measures["deletions"] + measures["hits"]
     
-    string_edit_metrics = {
-        "wer": incorrect / total,
-        "sub": substitutions / total,
-        "del": deletions / total,
-        "ins": insertions / total
-    }
+    if total == 0:
+        string_edit_metrics = {
+            "wer": float('nan'),
+            "sub": float('nan'),
+            "del": float('nan'),
+            "ins": float('nan'),
+        }
+    else:
+        string_edit_metrics = {
+            "wer": incorrect / total,
+            "sub": substitutions / total,
+            "del": deletions / total,
+            "ins": insertions / total
+        }
     
     return string_edit_metrics
