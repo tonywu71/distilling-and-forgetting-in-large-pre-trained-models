@@ -17,8 +17,6 @@ from functools import partial
 from pathlib import Path
 from pprint import pprint
 
-from dataloader.dataloader import load_dataset_dict
-from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from transformers import (WhisperForConditionalGeneration,
                           WhisperProcessor,
                           EarlyStoppingCallback,
@@ -26,13 +24,15 @@ from transformers import (WhisperForConditionalGeneration,
 
 import wandb
 
+from callbacks.distillation_callback import WandbDistillationCallback
+from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from dataloader.dataloader import load_dataset_dict
+from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_wer_fct_distil
-from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
-from callbacks.eval_first_step_callback import EvalFirstStepCallback
-from callbacks.distillation_callback import WandbDistillationCallback
+from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import distillation_sanity_check

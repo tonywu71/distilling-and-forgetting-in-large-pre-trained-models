@@ -16,8 +16,6 @@ from functools import partial
 from pathlib import Path
 from pprint import pprint
 
-from dataloader.dataloader import load_dataset_dict
-from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from transformers import (WhisperForConditionalGeneration,
                           WhisperProcessor,
                           Seq2SeqTrainingArguments,
@@ -27,15 +25,17 @@ from transformers import (WhisperForConditionalGeneration,
 
 import wandb
 
+from callbacks.eval_first_step_callback import EvalFirstStepCallback
+from callbacks.finetune_callback import WandbFinetuneCallback
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from dataloader.dataloader import load_dataset_dict
+from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_wer_fct
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
-from callbacks.eval_first_step_callback import EvalFirstStepCallback
-from callbacks.finetune_callback import WandbFinetuneCallback
+from utils.constants import GEN_MAX_LENGTH
 from utils.file_io import fix_model_dir_conflicts
 from utils.finetune_config import FinetuneConfig
-from utils.constants import GEN_MAX_LENGTH
 
 
 def main(config_filepath: str):
