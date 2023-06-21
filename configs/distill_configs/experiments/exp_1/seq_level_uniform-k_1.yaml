@@ -11,7 +11,7 @@ model_dir: ./checkpoints/experiments/exp_1-seq_level_uniform-k_1
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
-gradient_accumulation_steps: 2
+gradient_accumulation_steps: 1
 eval_accumulation_steps:
 gradient_checkpointing: True
 data_augmentation: False

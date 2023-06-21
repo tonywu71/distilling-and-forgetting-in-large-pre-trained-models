@@ -1,6 +1,6 @@
 # With batch_size = 32 and num_train_epochs = 1:
 # -> global_step = 340
-experiment_name: exp_2-seq_level_uniform-alpha_1
+experiment_name: exp_2-word_level_uniform-alpha_1
 lang_name: english
 task: transcribe
 method: word_level
@@ -10,7 +10,7 @@ is_tokenizer_multilingual: True
 model_dir: ./checkpoints/experiments/exp_2-word_level_uniform-alpha_1
 freeze_encoder: True
 freeze_decoder: False
-batch_size: 32
+batch_size: 16
 gradient_accumulation_steps: 2
 gradient_checkpointing: True
 dataset_name: ami_10h
