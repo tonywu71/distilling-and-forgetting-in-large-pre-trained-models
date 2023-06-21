@@ -195,12 +195,12 @@ class DistillationTrainer(Trainer):
         # Forward pass through student with labels as decoder input:
         student_output_wrt_labels: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
                                                                            decoder_input_ids=labels_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
-                                                                           decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
+                                                                           decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1],
+                                                                           labels=labels_with_prompt[:, 1:]  # right-shifted labels
+        )
         
         # Compute the cross-entropy loss:
-        loss_ce = self.compute_cross_entropy_loss(output_student=student_output_wrt_labels,
-                                                  labels_tokenized=labels_with_prompt[:, 1:]  # right-shifted labels
-        )  # (1,)
+        loss_ce = student_output_wrt_labels.loss  # (1,)
         
         # Repeat input features for the number of beams. The resulting tensor will have shape (batch_size * distillation_num_beams, dim_features).
         input_features = input_features.repeat_interleave(distillation_num_beams, dim=0)  # (batch_size * distillation_num_beams, 80, 3000)
@@ -291,24 +291,6 @@ class DistillationTrainer(Trainer):
         Compute the loss for k-best ranked sequence-level distillation where `k = self.args.distillation_num_beams`.
         """
         return self._compute_loss_seq_level_k_best(student_model, inputs, rank_weighting=True)
-    
-
-    def compute_cross_entropy_loss(self,
-                                   output_student: Seq2SeqLMOutput,
-                                   labels_tokenized: torch.Tensor) -> torch.Tensor:
-        """
-        Compute the cross-entropy loss between the student logits and the labels. Always zero-shot.
-        """
-        
-        # To be used with categorical targets, `F.cross_entropy` needs to be used with a tensor for which the 2nd dimension is the class dimension.
-        # See https://pytorch.org/docs/stable/generated/torch.nn.functional.cross_entropy.html for more information.
-        logits_student = rearrange(output_student.logits, "b s v -> b v s")  # (batch_size, vocab_size, n_tokens_labels)
-        
-        # Compute cross-entropy loss:
-        loss_ce = F.cross_entropy(input=logits_student,
-                                  target=labels_tokenized,
-                                  ignore_index=self.student_tokenizer.pad_token_id)  # (1,)
-        return loss_ce
     
     
     @staticmethod
