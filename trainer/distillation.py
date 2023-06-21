@@ -70,18 +70,21 @@ class DistillationTrainer(Trainer):
         """
         Computes the loss according to the distillation method specified in `self.args.method`.
         """
-        loss, output_student = self.METHOD_TO_LOSS_FCT[self.args.method](student_model, inputs)
+        loss, output_student = self.METHOD_TO_LOSS_FCT[self.args.method](student_model=student_model,
+                                                                         inputs=inputs,
+                                                                         teacher_model=self.teacher_model)
         return (loss, output_student) if return_outputs else loss
     
     
     def _compute_loss_word_level(self,
                                  student_model: PreTrainedModel,
-                                 inputs) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
+                                 inputs,
+                                 teacher_model: PreTrainedModel) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for word-level distillation.
         """
         
-        assert self.teacher_model is not None, \
+        assert teacher_model is not None, \
             "The `teacher_model` must be set for word-level distillation."
         
         # Move inputs to device:
@@ -116,9 +119,9 @@ class DistillationTrainer(Trainer):
         # Extract logits from teacher
         with torch.no_grad():
             # Forward pass through teacher (teacher-forced):
-            output_teacher: Seq2SeqLMOutput = self.teacher_model.forward(input_features=input_features,
-                                                                         decoder_input_ids=labels_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
-                                                                         decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
+            output_teacher: Seq2SeqLMOutput = teacher_model.forward(input_features=input_features,
+                                                                    decoder_input_ids=labels_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
+                                                                    decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
             logits_teacher = output_teacher.logits  # (batch_size, n_tokens_labels + n_prefix_tokens, vocab_size) as n_suffix_tokens = 1
         
         # Initialize KL-divergence loss:
@@ -143,9 +146,12 @@ class DistillationTrainer(Trainer):
     def _compute_loss_seq_level_k_best(self,
                                        student_model: PreTrainedModel,
                                        inputs,
+                                       teacher_model: PreTrainedModel = None,
                                        rank_weighting: bool = False) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for k-best sequence-level distillation where `k = self.args.distillation_num_beams`.
+        
+        Note: `teacher_model` should be set to `None` when using this method. It is kept as an argument only for consistency.
         """
         
         # Move inputs to device:
