@@ -10,8 +10,8 @@ is_tokenizer_multilingual: True
 model_dir: ./checkpoints/experiments/exp_2-word_level_uniform-alpha_1
 freeze_encoder: True
 freeze_decoder: False
-batch_size: 8
-gradient_accumulation_steps: 4
+batch_size: 32
+gradient_accumulation_steps: 1
 gradient_checkpointing: True
 dataset_name: ami_10h
 force_reprocess_dataset: False
@@ -25,8 +25,8 @@ save_steps: 680  # do not save the model
 num_train_epochs: 1
 
 zero_shot: True
-eval_batch_size: 256
-eval_accumulation_steps:
+eval_batch_size:
+eval_accumulation_steps: 1
 save_total_limit: 2
 early_stopping_patience: -1
 
