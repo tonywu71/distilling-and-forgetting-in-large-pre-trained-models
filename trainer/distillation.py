@@ -255,21 +255,21 @@ class DistillationTrainer(Trainer):
         # Compute the sequence negative log-probability of `y_hat`, which is equal to `loss_kd`:
         # log_prob_t_hat_step_wise.squeeze() -> (batch_size * distillation_num_beams, n_tokens_student_seq)
         # Hence we need to sum over the last dimension to get the sequence log-probability.
-        loss_kd = - torch.sum(log_prob_t_hat_step_wise.squeeze(), axis=-1)  # (batch_size * distillation_num_beams,)
-        loss_kd = loss_kd.reshape(batch_size, distillation_num_beams)  # (batch_size, distillation_num_beams)
+        loss_kd_per_sentence = - torch.sum(log_prob_t_hat_step_wise.squeeze(), axis=-1)  # (batch_size * distillation_num_beams,)
+        loss_kd_per_sentence = loss_kd_per_sentence.reshape(batch_size, distillation_num_beams)  # (batch_size, distillation_num_beams)
         
         # Compute the weighted mean of the sequence log-probabilities:
         # Inputs:
         # - weights -> (distillation_num_beams,)
         # - teacher_sequences_prob -> (batch_size, distillation_num_beams)
-        # - loss_kd -> (batch_size, distillation_num_beams)
+        # - loss_kd_per_sentence -> (batch_size, distillation_num_beams)
         # Output:
-        # - weights * teacher_sequences_prob * loss_kd -> (batch_size, distillation_num_beams) [broadcasting]
+        # - weights * teacher_sequences_prob * loss_kd_per_sentence -> (batch_size, distillation_num_beams) [broadcasting]
         if rank_weighting:
             weights = self.get_rank_based_exp_decay_weights(K=self.args.distillation_num_beams, beta=self.args.beta_decay)
-            loss_kd = torch.sum(weights * teacher_sequences_prob * loss_kd, axis=-1)  # (batch_size,)
+            loss_kd = torch.sum(weights * teacher_sequences_prob * loss_kd_per_sentence, axis=-1)  # (batch_size,)
         else:
-            loss_kd = torch.sum(teacher_sequences_prob * loss_kd, axis=-1)  # (batch_size,)
+            loss_kd = torch.sum(teacher_sequences_prob * loss_kd_per_sentence, axis=-1)  # (batch_size,)
         
         # Because the default cross-entropy loss is computed with reduction='mean', we need to
         # also take the mean of the sequence log-probabilities to be consistent:
