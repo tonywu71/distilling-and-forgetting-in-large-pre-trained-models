@@ -30,7 +30,6 @@ from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.dataloader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from evaluation.wer_metric import compute_wer_fct_distil
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
 from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
 from utils.distil_config import DistilConfig
@@ -217,15 +216,6 @@ def main(config_filepath: str):
     )
     
     
-    # Define the compute_metrics function:
-    if not is_seq_level:  # If word-level...
-        compute_wer = partial(compute_wer_fct_distil,
-                              processor=student_processor,
-                              normalize=True,
-                              log_string_edit_metrics_on_wandb=True)
-    else:  # If sequence-level...
-        pass  # `compute_metrics` will be set to `None` in the trainer
-    
     # Define callbacks:
     callbacks: List[TrainerCallback] = []
     
@@ -253,7 +243,7 @@ def main(config_filepath: str):
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
-        compute_metrics=compute_wer if not is_seq_level else None,
+        compute_metrics=None,
         tokenizer=student_processor,  # type: ignore
         callbacks=callbacks
     )

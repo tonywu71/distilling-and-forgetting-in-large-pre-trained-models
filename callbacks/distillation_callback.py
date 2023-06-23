@@ -90,10 +90,10 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         # Log the predictions of the student model:
         self.predict_and_log_preds_to_wandb(model, state)
         
-        # For sequence-level distillation, the WER cannot be computed using the `compute_metrics` arg of `Trainer`.
+        # For distillation, the WER cannot be computed using the `compute_metrics` arg of `Trainer`.
         # Therefore, we will compute it here instead:
-        if self.is_seq_level and state.global_step % args.eval_steps == 0:  # Every `eval_steps` steps...
-                self.compute_wer_sequence_level_and_log(args, model, state)
+        if state.global_step % args.eval_steps == 0:  # Every `eval_steps` steps...
+            self.compute_wer_sequence_level_and_log(args, model, state)
         
         return
 
@@ -214,8 +214,8 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             
             # Generate the predictions:
             pred_ids_student = model.generate(input_features,
-                                                max_length=GEN_MAX_LENGTH,
-                                                num_beams=self.config.generation_num_beams)  # type: ignore
+                                              max_length=GEN_MAX_LENGTH,
+                                              num_beams=self.config.generation_num_beams)  # type: ignore
             
             # Decode the predictions:
             pred_str_student = self.processor.tokenizer.batch_decode(pred_ids_student, skip_special_tokens=True, normalize=True)  # type: ignore
