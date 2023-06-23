@@ -1,7 +1,7 @@
 # Total training steps:
 # - 2230 for batch_size = 64 and num_train_epochs = 5
 # - 4460 for batch_size = 32 and num_train_epochs = 5
-experiment_name: whisper_tiny-librispeech_clean_100h
+experiment_name: finetune-whisper_tiny-librispeech_clean_100h
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
@@ -16,10 +16,10 @@ dataset_name: librispeech_clean_100h
 optim: adamw_torch
 learning_rate: 1e-5
 warmup_steps: 200
-eval_steps: 900
+eval_steps: 600
 generation_num_beams: 1  # to speed up eval
-logging_steps: 450
-save_steps: 900
+logging_steps: 600
+save_steps: 600
 num_train_epochs: 5
 
 zero_shot: False
@@ -30,7 +30,7 @@ early_stopping_patience: 3
 
 smart_load: True
 force_reprocess_dataset: False
-eval_first_step: False
+eval_first_step: True
 log_preds_to_wandb: True
 log_raw_str: True
 n_samples_per_wandb_logging_step: 32

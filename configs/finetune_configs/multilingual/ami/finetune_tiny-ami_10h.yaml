@@ -1,5 +1,5 @@
 # batch_size = 16 -> 478 steps
-experiment_name: finetune_whisper_tiny-ami_10h
+experiment_name: finetune-whisper_tiny-ami_10h
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
