@@ -90,11 +90,6 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         # Log the predictions of the student model:
         self.predict_and_log_preds_to_wandb(model, state)
         
-        # For distillation, the WER cannot be computed using the `compute_metrics` arg of `Trainer`.
-        # Therefore, we will compute it here instead:
-        if state.global_step % args.eval_steps == 0:  # Every `eval_steps` steps...
-            self.compute_wer_sequence_level_and_log(args, model, state)
-        
         return
 
     
@@ -193,60 +188,3 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
                                                            num_beams=self.config.generation_num_beams)  # type: ignore
         
         return label_ids, pred_ids_teacher, pred_ids_student
-    
-    
-    def compute_wer_sequence_level_and_log(self,
-                                           args: TrainingArguments,
-                                           model: PreTrainedModel,
-                                           state: TrainerState) -> None:
-        """
-        Computes the WER of the student model and logs it to wandb.
-        """
-        
-        # Placeholders for the total WER and the number of samples:
-        string_edit_metrics_total = pd.Series({"wer": 0.0, "sub": 0.0, "ins": 0.0, "del": 0.0})
-        count = 0
-        
-        for batch in self.eval_dataloader:
-            # Note that we need to move the data to the device manually (which is not the case with Trainer):
-            input_features = batch["input_features"].to(device)
-            label_ids = batch[DEFAULT_LABEL_TOKENIZED_COL].to(device)
-            
-            # Generate the predictions:
-            pred_ids_student = model.generate(input_features,
-                                              max_length=GEN_MAX_LENGTH,
-                                              num_beams=self.config.generation_num_beams)  # type: ignore
-            
-            # Decode the predictions:
-            pred_str_student = self.processor.tokenizer.batch_decode(pred_ids_student, skip_special_tokens=True, normalize=True)  # type: ignore
-            
-            # Replace the padding index with the pad token id to undo the step we applied
-            # in the data collator to ignore padded tokens correctly in the loss:
-            label_ids[label_ids==LOSS_MASK_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
-            
-            # Decode the labels:
-            label_str = self.processor.tokenizer.batch_decode(label_ids, skip_special_tokens=True, normalize=True)  # type: ignore
-
-            # Compute the string edit metrics and add them to the total:
-            string_edit_metrics_total += pd.Series(get_string_edit_metrics(references=label_str, predictions=pred_str_student))
-            
-            # Increment the count:
-            count += 1
-        
-        # Compute the average string edit metrics and multiply by 100 to get percentages:
-        string_edit_metrics = 100 * (string_edit_metrics_total / count)
-        
-        # Print the string edit metrics:
-        print(f"Current step: {state.global_step}:")
-        print(f"WER: {string_edit_metrics['wer']:.2f}%")
-        print(f"Sub: {string_edit_metrics['sub']:.2f}%")
-        print(f"Ins: {string_edit_metrics['ins']:.2f}%")
-        print(f"Del: {string_edit_metrics['del']:.2f}%")
-        
-        # Log the string edit metrics to wandb:
-        self._wandb.log({"eval/wer_student_%": string_edit_metrics["wer"]})
-        self._wandb.log({"eval/substitutions_student_%": string_edit_metrics["sub"]})
-        self._wandb.log({"eval/insertions_student_%": string_edit_metrics["ins"]})
-        self._wandb.log({"eval/deletions_student_%": string_edit_metrics["del"]})
-    
-        return

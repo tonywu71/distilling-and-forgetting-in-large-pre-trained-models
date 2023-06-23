@@ -31,7 +31,9 @@ from dataloader.dataloader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
+from evaluation.wer_metric import compute_wer_fct
 from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
+from utils.constants import GEN_MAX_LENGTH
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import distillation_sanity_check
@@ -98,8 +100,7 @@ def main(config_filepath: str):
     # Create the data collator that will be used to prepare the data for training:
     if not is_seq_level:  # If word-level...
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
-                                                             return_attention_mask_labels=True,
-                                                             add_k_beam_features=False)
+                                                             return_attention_mask_labels=True)
     else:
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
                                                              return_attention_mask_labels=True,
@@ -200,6 +201,7 @@ def main(config_filepath: str):
         warmup_steps=config.warmup_steps,
         optim=config.optim,
         num_train_epochs=config.num_train_epochs,
+        generation_num_beams=config.generation_num_beams,
         evaluation_strategy="steps",
         eval_steps=config.eval_steps,
         logging_strategy="steps",
@@ -208,12 +210,20 @@ def main(config_filepath: str):
         save_strategy="steps",
         save_steps=config.save_steps,
         save_total_limit=config.save_total_limit,
+        predict_with_generate=True,
+        generation_max_length=GEN_MAX_LENGTH,
         remove_unused_columns=not(is_seq_level),  # keep the K-beam features if sequence-level, remove them if word-level
         load_best_model_at_end=True,
-        metric_for_best_model="eval_loss",
+        metric_for_best_model="wer",
         greater_is_better=False,  # the lower the WER, the better (same for the loss)
         report_to="wandb"  # type: ignore
     )
+    
+    # Define the compute_metrics function:
+    compute_wer = partial(compute_wer_fct,
+                          processor=student_processor,
+                          normalize=True,
+                          log_string_edit_metrics_on_wandb=True)
     
     
     # Define callbacks:
@@ -238,13 +248,13 @@ def main(config_filepath: str):
     distillation_trainer = DistillationTrainer(
         args=training_args,
         model=student_model,  # type: ignore
-        student_tokenizer=student_processor.tokenizer,
+        student_processor=student_processor,
         teacher_model=teacher_model,
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
-        compute_metrics=None,
-        tokenizer=student_processor,  # type: ignore
+        compute_metrics=compute_wer,  # type: ignore
+        tokenizer=student_processor.tokenizer,  # type: ignore
         callbacks=callbacks
     )
     

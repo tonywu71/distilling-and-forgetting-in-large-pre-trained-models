@@ -1,22 +1,23 @@
 from typing import Optional, Literal
 
 import numpy as np
-from einops import rearrange
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.data import DataLoader, Dataset
 
-from transformers import TrainingArguments, Trainer, PreTrainedModel, WhisperTokenizer
+from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer, PreTrainedModel, WhisperProcessor, WhisperTokenizer
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
+from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from trainer.prompting import get_labels_with_prompt, get_attention_mask_with_prompt
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-class DistillationTrainingArguments(TrainingArguments):
+class DistillationTrainingArguments(Seq2SeqTrainingArguments):
     """
     Subclass of `TrainingArguments` used for `DistillationTrainer`.
     Only supports distillation for non-sequential tasks.
@@ -37,17 +38,18 @@ class DistillationTrainingArguments(TrainingArguments):
         self.beta_decay = beta_decay
 
 
-class DistillationTrainer(Trainer):
+class DistillationTrainer(Seq2SeqTrainer):
     """
     Trainer class for distillation. Should be used with `args=DistillationTrainingArguments`.
     """
     def __init__(self,
-                 student_tokenizer: Optional[WhisperTokenizer] = None,
+                 student_processor: WhisperProcessor,
                  teacher_model: Optional[PreTrainedModel] = None,
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
-        self.student_tokenizer = student_tokenizer
+        self.student_processor = student_processor
+        self.student_tokenizer: WhisperTokenizer = self.student_processor.tokenizer
         self.teacher_model = teacher_model
         
         # Sanity checks:
@@ -61,6 +63,25 @@ class DistillationTrainer(Trainer):
             "seq_level_k_best_uniform": self._compute_loss_seq_level_k_best_uniform,
             "seq_level_k_best_ranked": self._compute_loss_seq_level_k_best_ranked
         }
+    
+    
+    def get_eval_dataloader(self, eval_dataset: Optional[Dataset] = None):
+        """
+        Overriding `get_eval_dataloader` as we should not pass the attention mask during evaluation.
+        """
+        if eval_dataset is None and self.eval_dataset is None:
+            raise ValueError("Trainer: evaluation requires an eval_dataset.")
+        eval_dataset = eval_dataset if eval_dataset is not None else self.eval_dataset
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.student_processor,
+                                                             return_attention_mask_labels=False)
+        
+        return DataLoader(
+            eval_dataset,
+            batch_size=self.args.eval_batch_size,
+            collate_fn=data_collator,
+            num_workers=self.args.dataloader_num_workers,
+            pin_memory=self.args.dataloader_pin_memory,
+        )
     
     
     def compute_loss(self,
@@ -146,12 +167,9 @@ class DistillationTrainer(Trainer):
     def _compute_loss_seq_level_k_best(self,
                                        student_model: PreTrainedModel,
                                        inputs,
-                                       teacher_model: PreTrainedModel = None,
                                        rank_weighting: bool = False) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for k-best sequence-level distillation where `k = self.args.distillation_num_beams`.
-        
-        Note: `teacher_model` should be set to `None` when using this method. It is kept as an argument only for consistency.
         """
         
         # Move inputs to device:
@@ -283,18 +301,24 @@ class DistillationTrainer(Trainer):
     
     def _compute_loss_seq_level_k_best_uniform(self,
                                                student_model: PreTrainedModel,
-                                               inputs) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
+                                               inputs,
+                                               teacher_model: PreTrainedModel = None) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for k-best uniform sequence-level distillation where `k = self.args.distillation_num_beams`.
+        
+        Note: `teacher_model` should be set to `None` when using this method. It is kept as an argument only for consistency.
         """
         return self._compute_loss_seq_level_k_best(student_model, inputs, rank_weighting=False)
     
     
     def _compute_loss_seq_level_k_best_ranked(self,
                                               student_model: PreTrainedModel,
-                                              inputs) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
+                                              inputs,
+                                              teacher_model: PreTrainedModel = None) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for k-best ranked sequence-level distillation where `k = self.args.distillation_num_beams`.
+        
+        Note: `teacher_model` should be set to `None` when using this method. It is kept as an argument only for consistency.
         """
         return self._compute_loss_seq_level_k_best(student_model, inputs, rank_weighting=True)
     

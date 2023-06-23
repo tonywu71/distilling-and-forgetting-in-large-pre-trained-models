@@ -209,7 +209,7 @@ def main(config_filepath: str):
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
-        tokenizer=processor,  # type: ignore
+        tokenizer=processor.tokenizer,  # type: ignore
         callbacks=callbacks
     )
     
