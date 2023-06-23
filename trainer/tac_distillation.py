@@ -2,9 +2,8 @@ from typing import Optional, Literal, List
 
 import torch
 
-from transformers import PreTrainedModel, WhisperProcessor
+from transformers import PreTrainedModel, WhisperForConditionalGeneration, WhisperProcessor
 
-from models.model_utils import copy_model
 from trainer.distillation import DistillationTrainingArguments, DistillationTrainer
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -64,11 +63,13 @@ class TACDistillationTrainer(DistillationTrainer):
         #       This will require to run k-beam search on the orginial student model as well... thus
         #       we will need run smart caching one more time in the distil script.
         
-        self.original_student_model = copy_model(self.model)
+        print("Creating a copy of the original student...")
+        self.original_student_model = WhisperForConditionalGeneration.from_pretrained(self.model.config._name_or_path).to(device)  # type: ignore
         
-        # Freeze the parameters of self.original_student_model:
+        # Freeze the copy of the original student:
         for param in self.original_student_model.parameters():
             param.requires_grad = False
+        self.original_student_model._requires_grad = False
     
     
     def compute_loss(self,
@@ -85,12 +86,11 @@ class TACDistillationTrainer(DistillationTrainer):
                                                                                        teacher_model=self.teacher_model,
                                                                                        language="english")
         
-        if self.args.tac_regularization:
-            for language_to_preserve in self.args.languages_to_preserve:
-                loss_other_task, _ = self.METHOD_DISTIL_TO_LOSS_FCT[self.args.method_tac](student_model=student_model,
-                                                                                          inputs=inputs,
-                                                                                          teacher_model=self.original_student_model,
-                                                                                          language=language_to_preserve)
-                loss += self.args.tac_gamma * loss_other_task / len(self.args.languages_to_preserve)
+        for language_to_preserve in self.args.languages_to_preserve:
+            loss_other_task, _ = self.METHOD_DISTIL_TO_LOSS_FCT[self.args.method_tac](student_model=student_model,
+                                                                                        inputs=inputs,
+                                                                                        teacher_model=self.original_student_model,
+                                                                                        language=language_to_preserve)
+            loss += self.args.gamma_tac * loss_other_task / len(self.args.languages_to_preserve)
         
         return (loss, output_student) if return_outputs else loss

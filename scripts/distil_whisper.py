@@ -282,6 +282,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         distillation_trainer = DistillationTrainer(**trainer_args)
     
     
+    print("\n-----------------------\n")
     print("Starting distillation...")
         
     # Distil the model:
