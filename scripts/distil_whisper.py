@@ -274,7 +274,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
-        tokenizer=student_processor.tokenizer,  # type: ignore
+        tokenizer=student_processor,  # use processor for saving  # type: ignore
         callbacks=callbacks
     )
     
