@@ -93,14 +93,16 @@ class DistillationTrainer(Seq2SeqTrainer):
         """
         loss, output_student = self.METHOD_TO_LOSS_FCT[self.args.method](student_model=student_model,
                                                                          inputs=inputs,
-                                                                         teacher_model=self.teacher_model)
+                                                                         teacher_model=self.teacher_model,
+                                                                         language="english")
         return (loss, output_student) if return_outputs else loss
     
     
     def _compute_loss_word_level(self,
                                  student_model: PreTrainedModel,
                                  inputs,
-                                 teacher_model: PreTrainedModel) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
+                                 teacher_model: PreTrainedModel,
+                                 language: str = "english") -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for word-level distillation.
         """
@@ -118,7 +120,7 @@ class DistillationTrainer(Seq2SeqTrainer):
         # Add prompt to labels and attention mask:
         labels_with_prompt, n_prefix_tokens, n_suffix_tokens = get_labels_with_prompt(labels,
                                                                                       tokenizer=self.student_tokenizer,
-                                                                                      language="en",
+                                                                                      language=language,
                                                                                       task="transcribe",
                                                                                       no_timestamps=True)  # (batch_size, n_tokens_labels + n_prefix_tokens + n_suffix_tokens)
         attention_mask_labels_with_prompt = get_attention_mask_with_prompt(attention_mask_labels,
@@ -132,7 +134,7 @@ class DistillationTrainer(Seq2SeqTrainer):
                                                                 decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1],
                                                                 labels=labels_with_prompt[:, 1:]  # right-shifted labels
         )
-        logits_student = output_student.logits  # (batch_size, n_tokens_labels, vocab_size)
+        logits_student = output_student.logits  # (batch_size, n_tokens_labels + n_prefix_tokens, vocab_size) as n_suffix_tokens = 1
         
         # Compute the cross-entropy loss:
         loss_ce = output_student.loss  # (1,)
@@ -167,6 +169,8 @@ class DistillationTrainer(Seq2SeqTrainer):
     def _compute_loss_seq_level_k_best(self,
                                        student_model: PreTrainedModel,
                                        inputs,
+                                       teacher_model: PreTrainedModel = None,
+                                       language: str = "english",
                                        rank_weighting: bool = False) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for k-best sequence-level distillation where `k = self.args.distillation_num_beams`.
@@ -209,7 +213,7 @@ class DistillationTrainer(Seq2SeqTrainer):
         # Add prompt to labels and attention mask:
         labels_with_prompt, n_prefix_tokens_labels, n_suffix_tokens_labels = get_labels_with_prompt(labels,
                                                                                                     tokenizer=self.student_tokenizer,
-                                                                                                    language="en",
+                                                                                                    language=language,
                                                                                                     task="transcribe",
                                                                                                     no_timestamps=True)  # (batch_size, n_tokens_labels + n_prefix_tokens_labels + n_suffix_tokens_labels)
         attention_mask_labels_with_prompt = get_attention_mask_with_prompt(attention_mask_labels,
@@ -232,7 +236,7 @@ class DistillationTrainer(Seq2SeqTrainer):
         # Add prompt to labels and attention mask:
         teacher_sequences_with_prompt, n_prefix_tokens_teacher_seq, n_suffix_tokens_teacher_seq = get_labels_with_prompt(teacher_sequences,
                                                                                                                          tokenizer=self.student_tokenizer,
-                                                                                                                         language="en",
+                                                                                                                         language=language,
                                                                                                                          task="transcribe",
                                                                                                                          no_timestamps=True)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq + n_prefix_tokens + n_suffix_tokens)
         attention_mask_teacher_sequences_with_prompt = get_attention_mask_with_prompt(attention_mask_teacher_sequences,
@@ -302,25 +306,27 @@ class DistillationTrainer(Seq2SeqTrainer):
     def _compute_loss_seq_level_k_best_uniform(self,
                                                student_model: PreTrainedModel,
                                                inputs,
-                                               teacher_model: PreTrainedModel = None) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
+                                               teacher_model: PreTrainedModel = None,
+                                               language: str = "english") -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for k-best uniform sequence-level distillation where `k = self.args.distillation_num_beams`.
         
         Note: `teacher_model` should be set to `None` when using this method. It is kept as an argument only for consistency.
         """
-        return self._compute_loss_seq_level_k_best(student_model, inputs, rank_weighting=False)
+        return self._compute_loss_seq_level_k_best(student_model, inputs, language=language, rank_weighting=False)
     
     
     def _compute_loss_seq_level_k_best_ranked(self,
                                               student_model: PreTrainedModel,
                                               inputs,
-                                              teacher_model: PreTrainedModel = None) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
+                                              teacher_model: PreTrainedModel = None,
+                                              language: str = "english") -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for k-best ranked sequence-level distillation where `k = self.args.distillation_num_beams`.
         
         Note: `teacher_model` should be set to `None` when using this method. It is kept as an argument only for consistency.
         """
-        return self._compute_loss_seq_level_k_best(student_model, inputs, rank_weighting=True)
+        return self._compute_loss_seq_level_k_best(student_model, inputs, language=language, rank_weighting=True)
     
     
     @staticmethod

@@ -33,20 +33,30 @@ from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
 from evaluation.wer_metric import compute_wer_fct
 from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
+from trainer.tac_distillation import TACDistillationTrainer, TACDistillationTrainingArguments
 from utils.constants import GEN_MAX_LENGTH
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
-from utils.sanity_checks import distillation_sanity_check
+from utils.sanity_checks import assert_if_distillation_tokenizers_match
+from utils.tac_distill_config import TACDistilConfig
 
 
 
-def main(config_filepath: str):
+def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file."),
+         tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
+                                              "Flag should be used if only if the config file is for TAC distillation.")):
     """
-    Distil the Whisper model on the LibriSpeech dataset.
+    Distil Whisper based on the provided config file.
     """
+    
     # --------------------   Load config   --------------------
-    config = DistilConfig.from_yaml(config_filepath)
-    distillation_sanity_check(config)
+    if tac:
+        config = TACDistilConfig.from_yaml(config_filepath)
+    else:
+        config = DistilConfig.from_yaml(config_filepath)
+    
+    # Sanity check:
+    assert_if_distillation_tokenizers_match(config)
     
     is_seq_level = config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]
     
@@ -68,7 +78,7 @@ def main(config_filepath: str):
     # -----------------------   W&B   -----------------------
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
-               job_type="distillation",
+               job_type="distillation_with_tac" if tac else "distillation",
                tags=list_tags,
                name=config.experiment_name,
                config=asdict(config))
@@ -184,7 +194,7 @@ def main(config_filepath: str):
     # Prepare training:
     Path(config.model_dir).mkdir(parents=True, exist_ok=True)
     
-    training_args = DistillationTrainingArguments(
+    training_arguments_args = dict(
         method=config.method,
         alpha_ce=config.alpha_ce,
         temperature=config.temperature,
@@ -219,6 +229,14 @@ def main(config_filepath: str):
         report_to="wandb"  # type: ignore
     )
     
+    if isinstance(config, TACDistilConfig):  # equivalent to `if tac`
+        training_args = TACDistillationTrainingArguments(languages_to_preserve=config.languages_to_preserve,
+                                                         method_tac=config.method_tac,
+                                                         gamma_tac=config.gamma_tac,
+                                                         **training_arguments_args)
+    else:
+        training_args = DistillationTrainingArguments(**training_arguments_args)  # type: ignore
+    
     # Define the compute_metrics function:
     compute_wer = partial(compute_wer_fct,
                           processor=student_processor,
@@ -245,7 +263,7 @@ def main(config_filepath: str):
     
     
     # Create the trainer:
-    distillation_trainer = DistillationTrainer(
+    trainer_args = dict(
         args=training_args,
         model=student_model,  # type: ignore
         student_processor=student_processor,
@@ -257,6 +275,12 @@ def main(config_filepath: str):
         tokenizer=student_processor.tokenizer,  # type: ignore
         callbacks=callbacks
     )
+    
+    if tac:
+        distillation_trainer = TACDistillationTrainer(**trainer_args)
+    else:
+        distillation_trainer = DistillationTrainer(**trainer_args)
+    
     
     print("Starting distillation...")
         

@@ -45,6 +45,7 @@ class FinetuneConfig:
     
     # ======== Optional (training) ========
     zero_shot: bool = False
+    tac_regularization: bool = False
     eval_batch_size: Optional[int] = None
     eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     save_total_limit: Optional[int] = None
@@ -73,7 +74,8 @@ class FinetuneConfig:
         # Sanity checks:
         assert self.save_total_limit is None or self.save_total_limit >= 2, \
             "The `save_total_limit` must be at least 2, or None."
-    
+        if self.tac_regularization:
+            raise NotImplementedError("TAC regularization is not implemented yet.")
     
     
     @staticmethod
