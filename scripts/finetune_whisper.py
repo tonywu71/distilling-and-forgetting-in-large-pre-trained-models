@@ -214,6 +214,7 @@ def main(config_filepath: str):
     )
     
     
+    print("\n-----------------------\n")
     print("Starting training...")
     
     # Train the model:

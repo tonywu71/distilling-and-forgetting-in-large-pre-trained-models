@@ -74,6 +74,8 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     list_tags = [config.method_distil]
     if config.is_hpt:
         list_tags.append("hpt")
+    if tac:
+        list_tags.append("tac")
     
     # -----------------------   W&B   -----------------------
     wandb.login()
