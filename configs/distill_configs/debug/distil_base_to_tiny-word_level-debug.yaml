@@ -1,3 +1,5 @@
+# Total training steps:
+# - 30 for batch_size = 32 and num_train_epochs = 10
 experiment_name: distil_whisper_base_to_tiny-word_level-debug
 lang_name: english
 task: transcribe
@@ -8,8 +10,8 @@ is_tokenizer_multilingual: True
 model_dir: ./checkpoints/distillation/whisper_base_to_tiny/librispeech_debug/word_level
 freeze_encoder: True
 freeze_decoder: False
-batch_size: 8
-gradient_accumulation_steps: 2
+batch_size: 32
+gradient_accumulation_steps: 1
 eval_accumulation_steps:
 gradient_checkpointing: True
 data_augmentation: False
@@ -18,10 +20,10 @@ force_reprocess_dataset: False
 optim: adamw_torch
 learning_rate: 1e-5
 warmup_steps: 5
-eval_steps: 5
-generation_num_beams: 3
-logging_steps: 5
-save_steps: 100
+eval_steps: 10
+generation_num_beams: 1
+logging_steps: 10
+save_steps: 10000  # do not save checkpoints
 save_total_limit: 2
 num_train_epochs: 10
 early_stopping_patience: -1
