@@ -58,7 +58,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Sanity check:
     assert_if_distillation_tokenizers_match(config)
     
-    is_seq_level = config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+    is_seq_level = config.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]
     
     if is_seq_level:
         print(f"Sequence-level distillation will be performed. Although the batch size is set to {config.batch_size}, " + \
@@ -71,7 +71,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     fix_model_dir_conflicts(config)
     
     # Prepare tags for W&B:
-    list_tags = [config.method]
+    list_tags = [config.method_distil]
     if config.is_hpt:
         list_tags.append("hpt")
     
@@ -183,7 +183,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
             if config.zero_shot:
                 model.config.forced_decoder_ids = None
             else:
-                model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+                model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
             model.config.suppress_tokens = []
     
     # Since only the student model is trained, we can keep caching for the teacher model:
@@ -195,7 +195,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     Path(config.model_dir).mkdir(parents=True, exist_ok=True)
     
     training_arguments_args = dict(
-        method=config.method,
+        method_distil=config.method_distil,
         alpha_ce=config.alpha_ce,
         temperature=config.temperature,
         distillation_num_beams=config.distillation_num_beams,

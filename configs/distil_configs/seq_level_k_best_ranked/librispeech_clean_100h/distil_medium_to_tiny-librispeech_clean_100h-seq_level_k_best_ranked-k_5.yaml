@@ -5,7 +5,7 @@
 experiment_name: distil_whisper_medium_to_tiny-librispeech_clean_100h-seq_level_k_best_ranked-k_5
 lang_name: english
 task: transcribe
-method: seq_level_k_best_ranked
+method_distil: seq_level_k_best_ranked
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True

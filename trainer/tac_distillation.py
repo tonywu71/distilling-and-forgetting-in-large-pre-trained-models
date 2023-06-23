@@ -2,7 +2,7 @@ from typing import Optional, Literal, List
 
 import torch
 
-from transformers import PreTrainedModel, WhisperTokenizer
+from transformers import PreTrainedModel, WhisperProcessor
 
 from models.model_utils import copy_model
 from trainer.distillation import DistillationTrainingArguments, DistillationTrainer
@@ -25,7 +25,7 @@ class TACDistillationTrainingArguments(DistillationTrainingArguments):
                  beta_decay: Optional[float] = None,
                  *args,
                  **kwargs):
-        super().__init__(method=method_distil,
+        super().__init__(method_distil=method_distil,
                          alpha_ce=alpha_ce,
                          temperature=temperature,
                          distillation_num_beams=distillation_num_beams,
@@ -48,11 +48,11 @@ class TACDistillationTrainer(DistillationTrainer):
     Should be used with `args=TACDistillationTrainingArguments`.
     """
     def __init__(self,
-                 student_tokenizer: Optional[WhisperTokenizer] = None,
+                 student_processor: WhisperProcessor,
                  teacher_model: Optional[PreTrainedModel] = None,
                  *args,
                  **kwargs):
-        super().__init__(student_tokenizer=student_tokenizer,
+        super().__init__(student_processor=student_processor,
                          teacher_model=teacher_model,
                          *args,
                          **kwargs)
@@ -64,7 +64,7 @@ class TACDistillationTrainer(DistillationTrainer):
         #       This will require to run k-beam search on the orginial student model as well... thus
         #       we will need run smart caching one more time in the distil script.
         
-        self.original_student_model = copy_model(self.student_model)
+        self.original_student_model = copy_model(self.model)
         
         # Freeze the parameters of self.original_student_model:
         for param in self.original_student_model.parameters():
@@ -77,20 +77,20 @@ class TACDistillationTrainer(DistillationTrainer):
                      return_outputs: bool = False):
         """
         Override the `compute_loss` method from `DistillationTrainer`.
-        Computes the loss according to the distillation method specified in `self.args.method` and
+        Computes the loss according to the distillation method specified in `self.args.method_distil` and
         the TAC method specified in `self.args.method_tac`.
         """
-        loss, output_student = self.METHOD_TO_LOSS_FCT[self.args.method](student_model=student_model,
-                                                                         inputs=inputs,
-                                                                         teacher_model=self.teacher_model,
-                                                                         language="english")
+        loss, output_student = self.METHOD_DISTIL_TO_LOSS_FCT[self.args.method_distil](student_model=student_model,
+                                                                                       inputs=inputs,
+                                                                                       teacher_model=self.teacher_model,
+                                                                                       language="english")
         
         if self.args.tac_regularization:
             for language_to_preserve in self.args.languages_to_preserve:
-                loss_other_task, _ = self.METHOD_TO_LOSS_FCT[self.args.method_tac](student_model=student_model,
-                                                                                   inputs=inputs,
-                                                                                   teacher_model=self.original_student_model,
-                                                                                   language=language_to_preserve)
+                loss_other_task, _ = self.METHOD_DISTIL_TO_LOSS_FCT[self.args.method_tac](student_model=student_model,
+                                                                                          inputs=inputs,
+                                                                                          teacher_model=self.original_student_model,
+                                                                                          language=language_to_preserve)
                 loss += self.args.tac_gamma * loss_other_task / len(self.args.languages_to_preserve)
         
         return (loss, output_student) if return_outputs else loss

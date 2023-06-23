@@ -1,10 +1,10 @@
 # Total training steps:
 # - 30 for batch_size = 32 and num_train_epochs = 10
 
-experiment_name: distil_tac=whisper_base_to_tiny-word_level-debug
+experiment_name: distil_tac-whisper_base_to_tiny-word_level-debug
 lang_name: english
 task: transcribe
-method: word_level
+method_distil: word_level
 teacher_model_name_or_path: openai/whisper-base
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True

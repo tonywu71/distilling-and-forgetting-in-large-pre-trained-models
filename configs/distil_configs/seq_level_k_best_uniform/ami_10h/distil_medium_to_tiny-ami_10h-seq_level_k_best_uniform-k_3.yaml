@@ -1,7 +1,7 @@
 experiment_name: distil_whisper_medium_to_tiny-ami_10h-seq_level_k_best_uniform-k_3
 lang_name: english
 task: transcribe
-method: seq_level_k_best_uniform
+method_distil: seq_level_k_best_uniform
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True

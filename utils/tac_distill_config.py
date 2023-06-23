@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 import yaml
@@ -8,7 +8,7 @@ from utils.distil_config import DistilConfig
 @dataclass
 class TACDistilConfig(DistilConfig):
     gamma_tac: float = 0.5
-    languages_to_preserve: List[str] = []
+    languages_to_preserve: List[str] = field(default_factory=list)
     method_tac: Optional[str] = None
 
 

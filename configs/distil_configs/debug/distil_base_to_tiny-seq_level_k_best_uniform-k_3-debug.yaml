@@ -3,7 +3,7 @@
 experiment_name: distil_whisper_base_to_tiny-seq_level_k_best_uniform-k_3-debug
 lang_name: english
 task: transcribe
-method: seq_level_k_best_uniform
+method_distil: seq_level_k_best_uniform
 teacher_model_name_or_path: openai/whisper-base
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True

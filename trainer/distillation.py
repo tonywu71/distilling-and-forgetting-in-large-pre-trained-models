@@ -23,7 +23,7 @@ class DistillationTrainingArguments(Seq2SeqTrainingArguments):
     Only supports distillation for non-sequential tasks.
     """
     def __init__(self,
-                 method: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"],
+                 method_distil: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"],
                  alpha_ce: float,
                  temperature: Optional[float] = None,
                  distillation_num_beams: Optional[int] = None,
@@ -31,7 +31,7 @@ class DistillationTrainingArguments(Seq2SeqTrainingArguments):
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
-        self.method = method
+        self.method_distil = method_distil
         self.alpha_ce = alpha_ce
         self.temperature = temperature
         self.distillation_num_beams = distillation_num_beams
@@ -53,12 +53,12 @@ class DistillationTrainer(Seq2SeqTrainer):
         self.teacher_model = teacher_model
         
         # Sanity checks:
-        if self.args.method == "word_level":
+        if self.args.method_distil == "word_level":
             assert self.teacher_model is not None, \
                 "The `teacher_model` must be set for word-level distillation."
         
         
-        self.METHOD_TO_LOSS_FCT = {
+        self.METHOD_DISTIL_TO_LOSS_FCT = {
             "word_level": self._compute_loss_word_level,
             "seq_level_k_best_uniform": self._compute_loss_seq_level_k_best_uniform,
             "seq_level_k_best_ranked": self._compute_loss_seq_level_k_best_ranked
@@ -89,12 +89,12 @@ class DistillationTrainer(Seq2SeqTrainer):
                      inputs,
                      return_outputs: bool = False):
         """
-        Computes the loss according to the distillation method specified in `self.args.method`.
+        Computes the loss according to the distillation method specified in `self.args.method_distil`.
         """
-        loss, output_student = self.METHOD_TO_LOSS_FCT[self.args.method](student_model=student_model,
-                                                                         inputs=inputs,
-                                                                         teacher_model=self.teacher_model,
-                                                                         language="english")
+        loss, output_student = self.METHOD_DISTIL_TO_LOSS_FCT[self.args.method_distil](student_model=student_model,
+                                                                                       inputs=inputs,
+                                                                                       teacher_model=self.teacher_model,
+                                                                                       language="english")
         return (loss, output_student) if return_outputs else loss
     
     

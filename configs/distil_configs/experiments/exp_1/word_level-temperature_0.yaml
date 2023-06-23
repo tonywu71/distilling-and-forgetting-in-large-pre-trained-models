@@ -3,7 +3,7 @@
 experiment_name: exp_1-word_level-temperature_0
 lang_name: english
 task: transcribe
-method: word_level
+method_distil: word_level
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
