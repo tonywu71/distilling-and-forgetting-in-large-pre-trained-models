@@ -10,7 +10,7 @@ from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL, 
 
 
 def lowercase_fct(example: Dict[str, str]) -> Dict[str, str]:
-    return {DEFAULT_LABEL_STR_COL: example[DEFAULT_LABEL_STR_COL].upper()}
+    return {DEFAULT_LABEL_STR_COL: example[DEFAULT_LABEL_STR_COL].lower()}
 
 
 def prepare_dataset_fct(batch: Dict[str, Any],
