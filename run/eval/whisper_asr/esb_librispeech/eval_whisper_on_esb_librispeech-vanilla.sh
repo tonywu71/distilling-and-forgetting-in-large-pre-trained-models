@@ -29,7 +29,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change:
-#SBATCH -p pascal
+#SBATCH -p ampere
 #! ############################################################
 
 
@@ -51,17 +51,15 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-tiny >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-tiny.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-base >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-base.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-small >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-small.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-medium >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-medium.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-large-v2 >> $LOG 2> $ERR
-
-# python scripts/eval_whisper/eval_whisper_on_esb_librispeech.py openai/whisper-tiny --subset librispeech_clean --subset librispeech_other >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_librispeech >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny.en --dataset-name esb_librispeech >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-base --dataset-name esb_librispeech >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-base.en --dataset-name esb_librispeech >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-small --dataset-name esb_librispeech >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-small.en --dataset-name esb_librispeech >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-medium --dataset-name esb_librispeech >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-medium.en --dataset-name esb_librispeech >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-large-v2 --dataset-name esb_librispeech >> $LOG 2> $ERR
 
 #! #############################################
 

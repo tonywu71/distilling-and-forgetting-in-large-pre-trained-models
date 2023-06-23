@@ -16,8 +16,6 @@ from functools import partial
 from pathlib import Path
 from pprint import pprint
 
-from dataloader.dataloader import load_dataset_dict
-from dataloader.preprocessing import preprocess_dataset
 from transformers import (WhisperForConditionalGeneration,
                           WhisperProcessor,
                           Seq2SeqTrainingArguments,
@@ -27,15 +25,17 @@ from transformers import (WhisperForConditionalGeneration,
 
 import wandb
 
-from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from evaluation.metrics import compute_wer_fct
-from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
 from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from callbacks.finetune_callback import WandbFinetuneCallback
+from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from dataloader.dataloader import load_dataset_dict
+from dataloader.preprocessing_train.preprocessing import preprocess_dataset
+from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
+from evaluation.wer_metric import compute_wer_fct
+from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
+from utils.constants import GEN_MAX_LENGTH
 from utils.file_io import fix_model_dir_conflicts
 from utils.finetune_config import FinetuneConfig
-from utils.constants import GEN_MAX_LENGTH
 
 
 def main(config_filepath: str):
@@ -83,7 +83,9 @@ def main(config_filepath: str):
     )
 
     # Create the data collator that will be used to prepare the data for training:
-    data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
+    data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor,
+                                                         replace_padded_with_loss_mask_for_labels=True,
+                                                         discard_first_bos_token=True)
 
     
     # Load the dataset and preprocess it:
@@ -97,6 +99,7 @@ def main(config_filepath: str):
         dataset_dict = preprocess_dataset(dataset_dict,  # type: ignore
                                           tokenizer=processor.tokenizer,  # type: ignore
                                           feature_extractor=processor.feature_extractor,  # type: ignore
+                                          lowercase=config.lowercase,
                                           augment=config.data_augmentation)
     
     print("\n-----------------------\n")
@@ -126,22 +129,18 @@ def main(config_filepath: str):
         decoder._requires_grad = False  # type: ignore
     
     
-    # Notes:
-    # - In Whisper, the decoder is conditioned on both the source and target sentences,
-    #   and the decoder inputs are the concatenation of the target sentence and a special
-    #   separator token. By default, the `forced_decoder_ids` attribute is set to a tensor
-    #   containing the target sentence and the separator token. This tells the model to
-    #   always generate the target sentence and the separator token before starting the
-    #   decoding process.
-    # - The `forced_decoder_ids` should be set using the processor's `get_decoder_prompt_ids`
-    #   method, which returns the correct prompt.
-    # - If the model is English-only, the `forced_decoder_ids` should be set with
-    #   `language=None`.
-    if config.is_tokenizer_multilingual:
-        model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+    # The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
+    # These token ids control the transcription language and task for zero-shot ASR. If `zero_shot` is enabled in config, we will set
+    # these ids to None, as we will train the model to predict the correct language and task (which are provided in the tokenized input).
+    if config.zero_shot:
+        model.config.forced_decoder_ids = None
     else:
-        model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=None, task=config.task)  # type: ignore
+        model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+    
+    # There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
+    # set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
     model.config.suppress_tokens = []  # type: ignore
+    
     if config.gradient_checkpointing:
         model.config.use_cache = False  # type: ignore
     
@@ -152,7 +151,7 @@ def main(config_filepath: str):
     training_args = Seq2SeqTrainingArguments(
         output_dir=config.model_dir,
         per_device_train_batch_size=config.batch_size,
-        per_device_eval_batch_size=config.batch_size,
+        per_device_eval_batch_size=config.eval_batch_size,
         gradient_accumulation_steps=config.gradient_accumulation_steps,
         eval_accumulation_steps=config.eval_accumulation_steps,
         gradient_checkpointing=config.gradient_checkpointing,
@@ -181,7 +180,8 @@ def main(config_filepath: str):
     # Define the compute_metrics function:
     compute_wer = partial(compute_wer_fct,
                           processor=processor,
-                          normalize=True)
+                          normalize=True,
+                          log_string_edit_metrics_on_wandb=True)
     
     
     # Define callbacks:
@@ -209,16 +209,24 @@ def main(config_filepath: str):
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
-        tokenizer=processor,  # type: ignore
+        tokenizer=processor.tokenizer,  # type: ignore
         callbacks=callbacks
     )
     
+    
     print("Starting training...")
-        
+    
     # Train the model:
     trainer.train()
     
     print("Training finished.")
+    
+    
+    # Save the model:
+    final_model_dir = str(Path(config.model_dir) / "final")
+    trainer.save_model(final_model_dir)
+    
+    print(f"Model saved to `{final_model_dir}`.")
     
     wandb.finish()
     

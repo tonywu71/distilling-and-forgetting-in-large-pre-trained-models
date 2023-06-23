@@ -17,8 +17,6 @@ from functools import partial
 from pathlib import Path
 from pprint import pprint
 
-from dataloader.dataloader import load_dataset_dict
-from dataloader.preprocessing import preprocess_dataset
 from transformers import (WhisperForConditionalGeneration,
                           WhisperProcessor,
                           EarlyStoppingCallback,
@@ -26,13 +24,16 @@ from transformers import (WhisperForConditionalGeneration,
 
 import wandb
 
-from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from evaluation.metrics import compute_wer_fct_distil
-from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
-from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
-from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from callbacks.distillation_callback import WandbDistillationCallback
+from callbacks.eval_first_step_callback import EvalFirstStepCallback
+from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from dataloader.dataloader import load_dataset_dict
+from dataloader.preprocessing_train.preprocessing import preprocess_dataset
+from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
+from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
+from evaluation.wer_metric import compute_wer_fct
+from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
+from utils.constants import GEN_MAX_LENGTH
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import distillation_sanity_check
@@ -46,6 +47,13 @@ def main(config_filepath: str):
     # --------------------   Load config   --------------------
     config = DistilConfig.from_yaml(config_filepath)
     distillation_sanity_check(config)
+    
+    is_seq_level = config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+    
+    if is_seq_level:
+        print(f"Sequence-level distillation will be performed. Although the batch size is set to {config.batch_size}, " + \
+              f", because {config.distillation_num_beams} beams will be used for distillation, " + \
+              f"the actual batch size will {config.batch_size * config.distillation_num_beams}.")
     
     # If a previous run has its checkpoints saved in the same directory,
     # add a timestamp to the model directory. This is to avoid overwriting
@@ -90,12 +98,14 @@ def main(config_filepath: str):
     )
     
     # Create the data collator that will be used to prepare the data for training:
-    if config.method == "word_level":
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor)
+    if not is_seq_level:  # If word-level...
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
+                                                             return_attention_mask_labels=True)
     else:
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
+                                                             return_attention_mask_labels=True,
                                                              add_k_beam_features=True)
-        
+    
     # Load the dataset and preprocess it:
     if config.smart_load:
         dataset_dict = smart_load_dataset_dict(config=config, processor=student_processor)
@@ -111,26 +121,26 @@ def main(config_filepath: str):
     
     print("\n-----------------------\n")
     
-    if config.method != "word_level":
+    if is_seq_level:
         # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
         dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
-                                                            dataset_dict=dataset_dict)  # type: ignore
+                                                             dataset_dict=dataset_dict)
     
-    # Note: Technically, the K-beam search features are not needed for the word-level distillation. However,
-    #       we still load them for simplicity and because they are needed for `WandbDistillationCallback`.
+        # Note: Technically, the K-beam search features are not needed for the word-level distillation. However,
+        #       we still load them for simplicity and because they are needed for `WandbDistillationCallback`.
     
-    print("\n-----------------------\n")
+        print("\n-----------------------\n")
     
     # Initialize the models from pretrained checkpoints:
-    if config.method == "word_level":
+    if not is_seq_level:  # If word-level...
         print(f"Loading teacher model `{config.teacher_model_name_or_path}`...")
         teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
         # Freeze the teacher model:
         for param in teacher_model.parameters():
             param.requires_grad = False
-        teacher_model._requires_grad = False  # type: ignore
+        teacher_model._requires_grad = False
     else:
-        teacher_model = None  # the teacher model is not needed for sequence-level distillation as we already have its K-beam search outputs laoded
+        teacher_model = None  # the teacher model is not needed for sequence-level distillation as we already have its K-beam search outputs loaded
     
     print(f"Loading student model `{config.student_model_name_or_path}`...")
     student_model = WhisperForConditionalGeneration.from_pretrained(config.student_model_name_or_path).to(device)  # type: ignore
@@ -153,25 +163,22 @@ def main(config_filepath: str):
     
     
     # Notes:
-    # - In Whisper, the decoder is conditioned on both the source and target sentences,
-    #   and the decoder inputs are the concatenation of the target sentence and a special
-    #   separator token. By default, the `forced_decoder_ids` attribute is set to a tensor
-    #   containing the target sentence and the separator token. This tells the model to
-    #   always generate the target sentence and the separator token before starting the
-    #   decoding process.
-    # - The `forced_decoder_ids` should be set using the processor's `get_decoder_prompt_ids`
-    #   method, which returns the correct prompt.
-    # - If the model is English-only, the `forced_decoder_ids` should be set with
-    #   `language=None`.
+    # - The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
+    #   These token ids control the transcription language and task for zero-shot ASR. If `zero_shot` is enabled in config, we will set
+    #   these ids to None, as we will train the model to predict the correct language and task (which are provided in the tokenized input).
+    # - There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
+    #   set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
     for model in [teacher_model, student_model]:
         if model is not None:  # ignore teacher model if not used
-            if config.is_tokenizer_multilingual:
-                model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+            if config.zero_shot:
+                model.config.forced_decoder_ids = None
             else:
-                model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=None, task=config.task)
-            model.config.suppress_tokens = []  # type: ignore
-            if config.gradient_checkpointing:
-                model.config.use_cache = False  # type: ignore
+                model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+            model.config.suppress_tokens = []
+    
+    # Since only the student model is trained, we can keep caching for the teacher model:
+    if config.gradient_checkpointing:
+        student_model.config.use_cache = False
     
     
     # Prepare training:
@@ -179,13 +186,13 @@ def main(config_filepath: str):
     
     training_args = DistillationTrainingArguments(
         method=config.method,
-        ce_alpha=config.ce_alpha,
+        alpha_ce=config.alpha_ce,
         temperature=config.temperature,
         distillation_num_beams=config.distillation_num_beams,
-        decay_beta=config.decay_beta,
+        beta_decay=config.beta_decay,
         output_dir=config.model_dir,
         per_device_train_batch_size=config.batch_size,
-        per_device_eval_batch_size=config.batch_size,
+        per_device_eval_batch_size=config.eval_batch_size,
         gradient_accumulation_steps=config.gradient_accumulation_steps,
         eval_accumulation_steps=config.eval_accumulation_steps,
         gradient_checkpointing=config.gradient_checkpointing,
@@ -194,6 +201,7 @@ def main(config_filepath: str):
         warmup_steps=config.warmup_steps,
         optim=config.optim,
         num_train_epochs=config.num_train_epochs,
+        generation_num_beams=config.generation_num_beams,
         evaluation_strategy="steps",
         eval_steps=config.eval_steps,
         logging_strategy="steps",
@@ -202,20 +210,21 @@ def main(config_filepath: str):
         save_strategy="steps",
         save_steps=config.save_steps,
         save_total_limit=config.save_total_limit,
-        remove_unused_columns=False,  # keep the K-beam search features
+        predict_with_generate=True,
+        generation_max_length=GEN_MAX_LENGTH,
+        remove_unused_columns=not(is_seq_level),  # keep the K-beam features if sequence-level, remove them if word-level
         load_best_model_at_end=True,
-        metric_for_best_model="wer" if config.method == "word_level" else "eval_loss",
+        metric_for_best_model="wer",
         greater_is_better=False,  # the lower the WER, the better (same for the loss)
         report_to="wandb"  # type: ignore
     )
     
-    
     # Define the compute_metrics function:
-    if config.method == "word_level":
-        compute_wer = partial(compute_wer_fct_distil,
-                            processor=student_processor,
-                            normalize=True)
-        
+    compute_wer = partial(compute_wer_fct,
+                          processor=student_processor,
+                          normalize=True,
+                          log_string_edit_metrics_on_wandb=True)
+    
     
     # Define callbacks:
     callbacks: List[TrainerCallback] = []
@@ -239,13 +248,13 @@ def main(config_filepath: str):
     distillation_trainer = DistillationTrainer(
         args=training_args,
         model=student_model,  # type: ignore
-        student_tokenizer=student_processor.tokenizer,
+        student_processor=student_processor,
         teacher_model=teacher_model,
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
-        compute_metrics=compute_wer if config.method == "word_level" else None,
-        tokenizer=student_processor,  # type: ignore
+        compute_metrics=compute_wer,  # type: ignore
+        tokenizer=student_processor.tokenizer,  # type: ignore
         callbacks=callbacks
     )
     
@@ -255,6 +264,12 @@ def main(config_filepath: str):
     distillation_trainer.train()
     
     print("Distillation finished.")
+    
+    # Save the model:
+    final_model_dir = Path(config.model_dir) / "final"
+    distillation_trainer.save_model(final_model_dir)
+    
+    print(f"Model saved to `{final_model_dir}`.")
     
     wandb.finish()
     

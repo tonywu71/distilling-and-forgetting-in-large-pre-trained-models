@@ -51,27 +51,31 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
     
     # Load data:
     df = pd.read_csv(datapath)
-    df = df.dropna(subset=["WER (%)"])
+    df = df.dropna(subset=["WER on LibriSpeech clean (%)"])
     
     markers = {model: "o" for model in df["Model"].unique()}
     
     if plot_expected:
         size_expected = df["Size (M parameters)"].min()
-        wer_expected = df["WER (%)"].min()
+        wer_expected = df["WER on LibriSpeech clean (%)"].min()
         row_expected = pd.DataFrame.from_dict({
             "Model": ["Expected distilled model"],
-            "WER (%)": [wer_expected],
+            "WER on LibriSpeech clean (%)": [wer_expected],
             "Size (M parameters)": [size_expected]
         })
         df = pd.concat([df, row_expected])  # type: ignore
         markers["Expected distilled model"] = "^"
     
+    fig, ax = plt.subplots(figsize=(7, 3))  # for the poster
+    # fig, ax = plt.subplots(figsize=(8, 6))
+    
     if regression:
-        sns.regplot(data=df, x="Size (M parameters)", y="WER (%)",
-                    logx=log, ci=None, scatter_kws={"s": 400})  # type: ignore
+        sns.regplot(data=df, x="Size (M parameters)", y="WER on LibriSpeech clean (%)",
+                    logx=log, ci=None, scatter_kws={"s": 400},
+                    ax=ax)
     else:
-        sns.scatterplot(data=df, x="Size (M parameters)", y="WER (%)", hue="Model",
-                        s=400, style="Model", markers=markers)  # type: ignore
+        sns.scatterplot(data=df, x="Size (M parameters)", y="WER on LibriSpeech clean (%)", hue="Model",
+                        s=400, style="Model", markers=markers, ax=ax)  # type: ignore
         if log:
             plt.xscale("log")
         
@@ -88,14 +92,14 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
         # Draw arrow from "tiny" to "distilled":
         tiny = df[df["Model"] == "tiny"]
         distilled = df[df["Model"] == "distilled"]
-        plt.annotate("", xy=(distilled["Size (M parameters)"], distilled["WER (%)"]),
-                     xytext=(tiny["Size (M parameters)"], tiny["WER (%)"]),
+        plt.annotate("", xy=(distilled["Size (M parameters)"], distilled["WER on LibriSpeech clean (%)"]),
+                     xytext=(tiny["Size (M parameters)"], tiny["WER on LibriSpeech clean (%)"]),
                      arrowprops=dict(arrowstyle="->", color="black", lw=3))
         # Add text to the right of the center of the arrow:
-        # plt.text(x=distilled["Size (M parameters)"] + 2., y=distilled["WER (%)"] + 0.5, s="Distillation", fontsize=14)
+        # plt.text(x=distilled["Size (M parameters)"] + 2., y=distilled["WER on LibriSpeech clean (%)"] + 0.5, s="Distillation", fontsize=14)
         
         plt.text(x=tiny["Size (M parameters)"] + 4.,
-                 y=(tiny["WER (%)"].values + distilled["WER (%)"].values) / 2,
+                 y=(tiny["WER on LibriSpeech clean (%)"].values + distilled["WER on LibriSpeech clean (%)"].values) / 2,
                  s="Distillation",
                  fontsize=12)
     

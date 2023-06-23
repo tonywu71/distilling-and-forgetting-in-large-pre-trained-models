@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=02:30:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,15 +51,14 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-tiny >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-tiny.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-base >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-base.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-small >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-small.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-medium >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-medium.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_esb_ami.py openai/whisper-large-v2 >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_ami >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-base --dataset-name esb_ami >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-small --dataset-name esb_ami >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-medium --dataset-name esb_ami >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-large-v2 --dataset-name esb_ami >> $LOG 2> $ERR
+
+python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_ami --all >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-medium --dataset-name esb_ami >> $LOG 2> $ERR
 
 #! #############################################
 

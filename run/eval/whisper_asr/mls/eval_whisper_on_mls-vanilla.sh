@@ -29,7 +29,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change:
-#SBATCH -p pascal
+#SBATCH -p ampere
 #! ############################################################
 
 
@@ -51,14 +51,12 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-tiny >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-base >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-small >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-small.en >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-medium >> $LOG 2> $ERR
-# python scripts/eval_whisper/eval_whisper_on_mls.py openai/whisper-large-v2 >> $LOG 2> $ERR
-
-# python scripts/eval_whisper/eval_whisper_on_mls.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name mls >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-base --dataset-name mls >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-small --dataset-name mls >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-small.en --dataset-name mls >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-medium --dataset-name mls >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-large-v2 --dataset-name mls >> $LOG 2> $ERR
 
 
 #! #############################################

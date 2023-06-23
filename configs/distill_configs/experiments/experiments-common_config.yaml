@@ -1,0 +1,14 @@
+lang_name: english
+task: transcribe
+teacher_model_name_or_path: openai/whisper-medium
+student_model_name_or_path: openai/whisper-tiny
+freeze_encoder: True
+freeze_decoder: False
+batch_size: 32
+gradient_checkpointing: True
+dataset_name: ami_10h
+optim: adamw_torch
+learning_rate: 1e-5
+warmup_steps: first 10% training steps
+num_train_epochs: 1
+early_stopping_patience: -1

@@ -13,6 +13,7 @@ class DistilConfig:
     Config class for distillation experiments.
     
     Notes:
+    - If not defined in the config, `eval_batch_size` will be set to `batch_size`.
     - `is_tokenizer_multilingual` is used to identify the saved/loaded preprocessed datasets
       as there are two different tokenizers (one for English and one for multilingual) and no
       way to know which one was used to preprocess the dataset if a dir checkpoint is provided.
@@ -32,9 +33,7 @@ class DistilConfig:
     freeze_decoder: bool
     batch_size: int
     gradient_accumulation_steps: int  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-accumulation
-    eval_accumulation_steps: Optional[int]  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     gradient_checkpointing: bool  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-checkpointing
-    data_augmentation: bool
     dataset_name: str
     optim: str
     learning_rate: float
@@ -42,15 +41,26 @@ class DistilConfig:
     eval_steps: int
     generation_num_beams: int
     save_steps: int
-    save_total_limit: Optional[int]
     logging_steps: int
     num_train_epochs: int
-    early_stopping_patience: Optional[int]
+    
+    
+    # ======== Optional (data preprocessing) ========
+    data_augmentation: bool = False
+    lowercase: bool = True  # set to False if and only if the text is not fully uppercased
+    
+    
+    # ======== Optional (training) ========
+    zero_shot: bool = True
+    eval_batch_size: Optional[int] = None
+    eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
+    save_total_limit: Optional[int] = None
+    early_stopping_patience: Optional[int] = None
     
     
     # ======== Knowledge distillation hyperparameters ========
     # General:
-    ce_alpha: float = 0.5
+    alpha_ce: float = 0.5
     
     # `word_level`:
     temperature: float = 2
@@ -59,7 +69,7 @@ class DistilConfig:
     distillation_num_beams: Optional[int] = None
     
     # `seq_level_k_best_ranked`:
-    decay_beta: Optional[float] = 1.
+    beta_decay: Optional[float] = 2.
     
     
     # ======== Other ========
@@ -67,15 +77,21 @@ class DistilConfig:
     smart_load: bool = True
     force_reprocess_dataset: bool = False
     force_reprocess_k_best: bool = False
-    eval_first_step: bool = True
+    eval_first_step: bool = False
     log_preds_to_wandb: bool = True
-    n_samples_per_wandb_logging_step: int = 8
     log_raw_str: bool = False
+    n_samples_per_wandb_logging_step: int = 8
     
     
     
     def __post_init__(self) -> None:
-        """Post-initialization checks."""
+        """Set default values and run sanity checks after initialization."""
+        
+        # Set defaults:
+        if self.eval_batch_size is None:
+            self.eval_batch_size = self.batch_size
+        if self.early_stopping_patience is None:
+            self.early_stopping_patience = -1
         
         assert self.save_total_limit is None or self.save_total_limit >= 2, \
             "The `save_total_limit` must be at least 2, or None."
@@ -96,14 +112,13 @@ class DistilConfig:
             assert self.distillation_num_beams is not None, \
                 "The `distillation_num_beams` must be set for sequence-level distillation."
         if self.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
-            assert self.distillation_num_beams is not None and self.distillation_num_beams > 1, \
-                "The `distillation_num_beams` must be set to a value greater than 1 for " + \
-                "`seq_level_k_best_uniform` and `seq_level_k_best_ranked` distillation methods."
+            assert self.distillation_num_beams is not None and self.distillation_num_beams > 0, \
+                "The `distillation_num_beams` must be greater than 0 for sequence-level distillation."
         if self.method == "seq_level_k_best_ranked":
-            assert self.decay_beta is not None, \
-                "The `decay_beta` must be set for `seq_level_k_best_ranked` distillation."
-            assert self.decay_beta > 0, \
-                "The `decay_beta` must be greater than 0 for `seq_level_k_best_ranked` distillation."
+            assert self.beta_decay is not None, \
+                "The `beta_decay` must be set for `seq_level_k_best_ranked` distillation."
+            assert self.beta_decay > 0, \
+                "The `beta_decay` must be greater than 0 for `seq_level_k_best_ranked` distillation."
     
     
     @staticmethod
@@ -121,9 +136,5 @@ class DistilConfig:
         if config_dict["model_dir"] and not config_dict["model_dir"].endswith("/"):
             # The model_dir must end with a slash:
             config_dict["model_dir"] = config_dict["model_dir"] + "/"
-        
-        # Set defaults:
-        if config_dict["early_stopping_patience"] is None:
-            config_dict["early_stopping_patience"] = -1
         
         return DistilConfig(**config_dict)

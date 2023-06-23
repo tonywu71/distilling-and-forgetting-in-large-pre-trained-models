@@ -29,7 +29,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change:
-#SBATCH -p pascal
+#SBATCH -p ampere
 #! ############################################################
 
 
@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/finetune_whisper.py configs/finetune_configs/references/finetune_whisper_tiny-librispeech-debug.yaml >> $LOG 2> $ERR
+python scripts/finetune_whisper.py configs/finetune_configs/debug/finetune_whisper_tiny-librispeech-debug.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

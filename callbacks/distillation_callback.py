@@ -11,9 +11,9 @@ from transformers import (PreTrainedModel,
                           TrainerState,
                           TrainerControl)
 from datasets import Dataset
-import evaluate
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from evaluation.string_edit_metrics import get_string_edit_metrics
 from callbacks.base_training_callback import BaseWandbTrainingCallback
 from utils.distil_config import DistilConfig
 from utils.constants import GEN_MAX_LENGTH, LOSS_MASK_IDX, DEFAULT_LABEL_TOKENIZED_COL
@@ -23,6 +23,12 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class WandbDistillationCallback(BaseWandbTrainingCallback):
+    """
+    A callback for distillation that logs the first `n_samples` of the evaluation dataset to W&B.
+    Also computes the WER of the student model's predictions (because `compute_metrics` is not
+    called during distillation).
+    """
+    
     def __init__(self,
                  config: DistilConfig,
                  processor: WhisperProcessor,
@@ -41,8 +47,6 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         self.table_name = "sample_predictions-distill"
         self.data_collator_no_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
                                                                             add_k_beam_features=False)
-
-        self.wer_metric = evaluate.load("wer")
         
         self.is_seq_level = (self.config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"])
         
@@ -50,7 +54,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             self.data_collator_with_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
                                                                                   add_k_beam_features=True)
             self.eval_dataloader = DataLoader(self.eval_dataset,
-                                              batch_size=self.config.batch_size,
+                                              batch_size=self.config.eval_batch_size,
                                               shuffle=False,
                                               collate_fn=self.data_collator_no_k_beam)
         else:  # If word-level distillation...
@@ -86,14 +90,12 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         # Log the predictions of the student model:
         self.predict_and_log_preds_to_wandb(model, state)
         
-        if self.is_seq_level:
-            # Compute the WER of the student model:
-            self.compute_wer_sequence_level_and_log(args, model, state)
-        
         return
 
     
-    def predict_and_log_preds_to_wandb(self, model: PreTrainedModel, state: TrainerState) -> None:
+    def predict_and_log_preds_to_wandb(self,
+                                       model: PreTrainedModel,
+                                       state: TrainerState) -> None:
         # Iterate through the first n samples:
         for idx, data in enumerate(self.eval_dataset):
             if idx >= self.n_samples:
@@ -122,8 +124,8 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             curr_pred_student_str = self.records["pred_student"][-1]
             
             # Compute the WER of both the teacher and the student:
-            self.records["wer_teacher"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_teacher_str]))  # type: ignore
-            self.records["wer_student"].append(100 * self.wer_metric.compute(references=[curr_label_str], predictions=[curr_pred_student_str]))  # type: ignore
+            self.records["wer_teacher"].append(100 * get_string_edit_metrics(references=[curr_label_str], predictions=[curr_pred_teacher_str])["wer"])  # type: ignore
+            self.records["wer_student"].append(100 * get_string_edit_metrics(references=[curr_label_str], predictions=[curr_pred_student_str])["wer"])  # type: ignore
             
             # Add boolean flag to indicate whether the prediction is correct:
             self.records["is_student_correct_wrt_teacher"].append(curr_pred_student_str == curr_pred_teacher_str)
@@ -139,10 +141,12 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         return
 
 
-    def get_labels_and_preds(self, student_model: PreTrainedModel, data) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def get_labels_and_preds(self,
+                             student_model: PreTrainedModel,
+                             data) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        Returns the labels and the teacher and student predictions.
-        Automatically handles both word-level and sequence-level distillation.
+        Returns the labels and the teacher and student predictions. Automatically handles both word-level and
+        sequence-level distillation.
         """
         if self.is_seq_level:  # If sequence-level distillation...
             # Collate the data into batches of size 1:
@@ -184,46 +188,3 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
                                                            num_beams=self.config.generation_num_beams)  # type: ignore
         
         return label_ids, pred_ids_teacher, pred_ids_student
-    
-    
-    def compute_wer_sequence_level_and_log(self, args: TrainingArguments, model: PreTrainedModel, state: TrainerState) -> None:
-        total_wer = 0
-        count = 0
-        
-        # Print and log the WER of the student model every `eval_steps`:
-        if state.global_step % args.eval_steps == 0:
-            for batch in self.eval_dataloader:
-                # Note that we need to move the data to the device manually (which is not the case with Trainer):
-                input_features = batch["input_features"].to(device)
-                label_ids = batch[DEFAULT_LABEL_TOKENIZED_COL].to(device)
-                
-                # Generate the predictions:
-                pred_ids_student = model.generate(input_features,
-                                                    max_length=GEN_MAX_LENGTH,
-                                                    num_beams=self.config.generation_num_beams)  # type: ignore
-                
-                # Decode the predictions:
-                pred_str_student = self.processor.tokenizer.batch_decode(pred_ids_student, skip_special_tokens=True, normalize=True)  # type: ignore
-                
-                # Replace the padding index with the pad token id to undo the step we applied
-                # in the data collator to ignore padded tokens correctly in the loss:
-                label_ids[label_ids==LOSS_MASK_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
-                
-                # Decode the labels:
-                label_str = self.processor.tokenizer.batch_decode(label_ids, skip_special_tokens=True, normalize=True)  # type: ignore
-
-                # Compute the WER in percent:
-                # for current_label_str, current_pred_str in zip(label_str, pred_str_student):
-                    # total_wer += 100 * self.wer_metric.compute(references=current_label_str, predictions=current_pred_str)  # type: ignore
-                total_wer += 100 * self.wer_metric.compute(references=label_str, predictions=pred_str_student)  # type: ignore
-                count += 1
-            
-            # Compute the average WER:
-            avg_wer = total_wer / count
-            
-            # Print and log the average WER:
-            print(f"Student WER: {avg_wer:.3f}%")
-            self._wandb.log({"validation/wer_student_%": avg_wer})
-        
-        return
-    

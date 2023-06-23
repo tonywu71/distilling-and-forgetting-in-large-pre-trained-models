@@ -1,7 +1,7 @@
 import typer
 
 import os, sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 from pathlib import Path
 
@@ -35,6 +35,7 @@ def main(filepath: str, is_relative: bool=False):
         df = 100 * (df - df.iloc[0]) / df.iloc[0]
     
     plt.figure(figsize=(6, 4))
+    # plt.figure(figsize=(8, 4))  # poster
     sns.lineplot(df.iloc[:, :-1], marker="o", dashes=False)
     if is_relative:
         plt.axhline(0, color="black", linestyle="--")

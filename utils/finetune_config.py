@@ -10,6 +10,7 @@ class FinetuneConfig:
     Config class for the Whisper experiments.
     
     Notes:
+    - If not defined in the config, `eval_batch_size` will be set to `batch_size`.
     - `is_tokenizer_multilingual` is used to identify the saved/loaded preprocessed datasets
       as there are two different tokenizers (one for English and one for multilingual) and no
       way to know which one was used to preprocess the dataset if a dir checkpoint is provided.
@@ -18,7 +19,7 @@ class FinetuneConfig:
       disable this feature.
     """
     experiment_name: str
-    lang_name: Optional[str]
+    lang_name: str
     task: str
     pretrained_model_name_or_path: str
     is_tokenizer_multilingual: bool
@@ -27,9 +28,7 @@ class FinetuneConfig:
     freeze_decoder: bool
     batch_size: int
     gradient_accumulation_steps: int  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-accumulation
-    eval_accumulation_steps: Optional[int]  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     gradient_checkpointing: bool  # https://huggingface.co/docs/transformers/v4.20.1/en/perf_train_gpu_one#gradient-checkpointing
-    data_augmentation: bool
     dataset_name: str
     optim: str
     learning_rate: float
@@ -37,27 +36,44 @@ class FinetuneConfig:
     eval_steps: int
     generation_num_beams: int
     save_steps: int
-    save_total_limit: Optional[int]
     logging_steps: int
     num_train_epochs: int
-    early_stopping_patience: Optional[int]
+    
+    # ======== Optional (data preprocessing) ========
+    data_augmentation: bool = False
+    lowercase: bool = True  # set to False if and only if the text is not fully uppercased
+    
+    # ======== Optional (training) ========
+    zero_shot: bool = False
+    eval_batch_size: Optional[int] = None
+    eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
+    save_total_limit: Optional[int] = None
+    early_stopping_patience: Optional[int] = None
     
     # ======== Other ========
     smart_load: bool = True
     force_reprocess_dataset: bool = False
     eval_first_step: bool = True
     log_preds_to_wandb: bool = True
-    n_samples_per_wandb_logging_step: int = 8
     log_raw_str: bool = False
+    n_samples_per_wandb_logging_step: int = 8
     
     experimental_train_implicit_lm: bool = False
     
     
     def __post_init__(self) -> None:
-        """Post-initialization checks."""
+        """Set default values and run sanity checks after initialization."""
         
+        # Set defaults:
+        if self.eval_batch_size is None:
+            self.eval_batch_size = self.batch_size
+        if self.early_stopping_patience is None:
+            self.early_stopping_patience = -1
+        
+        # Sanity checks:
         assert self.save_total_limit is None or self.save_total_limit >= 2, \
             "The `save_total_limit` must be at least 2, or None."
+    
     
     
     @staticmethod
@@ -72,12 +88,8 @@ class FinetuneConfig:
         config_dict["learning_rate"] = float(config_dict["learning_rate"])
         
         # Fix paths:
-        if config_dict["model_dir"] and not config_dict["model_dir"].endswith("/"):
+        if config_dict["model_dir"].endswith("/"):
             # The model_dir must end with a slash:
             config_dict["model_dir"] = config_dict["model_dir"] + "/"
-        
-        # Set defaults:
-        if config_dict["early_stopping_patience"] is None:
-            config_dict["early_stopping_patience"] = -1
         
         return FinetuneConfig(**config_dict)

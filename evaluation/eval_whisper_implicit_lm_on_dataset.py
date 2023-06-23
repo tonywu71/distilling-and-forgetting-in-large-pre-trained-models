@@ -11,11 +11,11 @@ from tqdm.auto import tqdm
 
 from transformers import WhisperProcessor
 
-from dataloader.datasets.base_dataset_group import BaseDatasetGroup
+from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
 from normalization.whisper_normalization import get_whisper_normalizer
-from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL
+from utils.constants import DEFAULT_LABEL_TOKENIZED_COL
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -60,7 +60,8 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
                                                      task=task)
         
         # Load data collator:
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor,
+                                                             replace_padded_with_loss_mask_for_labels=True)
         
         # Set the forced decoder ids:
         model_zero_cross_attention.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=language, task=task)  # type: ignore
