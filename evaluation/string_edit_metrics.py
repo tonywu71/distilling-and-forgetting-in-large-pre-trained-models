@@ -10,7 +10,7 @@ def get_string_edit_metrics(references: List[str], predictions: List[str]) -> Di
         string_edit_metrics: dict with the following keys:
             - wer: word error rate,
             - sub: number of substitutions,
-            - def: number of deletions,
+            - del: number of deletions,
             - ins: number of insertions.
     """
     incorrect = 0
