@@ -51,7 +51,7 @@ class DistilConfig:
     
     
     # ======== Optional (training) ========
-    zero_shot: bool = True
+    zero_shot: bool = False
     eval_batch_size: Optional[int] = None
     eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     save_total_limit: Optional[int] = None
