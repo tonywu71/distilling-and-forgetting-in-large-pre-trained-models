@@ -51,8 +51,8 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/distil_whisper.py configs/distill_configs/experiments/exp_1/seq_level_uniform-k_1.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distill_configs/experiments/exp_1/word_level-temperature_0.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distil_configs/experiments/exp_1/seq_level_uniform-k_1.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distil_configs/experiments/exp_1/word_level-temperature_0.yaml >> $LOG 2> $ERR
 
 #! #############################################
 
