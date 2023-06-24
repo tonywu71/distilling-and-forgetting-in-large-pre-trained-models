@@ -45,4 +45,4 @@ force_reprocess_dataset: False
 eval_first_step: True
 log_preds_to_wandb: True
 log_raw_str: True
-n_samples_per_wandb_logging_step: 32
+n_samples_per_wandb_logging_step: 8
