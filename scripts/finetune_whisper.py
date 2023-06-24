@@ -50,11 +50,14 @@ def main(config_filepath: str):
     # previous models. Note that `config` is modified in-place.
     fix_model_dir_conflicts(config)
     
+    # Prepare tags for W&B:
+    list_tags = [config.dataset_name]
     
     # -----------------------   W&B   -----------------------
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT"],
                job_type="finetuning",
+               tags=list_tags,
                name=config.experiment_name,
                config=asdict(config))
     
