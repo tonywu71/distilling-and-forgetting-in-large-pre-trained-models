@@ -7,8 +7,8 @@ from utils.distil_config import DistilConfig
 
 @dataclass
 class TACDistilConfig(DistilConfig):
-    gamma_tac: float = 0.5
     languages_to_preserve: List[str] = field(default_factory=list)
+    gamma_tac: float = 0.5
     method_tac: Optional[str] = None
 
 

@@ -197,7 +197,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Prepare training:
     Path(config.model_dir).mkdir(parents=True, exist_ok=True)
     
-    training_arguments_args = dict(
+    training_arguments_dict = dict(
         method_distil=config.method_distil,
         alpha_ce=config.alpha_ce,
         temperature=config.temperature,
@@ -236,9 +236,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         training_args = TACDistillationTrainingArguments(languages_to_preserve=config.languages_to_preserve,
                                                          method_tac=config.method_tac,
                                                          gamma_tac=config.gamma_tac,
-                                                         **training_arguments_args)
+                                                         **training_arguments_dict)
     else:
-        training_args = DistillationTrainingArguments(**training_arguments_args)  # type: ignore
+        training_args = DistillationTrainingArguments(**training_arguments_dict)  # type: ignore
     
     # Define the compute_metrics function:
     compute_wer = partial(compute_wer_fct,
