@@ -129,6 +129,8 @@ class DistillationTrainer(Seq2SeqTrainer):
         
         
         # Forward pass through student (teacher-forced):
+        # Note: Although at inference, the model can be used without zero-shot, the loss is computed with zero-shot here.
+        # TODO: Fix this.
         output_student: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
                                                                 decoder_input_ids=labels_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
                                                                 decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1],
