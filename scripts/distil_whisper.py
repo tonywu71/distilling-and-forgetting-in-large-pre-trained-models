@@ -38,7 +38,7 @@ from utils.constants import GEN_MAX_LENGTH
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
-from utils.tac_distill_config import TACDistilConfig
+from utils.tac_distil_config import TACDistilConfig
 
 
 
