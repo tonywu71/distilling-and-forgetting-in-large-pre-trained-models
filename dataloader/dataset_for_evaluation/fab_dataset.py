@@ -21,6 +21,7 @@ class FABDataset(BaseDatasetGroup):
             "librispeech_en_other",
             "tedlium",
             "librispeech_fr",
+            "librispeech_pt"
         ]
         
         self.is_multilingual = True
@@ -95,7 +96,7 @@ class FABDataset(BaseDatasetGroup):
             "librispeech_pt": load_dataset(path="facebook/multilingual_librispeech",
                                            name="portuguese",
                                            split="test",
-                                           cache_dir=self.dataset_name_to_cache_dir["librispeech_portuguese"],
+                                           cache_dir=self.dataset_name_to_cache_dir["librispeech_pt"],
                                            streaming=self.streaming,
                                            use_auth_token=True)
         }
@@ -103,7 +104,8 @@ class FABDataset(BaseDatasetGroup):
         self.str2dataset = dicttoolz.keyfilter(lambda k: k in self.subset, self.str2dataset)
         
         # Remove unnecessary columns from the datasets:
-        self.str2dataset["librispeech_en_clean"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_en_clean"])
-        self.str2dataset["librispeech_en_other"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_en_other"])
+        for ds_name in ["librispeech_en_clean", "librispeech_en_other"]:
+            if ds_name in self.str2dataset:
+                self.str2dataset[ds_name] = remove_unnecessary_cols_for_librispeech(self.str2dataset[ds_name])
         
         return
