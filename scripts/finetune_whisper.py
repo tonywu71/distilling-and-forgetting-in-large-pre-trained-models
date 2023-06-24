@@ -33,17 +33,25 @@ from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_wer_fct
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
+from trainer.tac_finetuning import TACFinetuningTrainer, TACFinetuningTrainingArguments
 from utils.constants import GEN_MAX_LENGTH
 from utils.file_io import fix_model_dir_conflicts
 from utils.finetune_config import FinetuneConfig
+from utils.tac_finetune_config import TACFinetuneConfig
 
 
-def main(config_filepath: str):
+def main(config_filepath: str,
+         tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
+                                              "Flag should be used if only if the config file is for TAC distillation. " + \
+                                              "TAC is not compatible with zero-shot.")):
     """
     Fine-tune the Whisper model on the LibriSpeech dataset.
     """
     # --------------------   Load config   --------------------
-    config = FinetuneConfig.from_yaml(config_filepath)
+    if tac:
+        config = TACFinetuneConfig.from_yaml(config_filepath)
+    else:
+        config = FinetuneConfig.from_yaml(config_filepath)
     
     # If a previous run has its checkpoints saved in the same directory,
     # add a timestamp to the model directory. This is to avoid overwriting
@@ -52,6 +60,8 @@ def main(config_filepath: str):
     
     # Prepare tags for W&B:
     list_tags = [config.dataset_name]
+    if tac:
+        list_tags.append("tac")
     
     # -----------------------   W&B   -----------------------
     wandb.login()
@@ -151,7 +161,7 @@ def main(config_filepath: str):
     # Prepare training:
     Path(config.model_dir).mkdir(parents=True, exist_ok=True)
     
-    training_args = Seq2SeqTrainingArguments(
+    training_arguments_dict = dict(
         output_dir=config.model_dir,
         per_device_train_batch_size=config.batch_size,
         per_device_eval_batch_size=config.eval_batch_size,
@@ -180,6 +190,13 @@ def main(config_filepath: str):
         report_to="wandb"  # type: ignore
     )
     
+    if isinstance(config, TACFinetuneConfig):  # equivalent to `if tac`
+        training_args = TACFinetuningTrainingArguments(languages_to_preserve=config.languages_to_preserve,
+                                                       gamma_tac=config.gamma_tac,
+                                                       **training_arguments_dict)
+    else:
+        training_args = Seq2SeqTrainingArguments(**training_arguments_dict)  # type: ignore
+    
     # Define the compute_metrics function:
     compute_wer = partial(compute_wer_fct,
                           processor=processor,
@@ -205,7 +222,7 @@ def main(config_filepath: str):
     
     
     # Create the trainer:
-    trainer = Seq2SeqTrainer(
+    trainer_args = dict(
         args=training_args,
         model=model,  # type: ignore
         train_dataset=dataset_dict["train"],  # type: ignore
@@ -215,6 +232,11 @@ def main(config_filepath: str):
         tokenizer=processor,  # use processor for saving  # type: ignore
         callbacks=callbacks
     )
+    
+    if tac:
+        trainer = TACFinetuningTrainer(processor=processor, **trainer_args)
+    else:
+        trainer = Seq2SeqTrainer(**trainer_args)
     
     
     print("\n-----------------------\n")
