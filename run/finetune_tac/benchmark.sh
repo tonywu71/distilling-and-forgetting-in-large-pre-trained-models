@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_fab-finetuned
+#SBATCH -J finetune_tac-benchmark
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=01:00:00
+#SBATCH --time=04:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -41,7 +41,7 @@ LOG=$DIRPATH_EXP/$SLURM_JOB_ID.log
 ERR=$DIRPATH_EXP/$SLURM_JOB_ID.err
 
 
-echo -e "JobID: $JOBID\n======" > $LOG
+echo -e "JobID: $SLURM_JOB_ID\n======" > $LOG
 echo "Time: `date`" >> $LOG
 echo "Running on master node: `hostname`" >> $LOG
 echo "python `which python`": >> $LOG
@@ -51,12 +51,9 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 --dataset-name fab >> $LOG 2> $ERR
-
-# python scripts/eval_whisper.py checkpoints/distillation_tac/whisper_base_to_tiny/librispeech_debug/finetune/final --dataset-name fab --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt >> $LOG 2> $ERR
-# python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/final --dataset-name fab --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt >> $LOG 2> $ERR
-# python scripts/eval_whisper.py checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/final --dataset-name fab --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt >> $LOG 2> $ERR
-# python scripts/eval_whisper.py checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/final --dataset-name fab --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/finetune_tac_configs/librispeech_clean_100h/finetune_tiny-librispeech_100h-benchmark.yaml >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/finetune_tac_configs/librispeech_clean_100h/finetune_tac-tiny-librispeech_clean_100h.yaml --tac >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/finetune_tac_configs/librispeech_clean_100h/finetune_tac-tiny-librispeech_clean_100h-gamma_1e-2.yaml --tac >> $LOG 2> $ERR
 
 #! #############################################
 
