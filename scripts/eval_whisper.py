@@ -85,7 +85,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     
     # Preprocess:
     print("Preprocessing the datasets...")
-    dataset_group.preprocess_datasets(normalize=True)
+    dataset_group.preprocess_datasets(normalize=True, verbose=True)
     
     # Evaluate:
     print("Evaluating...")

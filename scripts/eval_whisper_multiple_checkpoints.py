@@ -86,7 +86,9 @@ def main(checkpoints: List[str] = typer.Argument(..., help="List of paths to the
     
     # Preprocess:
     print("Preprocessing the datasets...")
-    dataset_group.preprocess_datasets(normalize=True)
+    dataset_group.preprocess_datasets(normalize=True, verbose=True)
+    
+    print("\n-----------------------\n")
     
     tbar = tqdm(checkpoints)
     
