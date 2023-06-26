@@ -56,6 +56,7 @@ class DistilConfig:
     eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     save_total_limit: Optional[int] = None
     early_stopping_patience: Optional[int] = None
+    save_final_model: bool = True
     
     
     # ======== Knowledge distillation hyperparameters ========

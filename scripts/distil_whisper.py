@@ -293,11 +293,11 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     print("Distillation finished.")
     
-    # Save the model:
-    final_model_dir = Path(config.model_dir) / "final"
-    distillation_trainer.save_model(final_model_dir)
-    
-    print(f"Model saved to `{final_model_dir}`.")
+    if config.save_final_model:
+        # Save the model:
+        final_model_dir = str(Path(config.model_dir) / "final")
+        distillation_trainer.save_model(final_model_dir)
+        print(f"Model saved to `{final_model_dir}`.")
     
     wandb.finish()
     
