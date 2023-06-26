@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=01:30:00
+#SBATCH --time=01:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,9 +51,9 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/finetune_whisper.py configs/distil_configs/experiments/exp_2/finetune_tiny-ami_10h.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/experiments/exp_2/word_level_uniform-alpha_1.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/experiments/exp_2/seq_level_uniform-alpha_1.yaml >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/distillation_limiting_behavior/exp_2/finetune_tiny-ami_10h.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distillation_limiting_behavior/exp_2/word_level_uniform-alpha_1.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distillation_limiting_behavior/exp_2/seq_level_uniform-alpha_1.yaml >> $LOG 2> $ERR
 
 
 #! #############################################

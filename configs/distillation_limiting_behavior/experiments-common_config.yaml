@@ -10,5 +10,5 @@ dataset_name: ami_10h
 optim: adamw_torch
 learning_rate: 1e-5
 warmup_steps: first 10% training steps
-num_train_epochs: 1
+num_train_epochs: 0.5
 early_stopping_patience: -1
