@@ -29,7 +29,8 @@ def initialize_env():
     
     
     # WandB:
-    os.environ["WANDB_PROJECT"] = env_config.WANDB_PROJECT
+    os.environ["WANDB_PROJECT_TRAINING"] = env_config.WANDB_PROJECT_TRAINING
+    os.environ["WANDB_PROJECT_EVALUATION"] = env_config.WANDB_PROJECT_EVALUATION
     os.environ["WANDB_CACHE_DIR"] = env_config.WANDB_CACHE_DIR
     
     # Other:
@@ -50,7 +51,8 @@ def print_envs():
         "CACHE_DIR_ESB",
         "CACHE_DIR_ESB_DIAGNOSTIC",
         "CACHE_DIR_MLS",
-        "WANDB_PROJECT",
+        "WANDB_PROJECT_TRAINING",
+        "WANDB_PROJECT_EVALUATION",
         "WANDB_CACHE_DIR",
         "PREPROCESSED_DATASETS_DIR",
         "K_BEAM_SEARCH_CACHE_DIR"

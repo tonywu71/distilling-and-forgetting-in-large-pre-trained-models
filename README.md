@@ -39,9 +39,9 @@ Co-supervisors: Mengjie Qian (mq227@cam.ac.uk), Adian Liusie (al826@eng.cam.ac.u
    wandb login
    ```
 
-7. On [Weight&Biases](http://wandb.ai), log in and create a new project e.g. `distilling-and-forgetting-in-large-pre-trained-models`
+7. On [Weight&Biases](http://wandb.ai), log in and create 2 new projects: one for the training e.g `distilling_and_forgetting-training` and one the evaluation e.g. `distilling_and_forgetting-evaluation`.
 
-8. Edit the `configs/env_config.yaml` file accordingly. First, modify `WANDB_PROJECT` accordingly to the previous step. Then - if you are using Cambridge's HPC - the only other change needed is to replace `tw581` with your own Cambridge CRSid.
+8. Edit the `configs/env_config.yaml` file accordingly. First, modify `WANDB_PROJECT_TRAINING` and `WANDB_PROJECT_EVALUATION` accordingly to the previous step. Then - if you are using Cambridge's HPC - the only other change needed is to replace `tw581` with your own Cambridge CRSid.
 
 
 

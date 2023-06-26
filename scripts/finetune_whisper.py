@@ -65,7 +65,7 @@ def main(config_filepath: str,
     
     # -----------------------   W&B   -----------------------
     wandb.login()
-    wandb.init(project=os.environ["WANDB_PROJECT"],
+    wandb.init(project=os.environ["WANDB_PROJECT_TRAINING"],
                job_type="finetuning",
                tags=list_tags,
                name=config.experiment_name,

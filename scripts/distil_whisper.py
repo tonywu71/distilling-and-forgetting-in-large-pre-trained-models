@@ -80,7 +80,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     # -----------------------   W&B   -----------------------
     wandb.login()
-    wandb.init(project=os.environ["WANDB_PROJECT"],
+    wandb.init(project=os.environ["WANDB_PROJECT_TRAINING"],
                job_type="distillation_with_tac" if tac else "distillation",
                tags=list_tags,
                name=config.experiment_name,

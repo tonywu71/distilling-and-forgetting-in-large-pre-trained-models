@@ -98,7 +98,7 @@ def main(checkpoints: List[str] = typer.Argument(..., help="List of paths to the
         config["pretrained_model_name_or_path"] = pretrained_model_name_or_path
         
         # Initialize W&B for the current checkpoint:
-        wandb.init(project=os.environ["WANDB_PROJECT"],
+        wandb.init(project=os.environ["WANDB_PROJECT_EVALUATION"],
                    job_type="evaluation",
                    tags=[dataset_name],
                    name=f"eval_{dataset_name}-{extract_exp_name_from_model_path(pretrained_model_name_or_path)}",

@@ -49,7 +49,7 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     
     # Initialize W&B:
     wandb.login()
-    wandb.init(project=os.environ["WANDB_PROJECT"],
+    wandb.init(project=os.environ["WANDB_PROJECT_EVALUATION"],
                job_type="evaluation",
                name=f"eval_fab-{extract_exp_name_from_model_path(pretrained_model_name_or_path)}-implicit_lm",
                config=config)
