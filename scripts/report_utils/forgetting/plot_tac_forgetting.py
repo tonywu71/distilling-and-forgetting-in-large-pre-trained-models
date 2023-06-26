@@ -42,9 +42,9 @@ def main(filepath: str = typer.Argument(..., help="Path to CSV file that contain
     
         # Save figure:
         if is_relative:
-            savepath = (DEFAULT_OUTPUT_DIR / "report" / "forgetting_wrt_training_steps" / (Path(filepath).stem + f"-{col_language.replace(' ', '_')}-relative")).with_suffix(".png")
+            savepath = (DEFAULT_OUTPUT_DIR / "report" / "forgetting_wrt_training_steps" / (Path(filepath).stem + f"-{col_language.replace(' (%)', '').replace(' ', '_')}-relative")).with_suffix(".png")
         else:
-            savepath = (DEFAULT_OUTPUT_DIR / "report" / "forgetting_wrt_training_steps" / (Path(filepath).stem + f"-{col_language.replace(' ', '_')}")).with_suffix(".png")
+            savepath = (DEFAULT_OUTPUT_DIR / "report" / "forgetting_wrt_training_steps" / (Path(filepath).stem + f"-{col_language.replace(' (%)', '').replace(' ', '_')}")).with_suffix(".png")
         savepath.parent.mkdir(parents=True, exist_ok=True)
         plt.tight_layout()
         plt.savefig(savepath)
