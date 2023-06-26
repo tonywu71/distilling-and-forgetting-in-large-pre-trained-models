@@ -22,7 +22,7 @@ logging_steps: 250
 save_steps: 500
 num_train_epochs: 1  # quick debug
 
-zero_shot: False
+zero_shot_eval: False
 eval_batch_size: 256
 eval_accumulation_steps:
 save_total_limit:  # save all to plot forgetting wrt steps

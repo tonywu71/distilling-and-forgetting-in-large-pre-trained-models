@@ -109,6 +109,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         language=config.lang_name,
         task=config.task
     )
+    # Note: Because `language` and `task` have been set, the processor will append the associated
+    #       special tokens to the decoded sentence.
+    
     
     # Create the data collator that will be used to prepare the data for training:
     if not is_seq_level:  # If word-level...
@@ -175,19 +178,25 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         decoder._requires_grad = False  # type: ignore
     
     
-    # Notes:
-    # - The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
-    #   These token ids control the transcription language and task for zero-shot ASR. If `zero_shot` is enabled in config, we will set
-    #   these ids to None, as we will train the model to predict the correct language and task (which are provided in the tokenized input).
-    # - There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
-    #   set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
-    for model in [teacher_model, student_model]:
-        if model is not None:  # ignore teacher model if not used
-            if config.zero_shot:
-                model.config.forced_decoder_ids = None
-            else:
-                model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
-            model.config.suppress_tokens = []
+    # Set config parameters for generation:
+    if config.zero_shot_eval:
+        student_model.config.forced_decoder_ids = None
+    else:
+        student_model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+    # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
+    #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
+    #       this also affects evaluation.
+    student_model.config.suppress_tokens = []  # type: ignore
+    # Note: There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
+    #       set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
+    
+
+    if teacher_model is not None:  # ignore teacher model if not used
+        if config.zero_shot_eval:
+            teacher_model.config.forced_decoder_ids = None
+        else:
+            teacher_model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+        teacher_model.config.suppress_tokens = []
     
     # Since only the student model is trained, we can keep caching for the teacher model:
     if config.gradient_checkpointing:

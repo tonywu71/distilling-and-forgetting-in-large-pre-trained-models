@@ -28,7 +28,7 @@ num_train_epochs: 3
 alpha_ce: 0.5
 temperature: 5.0
 
-zero_shot: False
+zero_shot_eval: False
 eval_batch_size: 256
 eval_accumulation_steps:
 save_total_limit:

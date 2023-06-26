@@ -88,13 +88,16 @@ def main(config_filepath: str,
     
     # ----------------------   Main   ----------------------
 
-    # Load processor (contains both tokenizer and feature extractor)
+    # Load processor (contains both tokenizer and feature extractor):
     processor = WhisperProcessor.from_pretrained(
         config.pretrained_model_name_or_path,
         language=config.lang_name,
         task=config.task
     )
+    # Note: Because `language` and `task` have been set, the processor will append the associated
+    #       special tokens to the decoded sentence.
 
+    
     # Create the data collator that will be used to prepare the data for training:
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor,
                                                          replace_padded_with_loss_mask_for_labels=True,
@@ -141,21 +144,22 @@ def main(config_filepath: str,
             param.requires_grad = False
         decoder._requires_grad = False  # type: ignore
     
+    # Set config parameters for training:
+    if config.gradient_checkpointing:
+        model.config.use_cache = False  # type: ignore
     
-    # The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
-    # These token ids control the transcription language and task for zero-shot ASR. If `zero_shot` is enabled in config, we will set
-    # these ids to None, as we will train the model to predict the correct language and task (which are provided in the tokenized input).
-    if config.zero_shot:
+    # Set config parameters for generation:
+    if config.zero_shot_eval:
         model.config.forced_decoder_ids = None
     else:
         model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
-    
-    # There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
-    # set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
+    # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
+    #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
+    #       this also affects evaluation.
     model.config.suppress_tokens = []  # type: ignore
+    # Note: There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
+    #       set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
     
-    if config.gradient_checkpointing:
-        model.config.use_cache = False  # type: ignore
     
     
     # Prepare training:

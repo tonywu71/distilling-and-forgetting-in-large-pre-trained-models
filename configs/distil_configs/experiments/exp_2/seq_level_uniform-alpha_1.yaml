@@ -24,7 +24,7 @@ logging_steps: 34
 save_steps: 680  # do not save the model
 num_train_epochs: 1
 
-zero_shot: True
+zero_shot_eval: False
 eval_batch_size: 256
 eval_accumulation_steps:
 save_total_limit: 2

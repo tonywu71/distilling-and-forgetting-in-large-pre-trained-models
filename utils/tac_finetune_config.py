@@ -16,7 +16,6 @@ class TACFinetuneConfig(FinetuneConfig):
         """Set default values and run sanity checks after initialization."""
         super().__post_init__()
         assert self.languages_to_preserve, "The `languages_to_preserve` must not be empty."
-        assert not self.zero_shot, "Zero-shot learning is not supported for TAC."
     
     @staticmethod
     def from_yaml(config_file: str) -> "TACFinetuneConfig":

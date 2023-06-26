@@ -52,7 +52,6 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 # python scripts/finetune_whisper.py configs/finetune_configs/multilingual/librispeech/finetune_tiny-librispeech_100h.yaml >> $LOG 2> $ERR
-# python scripts/finetune_whisper.py configs/finetune_configs/multilingual/librispeech/finetune_tiny-librispeech_100h-zero_shot.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

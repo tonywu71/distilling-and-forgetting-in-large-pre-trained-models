@@ -28,7 +28,7 @@ alpha_ce: 0.5
 distillation_num_beams: 5
 beta_decay: 2.0
 
-zero_shot: False
+zero_shot_eval: False
 eval_batch_size: 256
 eval_accumulation_steps:
 save_total_limit: 2
