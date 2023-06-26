@@ -116,10 +116,14 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Create the data collator that will be used to prepare the data for training:
     if not is_seq_level:  # If word-level...
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
-                                                             return_attention_mask_labels=True)
+                                                             return_attention_mask=True,
+                                                             replace_padded_with_loss_mask_for_labels=True,
+                                                             discard_first_bos_token=True)
     else:
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
-                                                             return_attention_mask_labels=True,
+                                                             return_attention_mask=True,
+                                                             replace_padded_with_loss_mask_for_labels=True,
+                                                             discard_first_bos_token=True,
                                                              add_k_beam_features=True)
     
     # Load the dataset and preprocess it:

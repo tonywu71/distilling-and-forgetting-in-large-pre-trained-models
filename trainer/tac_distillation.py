@@ -88,9 +88,9 @@ class TACDistillationTrainer(DistillationTrainer):
         
         for language_to_preserve in self.args.languages_to_preserve:
             loss_other_task, _ = self.METHOD_DISTIL_TO_LOSS_FCT[self.args.method_tac](student_model=student_model,
-                                                                                        inputs=inputs,
-                                                                                        teacher_model=self.original_student_model,
-                                                                                        language=language_to_preserve)
+                                                                                      inputs=inputs,
+                                                                                      teacher_model=self.original_student_model,
+                                                                                      language=language_to_preserve)
             loss += self.args.gamma_tac * loss_other_task / len(self.args.languages_to_preserve)
         
         return (loss, output_student) if return_outputs else loss

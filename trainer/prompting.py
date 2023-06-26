@@ -12,6 +12,8 @@ def get_labels_with_prompt(labels: torch.Tensor,
                            task: str = "transcribe",
                            no_timestamps: bool = True)-> Tuple[torch.Tensor, int, int]:
     """
+    --- LEGACY: kept for reference ---
+    
     Returns the labels with the prefix and suffix tokens, as well as the number of prefix and suffix tokens.
     `labels_with_prompt` should be used as the `decoder_input_ids` argument for the `forward` method of the model.
     
@@ -48,6 +50,8 @@ def get_attention_mask_with_prompt(attention_mask_labels: torch.Tensor,
                                    n_prefix_tokens: int,
                                    n_suffix_tokens: int) -> torch.Tensor:
     """
+    --- LEGACY: kept for reference ---
+    
     Returns the attention mask for which the correct mask was added for the prefix and suffix tokens.
     """
     

@@ -9,9 +9,10 @@ from torch.utils.data import DataLoader, Dataset
 
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer, PreTrainedModel, WhisperProcessor, WhisperTokenizer
 from transformers.modeling_outputs import Seq2SeqLMOutput
+from transformers.models.whisper.modeling_whisper import shift_tokens_right
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from trainer.prompting import get_labels_with_prompt, get_attention_mask_with_prompt
+from trainer.trainer_utils import get_language_token
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -73,7 +74,7 @@ class DistillationTrainer(Seq2SeqTrainer):
             raise ValueError("Trainer: evaluation requires an eval_dataset.")
         eval_dataset = eval_dataset if eval_dataset is not None else self.eval_dataset
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.student_processor,
-                                                             return_attention_mask_labels=False)
+                                                             return_attention_mask=False)
         
         return DataLoader(
             eval_dataset,
@@ -85,16 +86,15 @@ class DistillationTrainer(Seq2SeqTrainer):
     
     
     def compute_loss(self,
-                     student_model: PreTrainedModel,
+                     model: PreTrainedModel,
                      inputs,
                      return_outputs: bool = False):
         """
         Computes the loss according to the distillation method specified in `self.args.method_distil`.
         """
-        loss, output_student = self.METHOD_DISTIL_TO_LOSS_FCT[self.args.method_distil](student_model=student_model,
+        loss, output_student = self.METHOD_DISTIL_TO_LOSS_FCT[self.args.method_distil](student_model=model,
                                                                                        inputs=inputs,
-                                                                                       teacher_model=self.teacher_model,
-                                                                                       language="english")
+                                                                                       teacher_model=self.teacher_model)
         return (loss, output_student) if return_outputs else loss
     
     
@@ -102,7 +102,7 @@ class DistillationTrainer(Seq2SeqTrainer):
                                  student_model: PreTrainedModel,
                                  inputs,
                                  teacher_model: PreTrainedModel,
-                                 language: str = "english") -> tuple[torch.Tensor, Seq2SeqLMOutput]:
+                                 language: Optional[str] = None) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for word-level distillation.
         """
@@ -111,32 +111,21 @@ class DistillationTrainer(Seq2SeqTrainer):
             "The `teacher_model` must be set for word-level distillation."
         
         # Move inputs to device:
-        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels', 'attention_mask_labels']
+        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels', 'attention_mask']
         
         input_features = inputs["input_features"]  # (batch_size, 80, 3000)
         labels = inputs["labels"]  # (batch_size, n_tokens_labels)
-        attention_mask_labels = inputs["attention_mask_labels"]  # (batch_size, n_tokens_labels)
+        attention_mask = inputs["attention_mask"]  # (batch_size, n_tokens_labels)
         
-        # Add prompt to labels and attention mask:
-        labels_with_prompt, n_prefix_tokens, n_suffix_tokens = get_labels_with_prompt(labels,
-                                                                                      tokenizer=self.student_tokenizer,
-                                                                                      language=language,
-                                                                                      task="transcribe",
-                                                                                      no_timestamps=True)  # (batch_size, n_tokens_labels + n_prefix_tokens + n_suffix_tokens)
-        attention_mask_labels_with_prompt = get_attention_mask_with_prompt(attention_mask_labels,
-                                                                           n_prefix_tokens=n_prefix_tokens,
-                                                                           n_suffix_tokens=n_suffix_tokens)  # (batch_size, n_tokens_labels + n_prefix_tokens + n_suffix_tokens)
-        
+        # [For TAC] Replace the language token with the new token language if specified:
+        if language:
+            labels[:, 1] = get_language_token(language)  # hardcoded: 1 is the position of the language token
         
         # Forward pass through student (teacher-forced):
-        # Note: Although at inference, the model can be used without zero-shot, the loss is computed with zero-shot here.
-        # TODO: Fix this.
         output_student: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                decoder_input_ids=labels_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
-                                                                decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1],
-                                                                labels=labels_with_prompt[:, 1:]  # right-shifted labels
-        )
-        logits_student = output_student.logits  # (batch_size, n_tokens_labels + n_prefix_tokens, vocab_size) as n_suffix_tokens = 1
+                                                                labels=labels,
+                                                                attention_mask=attention_mask)
+        logits_student = output_student.logits  # (batch_size, n_tokens_labels, vocab_size)
         
         # Compute the cross-entropy loss:
         loss_ce = output_student.loss  # (1,)
@@ -145,15 +134,15 @@ class DistillationTrainer(Seq2SeqTrainer):
         with torch.no_grad():
             # Forward pass through teacher (teacher-forced):
             output_teacher: Seq2SeqLMOutput = teacher_model.forward(input_features=input_features,
-                                                                    decoder_input_ids=labels_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
-                                                                    decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1])
-            logits_teacher = output_teacher.logits  # (batch_size, n_tokens_labels + n_prefix_tokens, vocab_size) as n_suffix_tokens = 1
+                                                                    labels=labels,
+                                                                    attention_mask=attention_mask)
+            logits_teacher = output_teacher.logits  # (batch_size, n_tokens_labels, vocab_size)
         
         # Initialize KL-divergence loss:
         kl_div_loss = nn.KLDivLoss(reduction="batchmean")
         
         # Important:
-        # - `KLDivLoss` argument order is the opposite of the one for the KL(·||·) methematical notation
+        # - `KLDivLoss` argument order is the opposite of the one for the KL(·||·) mathematical notation
         # - `KLDivLoss` expects log-probabilities for `input` to avoid underflow issues
         
         # Soften probabilities and compute distillation loss:
@@ -172,19 +161,24 @@ class DistillationTrainer(Seq2SeqTrainer):
                                        student_model: PreTrainedModel,
                                        inputs,
                                        teacher_model: PreTrainedModel = None,
-                                       language: str = "english",
+                                       language: Optional[str] = None,
                                        rank_weighting: bool = False) -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for k-best sequence-level distillation where `k = self.args.distillation_num_beams`.
         """
         
+        # If `language` is not specified, use the language of the tokenizer:
+        if language is None:
+            language = self.student_tokenizer.language
+            assert language is not None, "The `language` must be specified in the tokenizer."
+        
         # Move inputs to device:
-        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels', 'attention_mask_labels', 'teacher_sequences',
+        inputs = inputs.to(device)  # inputs.keys -> ['input_features', 'labels', 'attention_mask', 'teacher_sequences',
                                     #                 'attention_mask_teacher_sequences', 'teacher_sequences_scores']
         
         input_features = inputs["input_features"]  # (batch_size, 80, 3000)
         labels = inputs["labels"]  # (batch_size, n_tokens_labels)
-        attention_mask_labels = inputs["attention_mask_labels"]  # (batch_size, n_tokens_labels)
+        attention_mask_labels = inputs["attention_mask"]  # (batch_size, n_tokens_labels)
         teacher_sequences = inputs["teacher_sequences"]  # (batch_size, num_beams, n_tokens_teacher_seq)
         attention_mask_teacher_sequences = inputs["attention_mask_teacher_sequences"]  # (batch_size, num_beams, n_tokens_teacher_seq)
         teacher_sequences_scores = inputs["teacher_sequences_scores"]  # (batch_size, num_beams)
@@ -212,22 +206,15 @@ class DistillationTrainer(Seq2SeqTrainer):
         teacher_sequences = teacher_sequences.reshape(batch_size * distillation_num_beams, n_tokens_teacher_seq)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq)
         attention_mask_teacher_sequences = attention_mask_teacher_sequences.reshape(batch_size * distillation_num_beams, n_tokens_teacher_seq)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq)
         
-        # Add prompt to labels and attention mask:
-        labels_with_prompt, n_prefix_tokens_labels, n_suffix_tokens_labels = get_labels_with_prompt(labels,
-                                                                                                    tokenizer=self.student_tokenizer,
-                                                                                                    language=language,
-                                                                                                    task="transcribe",
-                                                                                                    no_timestamps=True)  # (batch_size, n_tokens_labels + n_prefix_tokens_labels + n_suffix_tokens_labels)
-        attention_mask_labels_with_prompt = get_attention_mask_with_prompt(attention_mask_labels,
-                                                                           n_prefix_tokens=n_prefix_tokens_labels,
-                                                                           n_suffix_tokens=n_suffix_tokens_labels)  # (batch_size, n_tokens_labels + n_prefix_tokens_labels + n_suffix_tokens_labels)
         
         # Forward pass through student with labels as decoder input:
+        labels_right_shifted = shift_tokens_right(labels, student_model.config.pad_token_id, student_model.config.decoder_start_token_id)
         student_output_wrt_labels: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                           decoder_input_ids=labels_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
-                                                                           decoder_attention_mask=attention_mask_labels_with_prompt[:, :-1],
-                                                                           labels=labels_with_prompt[:, 1:]  # right-shifted labels
-        )
+                                                                           decoder_input_ids=labels_right_shifted,
+                                                                           decoder_attention_mask=attention_mask_labels,
+                                                                           labels=labels)
+        
+        # Note: `shift_tokens_right` already added the BOS token and replaced the loss mask token with the pad token, so we can safely use the sequence as decoder input.
         
         # Compute the cross-entropy loss:
         loss_ce = student_output_wrt_labels.loss  # (1,)
@@ -235,33 +222,23 @@ class DistillationTrainer(Seq2SeqTrainer):
         # Repeat input features for the number of beams. The resulting tensor will have shape (batch_size * distillation_num_beams, dim_features).
         input_features = input_features.repeat_interleave(distillation_num_beams, dim=0)  # (batch_size * distillation_num_beams, 80, 3000)
         
-        # Add prompt to labels and attention mask:
-        teacher_sequences_with_prompt, n_prefix_tokens_teacher_seq, n_suffix_tokens_teacher_seq = get_labels_with_prompt(teacher_sequences,
-                                                                                                                         tokenizer=self.student_tokenizer,
-                                                                                                                         language=language,
-                                                                                                                         task="transcribe",
-                                                                                                                         no_timestamps=True)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq + n_prefix_tokens + n_suffix_tokens)
-        attention_mask_teacher_sequences_with_prompt = get_attention_mask_with_prompt(attention_mask_teacher_sequences,
-                                                                                      n_prefix_tokens=n_prefix_tokens_teacher_seq,
-                                                                                      n_suffix_tokens=n_suffix_tokens_teacher_seq)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq + n_prefix_tokens_teacher_seq + n_suffix_tokens_teacher_seq)
-        
         # Forward pass through student with respect to teacher sequences as decoder input:
+        teacher_sequences_right_shifted = shift_tokens_right(teacher_sequences, student_model.config.pad_token_id, student_model.config.decoder_start_token_id)
         student_output_wrt_teacher: Seq2SeqLMOutput = student_model.forward(input_features=input_features,
-                                                                            decoder_input_ids=teacher_sequences_with_prompt[:, :-1],  # -1 because there is no need to predict what comes after the EOS token
-                                                                            decoder_attention_mask=attention_mask_teacher_sequences_with_prompt[:, :-1])
+                                                                            decoder_input_ids=teacher_sequences_right_shifted,
+                                                                            decoder_attention_mask=attention_mask_teacher_sequences)
         
-        # Remove the first logits for the special tokens:
-        student_logits = student_output_wrt_teacher.logits  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
-        _, n_tokens_student_seq, vocab_size = student_logits.shape  # n_tokens_student_seq = n_tokens_teacher_seq + n_prefix_tokens - 1 + n_suffix_tokens (the 1 corresponds to the prediction wrt to the BOS token)
+        student_logits_wrt_teacher = student_output_wrt_teacher.logits  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
+        _, _, vocab_size = student_logits_wrt_teacher.shape
         
         # Temporarily reshape logits to be able to properly use softmax along the last dimension:
-        student_logits = student_logits.reshape(batch_size, distillation_num_beams, n_tokens_student_seq, vocab_size)  # (batch_size, distillation_num_beams, n_tokens_student_seq, vocab_size)
+        student_logits = student_logits_wrt_teacher.reshape(batch_size, distillation_num_beams, n_tokens_teacher_seq, vocab_size)  # (batch_size, distillation_num_beams, n_tokens_teacher_seq, vocab_size)
         
         # Normalize logits:
-        student_log_prob_all = torch.nn.functional.log_softmax(student_logits, dim=-1)  # (batch_size, distillation_num_beams, n_tokens_student_seq, vocab_size)
+        student_log_prob_all = torch.nn.functional.log_softmax(student_logits, dim=-1)  # (batch_size, distillation_num_beams, n_tokens_teacher_seq, vocab_size)
         
         # Reshape back to original shape:
-        student_log_prob_all = student_log_prob_all.reshape(batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
+        student_log_prob_all = student_log_prob_all.reshape(batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
         
         # Note: The first `K = distillation_num_beams` rows of output_log_prob_all_masked correspond to the same example but with different beams.
         
@@ -270,15 +247,15 @@ class DistillationTrainer(Seq2SeqTrainer):
         #       a sufficient method to ignore the padded values is to set them to 0.
         
         # Repeat attention_mask for the n_vocab dimension:
-        student_log_prob_all_mask = attention_mask_teacher_sequences_with_prompt[:, 1:, None].expand(-1, -1, vocab_size)  # right-shifted -> (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
-        output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens_student_seq, vocab_size)
+        student_log_prob_all_mask = attention_mask_teacher_sequences.expand(-1, -1, vocab_size)  # right-shifted -> (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
+        output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
         
         # Get log-probabilities for each generation step:
-        log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences_with_prompt[:, 1:, None], dim=-1)  # right-shifted -> (batch_size * distillation_num_beams, n_tokens_student_seq, 1)
+        log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences_right_shifted[:, :, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, 1)
         
         # Compute the sequence negative log-probability of `y_hat`, which is equal to `loss_kd`:
-        # log_prob_t_hat_step_wise.squeeze() -> (batch_size * distillation_num_beams, n_tokens_student_seq)
-        # Hence we need to sum over the last dimension to get the sequence log-probability.
+        # log_prob_t_hat_step_wise.squeeze() -> (batch_size * distillation_num_beams, n_tokens_teacher_seq)
+        # Hence we need to sum over the last dimension to get the sequence log-probability (product rule in the log space):
         loss_kd_per_sentence = - torch.sum(log_prob_t_hat_step_wise.squeeze(), axis=-1)  # (batch_size * distillation_num_beams,)
         loss_kd_per_sentence = loss_kd_per_sentence.reshape(batch_size, distillation_num_beams)  # (batch_size, distillation_num_beams)
         
