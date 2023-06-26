@@ -21,7 +21,7 @@ class FABDatasetWithAMI10h(BaseDatasetGroup):
         self.available_datasets = [
             "librispeech_en_clean",
             "librispeech_en_other",
-            "ami_10h",
+            "ami_10h_test",
             "tedlium",
             "librispeech_fr",
             "librispeech_pt"
@@ -31,7 +31,7 @@ class FABDatasetWithAMI10h(BaseDatasetGroup):
         self.ds_name_to_lang = {
             "librispeech_en_clean": "en",
             "librispeech_en_other": "en",
-            "ami_10h": "en",
+            "ami_10h_test": "en",
             "tedlium": "en",
             "librispeech_fr": "fr",
             "librispeech_pt": "pt"
@@ -67,7 +67,7 @@ class FABDatasetWithAMI10h(BaseDatasetGroup):
         self.dataset_name_to_cache_dir = {
             "librispeech_en_clean": self.cache_dir_librispeech,
             "librispeech_en_other": self.cache_dir_librispeech,
-            "ami_10h": self.cache_dir_ami,
+            "ami_10h_test": self.cache_dir_ami,
             "tedlium": self.cache_dir_esb,
             "librispeech_fr": self.cache_dir_mls,
             "librispeech_pt": self.cache_dir_mls
@@ -91,10 +91,10 @@ class FABDatasetWithAMI10h(BaseDatasetGroup):
                                                  cache_dir=self.dataset_name_to_cache_dir["librispeech_en_other"],
                                                  streaming=self.streaming,
                                                  use_auth_token=True),
-            "ami_test": load_dataset("edinburghcstr/ami",
-                                     name="ihm",
-                                     split="test[:10%]",
-                                     cache_dir=self.cache_dir_ami),
+            "ami_10h_test": load_dataset("edinburghcstr/ami",
+                                    name="ihm",
+                                    split="test[:10%]",
+                                    cache_dir=self.cache_dir_ami),
             "tedlium": load_dataset(path="esb/diagnostic-dataset",
                                     name="tedlium",
                                     split="clean",
@@ -123,7 +123,7 @@ class FABDatasetWithAMI10h(BaseDatasetGroup):
             if ds_name in self.str2dataset:
                 self.str2dataset[ds_name] = remove_unnecessary_cols_for_librispeech(self.str2dataset[ds_name])
         
-        if "ami_test" in self.str2dataset:
-            self.str2dataset["ami_test"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami_test"])
+        if "ami_10h_test" in self.str2dataset:
+            self.str2dataset["ami_10h_test"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami_10h_test"])
         
         return
