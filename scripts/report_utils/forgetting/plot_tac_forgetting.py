@@ -3,6 +3,7 @@ import typer
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
+from typing import Tuple
 from pathlib import Path
 
 import pandas as pd
@@ -17,7 +18,8 @@ sns.set_theme(context="paper", style="ticks")
 
 
 def main(filepath: str = typer.Argument(..., help="Path to CSV file that contains all eval results for TAC and for different values of gamma."),
-         is_relative: bool = typer.Option(False, help="Whether to plot relative forgetting w.r.t. the first step (i.e., 0% forgetting).")):
+         is_relative: bool = typer.Option(False, help="Whether to plot relative forgetting w.r.t. the first step (i.e., 0% forgetting)."),
+         figsize: Tuple[float, float] = typer.Option((6, 4), help="Figure size (width, height).")):
     df = pd.read_csv(filepath)
     
     if is_relative:
@@ -31,8 +33,7 @@ def main(filepath: str = typer.Argument(..., help="Path to CSV file that contain
     df["gamma"] = df["gamma"].astype("category")
     
     for col_language in df.columns[1:-1]:
-        plt.figure(figsize=(6, 4))
-        # plt.figure(figsize=(8, 4))  # poster
+        plt.figure(figsize=figsize)
         sns.lineplot(data=df, x="steps", y=col_language, hue="gamma", marker="o", dashes=False)
         if is_relative:
             plt.axhline(0, color="black", linestyle="--")
@@ -41,9 +42,9 @@ def main(filepath: str = typer.Argument(..., help="Path to CSV file that contain
     
         # Save figure:
         if is_relative:
-            savepath = (DEFAULT_OUTPUT_DIR / "report" / "forgetting_wrt_training_steps" / (Path(filepath).stem + f"-{col_language}-relative")).with_suffix(".png")
+            savepath = (DEFAULT_OUTPUT_DIR / "report" / "forgetting_wrt_training_steps" / (Path(filepath).stem + f"-{col_language.replace(' ', '_')}-relative")).with_suffix(".png")
         else:
-            savepath = (DEFAULT_OUTPUT_DIR / "report" / "forgetting_wrt_training_steps" / (Path(filepath).stem + f"-{col_language}")).with_suffix(".png")
+            savepath = (DEFAULT_OUTPUT_DIR / "report" / "forgetting_wrt_training_steps" / (Path(filepath).stem + f"-{col_language.replace(' ', '_')}")).with_suffix(".png")
         savepath.parent.mkdir(parents=True, exist_ok=True)
         plt.tight_layout()
         plt.savefig(savepath)
