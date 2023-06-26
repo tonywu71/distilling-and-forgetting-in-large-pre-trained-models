@@ -34,7 +34,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
          task: str = typer.Option("transcribe", help="Task to evaluate on."),
          zero_shot: bool = typer.Option(False, help="Whether to use zero-shot inference. Defaults to False."),
          num_beams: int = typer.Option(DEFAULT_EVAL_NUM_BEAMS, help="Number of beams for the ASR pipeline."),
-         batch_size: int = typer.Option(16, help="Batch size for the ASR pipeline."),
+         batch_size: int = typer.Option(64, help="Batch size for the ASR pipeline."),
          all_edit_metrics: bool = typer.Option(False, "-a", "--all", help="Whether to save and log all edit metrics on top of the WER."),
          savepath: Optional[str] = typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:

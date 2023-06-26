@@ -26,7 +26,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   task: str = "transcribe",
                                   zero_shot: bool = False,
                                   num_beams: int = 1,
-                                  batch_size: int = 16) -> pd.DataFrame:
+                                  batch_size: int = 64) -> pd.DataFrame:
     
     assert ds_group.is_preprocessed, "The dataset group must be preprocessed."
     
@@ -42,7 +42,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
     tbar = tqdm(ds_group.items())
     
     for dataset_name, dataset in tbar:
-        tbar.set_description(f"Processing {dataset_name}...")
+        tbar.set_description(f"Evaluating {dataset_name}...")
         
         if not ds_group.is_multilingual:
             language = ds_group.language
