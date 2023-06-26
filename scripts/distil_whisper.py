@@ -182,7 +182,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     if config.zero_shot_eval:
         student_model.config.forced_decoder_ids = None
     else:
-        student_model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+        student_model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
     # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
     #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
     #       this also affects evaluation.
