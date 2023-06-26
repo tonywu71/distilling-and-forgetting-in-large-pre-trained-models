@@ -74,7 +74,6 @@ class DistilConfig:
     
     
     # ======== Other ========
-    tac_regularization: bool = False
     is_hpt: bool = False
     smart_load: bool = True
     force_reprocess_dataset: bool = False

@@ -74,8 +74,6 @@ class FinetuneConfig:
         # Sanity checks:
         assert self.save_total_limit is None or self.save_total_limit >= 2, \
             "The `save_total_limit` must be at least 2, or None."
-        if self.tac_regularization:
-            raise NotImplementedError("TAC regularization is not implemented yet.")
     
     
     @staticmethod
