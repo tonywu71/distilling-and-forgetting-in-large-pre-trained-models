@@ -56,8 +56,9 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
         "subset": subset,
         "task": task,
         "zero_shot": zero_shot,
-        "batch_size": batch_size,
         "num_beams": num_beams,
+        "batch_size": batch_size,
+        "all_edit_metrics": all_edit_metrics
     }
     
     # If `dataset` has a `load_diagnostic` attribute, add it to the config:
@@ -96,6 +97,14 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
                                                     batch_size=batch_size,
                                                     num_beams=num_beams)
     
+    print("\n-----------------------\n")
+    
+    print("Results:")
+    print(df_edit_metrics)
+    
+    print("\n-----------------------\n")
+    
+    
     # Save the WER metrics:
     wer_metrics = df_edit_metrics["WER (%)"]
     
@@ -105,12 +114,6 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     # Round the results:
     wer_metrics = wer_metrics.round(2)
     
-    print("\n-----------------------\n")
-    
-    print("Results:")
-    print(wer_metrics)
-    
-    print("\n-----------------------\n")
     
     # Save and log the WER metrics:
     save_wer_to_csv(wer_metrics=wer_metrics,

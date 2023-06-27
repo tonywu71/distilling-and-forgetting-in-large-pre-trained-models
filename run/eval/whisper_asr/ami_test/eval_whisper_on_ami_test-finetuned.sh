@@ -53,6 +53,7 @@ echo "python `which python`": >> $LOG
 
 # python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-1600 --dataset-name ami_test --all >> $LOG 2> $ERR
 # python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-3200 --dataset-name ami_test --all >> $LOG 2> $ERR
+python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/ami_10h-benchmark/checkpoint-340 --dataset-name ami_10h_test --all >> $LOG 2> $ERR
 
 #! #############################################
 

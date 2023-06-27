@@ -241,7 +241,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         remove_unused_columns=not(is_seq_level),  # keep the K-beam features if sequence-level, remove them if word-level
         load_best_model_at_end=True,
         metric_for_best_model="wer",
-        greater_is_better=False,  # the lower the WER, the better (same for the loss)
+        greater_is_better=False,  # the lower the WER, the better
         report_to="wandb"  # type: ignore
     )
     
