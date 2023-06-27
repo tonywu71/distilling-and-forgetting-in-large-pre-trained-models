@@ -12,7 +12,7 @@ class ESBDiagnosticCustomDataset(BaseDatasetGroup):
     """
     Custom version of the ESB-diagnostic dataset.
     
-    The LibriSpeech and the AMI datasets from esb-diagnostic are replaced by the original
+    The LibriSpeech and the AMI datasets from esb_diagnostic are replaced by the original
     LibriSpeech (clean and other) and AMI test splits.
     """
     
