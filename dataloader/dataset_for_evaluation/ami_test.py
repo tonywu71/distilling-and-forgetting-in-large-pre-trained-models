@@ -39,7 +39,8 @@ class AMITestSet(BaseDatasetGroup):
             "ami_test": load_dataset("edinburghcstr/ami",
                                      name="ihm",
                                      split="test" if not self.is_ami_10h else "test[:10%]",
-                                     cache_dir=self.cache_dir_ami)
+                                     cache_dir=self.cache_dir_ami,
+                                     streaming=self.streaming)
         }
         
         self.str2dataset["ami_test"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami_test"])
