@@ -9,8 +9,8 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_esb_librispeech-finetuned
-#! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
+#SBATCH -J eval_whisper_on_esb_diagnostic_custom-finetuned
+#! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=01:30:00
+#SBATCH --time=01:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,13 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper.py checkpoints/finetune_configs/experiments/compare_freezing/freeze_encoder/checkpoint-800 --dataset-name esb_librispeech >> $LOG 2> $ERR
-# python scripts/eval_whisper.py checkpoints/finetune_configs/experiments/compare_freezing/freeze_decoder/checkpoint-800 --dataset-name esb_librispeech >> $LOG 2> $ERR
-# python scripts/eval_whisper.py checkpoints/finetune_configs/experiments/compare_freezing/no_frozen_layer/checkpoint-800 --dataset-name esb_librispeech >> $LOG 2> $ERR
-
-# python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 --dataset-name esb_librispeech >> $LOG 2> $ERR
-
-# python scripts/eval_whisper.py checkpoints/finetuning/english_model/finetune-whisper_tiny_en-librispeech_clean_100h-freeze_encoder/checkpoint-2500 --dataset-name esb_librispeech >> $LOG 2> $ERR
+python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/librispeech_clean_100h/final --dataset-name esb_diagnostic_custom --all >> $LOG 2> $ERR
 
 #! #############################################
 
