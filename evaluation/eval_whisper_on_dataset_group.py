@@ -56,9 +56,10 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         else:
             whisper_norm = get_whisper_normalizer(language=language)
         
-        processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path,
-                                                     language=language,
-                                                     task=task)
+        processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path)
+        
+        # Note: There is no need to set `language` and `task` for the processor here as the special tokens will be removed
+        #       from the input text before comparison.
         
         # Set config parameters for generation:
         if zero_shot:

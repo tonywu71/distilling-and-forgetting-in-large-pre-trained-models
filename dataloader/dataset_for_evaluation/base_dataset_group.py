@@ -55,7 +55,9 @@ class BaseDatasetGroup(ABC):
         """
         Preprocess the datasets.
         """
-        assert not self.is_preprocessed, "Datasets have already been preprocessed."
+        if self.is_preprocessed:
+            print("Datasets have already been preprocessed.")
+            return
         
         if not self.is_multilingual:
             # Load normalizer before the loop to avoid loading it multiple times:

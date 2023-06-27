@@ -1,9 +1,8 @@
-from typing import Optional, List
-
 import os
-
+from typing import Optional, List
 from datasets import load_dataset
 
+from dataloader.dataloader_for_training.dataloader_ami import remove_unnecessary_cols_for_ami
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 
 
@@ -42,3 +41,5 @@ class AMITestSet(BaseDatasetGroup):
                                      split="test" if not self.is_ami_10h else "test[:10%]",
                                      cache_dir=self.cache_dir_ami)
         }
+        
+        self.str2dataset["ami_test"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami_test"])
