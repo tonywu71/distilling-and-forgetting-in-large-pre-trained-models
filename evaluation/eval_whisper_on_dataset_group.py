@@ -66,6 +66,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
             model.config.forced_decoder_ids = []
         else:
             model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=language, task=task)  # type: ignore
+        
         # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
         #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
         #       this also affects evaluation.
@@ -84,10 +85,14 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         for out in whisper_asr(gen_from_dataset(dataset),
                                batch_size=batch_size,
                                generate_kwargs={"num_beams": num_beams}):  # type: ignore
-            if not out["reference"][0].strip():  # type: ignore
+            ref = whisper_norm(out["reference"][0])
+            pred = whisper_norm(out[DEFAULT_LABEL_STR_COL])
+            
+            if not ref.strip():
                 continue  # skip empty references to avoid error in WER computation
-            predictions.append(whisper_norm(out[DEFAULT_LABEL_STR_COL]))
-            references.append(out["reference"][0]) # the labels have already been normalized
+            
+            predictions.append(pred)
+            references.append(ref)
         
         # Compute the WER in percent:
         string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=references, predictions=predictions))
