@@ -43,24 +43,10 @@ class MLSDataset(BaseDatasetGroup):
             "spanish": "spanish"
         }
         
-        
         # If `load_diagnostic` is True, we will only load a 10h-subset of the MLS dataset:
         self.load_diagnostic = load_diagnostic
         
-        
-        # Retrieve custom `cache_dir` filepath if set:
-        self.cache_dir_en_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
-        if self.cache_dir_en_librispeech is None:
-            print("WARNING: `CACHE_DIR_EN_LIBRISPEECH` environment variable not set. Using default cache directory.")
-        else:
-            print(f"Using cache directory: `{self.cache_dir_en_librispeech}`.")
-        
-        self.cache_dir_non_english_librispeech = os.environ.get("CACHE_DIR_MLS", None)
-        if self.cache_dir_non_english_librispeech is None:
-            print("WARNING: `CACHE_DIR_MLS` environment variable not set. Using default cache directory.")
-        else:
-            print(f"Using cache directory: `{self.cache_dir_non_english_librispeech}`.")
-        
+        self._load_cache_dir_from_env_var()
         
         self.dataset_name_to_cache_dir = {
             "dutch": self.cache_dir_non_english_librispeech,
@@ -72,7 +58,6 @@ class MLSDataset(BaseDatasetGroup):
             "portuguese": self.cache_dir_non_english_librispeech,
             "spanish": self.cache_dir_non_english_librispeech
         }
-        
         
         super().__init__(streaming=streaming, subset=subset)
     
@@ -134,3 +119,20 @@ class MLSDataset(BaseDatasetGroup):
                                                                     cache_dir=self.dataset_name_to_cache_dir[dataset_name],
                                                                     streaming=self.streaming,
                                                                     use_auth_token=True)
+
+
+    def _load_cache_dir_from_env_var(self) -> None:
+        self.cache_dir_en_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
+        if self.cache_dir_en_librispeech is None:
+            print("WARNING: `CACHE_DIR_EN_LIBRISPEECH` environment variable not set. Using default cache directory.")
+        else:
+            print(f"Using cache directory: `{self.cache_dir_en_librispeech}`.")
+        
+        self.cache_dir_non_english_librispeech = os.environ.get("CACHE_DIR_MLS", None)
+        
+        if self.cache_dir_non_english_librispeech is None:
+            print("WARNING: `CACHE_DIR_MLS` environment variable not set. Using default cache directory.")
+        else:
+            print(f"Using cache directory: `{self.cache_dir_non_english_librispeech}`.")
+
+        return

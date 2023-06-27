@@ -44,9 +44,17 @@ class BaseDatasetGroup(ABC):
     
     
     @abstractmethod
+    def _load_cache_dir_from_env_var(self) -> None:
+        """
+        Load the cache directories from the environment variables.
+        """
+        pass
+        
+    
+    @abstractmethod
     def _prepare_str2dataset(self) -> None:
         """
-        Must be called after `super().__init__()`.
+        Load the different datasets. Will be automatically called in `super().__init__()`.
         """
         pass
     

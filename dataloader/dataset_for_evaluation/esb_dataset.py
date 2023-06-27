@@ -12,7 +12,6 @@ class ESBDataset(BaseDatasetGroup):
     See for more details:
     - https://arxiv.org/abs/2210.13352 
     - https://huggingface.co/datasets/esb/datasets
-    - https://huggingface.co/datasets/esb/diagnostic-dataset
     """
     
     def __init__(self,
@@ -36,21 +35,7 @@ class ESBDataset(BaseDatasetGroup):
         
         self.load_diagnostic = load_diagnostic
         
-        
-        # Retrieve custom `cache_dir` filepath if set:
-        if self.load_diagnostic:
-            self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB_DIAGNOSTIC", None)
-            if self.cache_dir_esb is None:
-                print("WARNING: `CACHE_DIR_ESB_DIAGNOSTIC` environment variable not set. Using default cache directory.")
-            else:
-                print(f"Using cache directory: `{self.cache_dir_esb}`.")
-        else:
-            self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB", None)
-            if self.cache_dir_esb is None:
-                print("WARNING: `CACHE_DIR_ESB` environment variable not set. Using default cache directory.")
-            else:
-                print(f"Using cache directory: `{self.cache_dir_esb}`.")
-        
+        self._load_cache_dir_from_env_var()
         
         self.dataset_name_to_cache_dir = {
             "librispeech": self.cache_dir_esb,
@@ -89,3 +74,19 @@ class ESBDataset(BaseDatasetGroup):
                                                                     streaming=self.streaming,
                                                                     use_auth_token=True
                                                                     ).rename_column("norm_transcript", "text")
+
+
+    def _load_cache_dir_from_env_var(self) -> None:
+        if self.load_diagnostic:
+            self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB_DIAGNOSTIC", None)
+            if self.cache_dir_esb is None:
+                print("WARNING: `CACHE_DIR_ESB_DIAGNOSTIC` environment variable not set. Using default cache directory.")
+            else:
+                print(f"Using cache directory: `{self.cache_dir_esb}`.")
+        else:
+            self.cache_dir_esb = os.environ.get("CACHE_DIR_ESB", None)
+            if self.cache_dir_esb is None:
+                print("WARNING: `CACHE_DIR_ESB` environment variable not set. Using default cache directory.")
+            else:
+                print(f"Using cache directory: `{self.cache_dir_esb}`.")
+        return

@@ -23,12 +23,7 @@ class LibriSpeechCleanTestSet(BaseDatasetGroup):
         self.is_multilingual = False
         self.language = "english"
         
-        # Retrieve custom `cache_dir` filepath if set:
-        self.cache_dir_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
-        if self.cache_dir_librispeech is None:
-            print("WARNING: `CACHE_DIR_LIBRISPEECH` environment variable not set. Using default cache directory.")
-        else:
-            print(f"Using cache directory: `{self.cache_dir_librispeech}`.")
+        self._load_cache_dir_from_env_var()
         
         super().__init__(streaming=streaming, subset=subset)
     
@@ -41,3 +36,11 @@ class LibriSpeechCleanTestSet(BaseDatasetGroup):
                                                    streaming=self.streaming,
                                                    cache_dir=self.cache_dir_librispeech)
         }
+
+
+    def _load_cache_dir_from_env_var(self) -> None:
+        self.cache_dir_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
+        if self.cache_dir_librispeech is None:
+            print("WARNING: `CACHE_DIR_LIBRISPEECH` environment variable not set. Using default cache directory.")
+        else:
+            print(f"Using cache directory: `{self.cache_dir_librispeech}`.")

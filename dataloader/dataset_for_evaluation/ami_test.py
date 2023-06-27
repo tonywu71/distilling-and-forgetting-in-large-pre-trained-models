@@ -24,12 +24,7 @@ class AMITestSet(BaseDatasetGroup):
         self.language = "english"
         self.is_ami_10h = is_ami_10h
         
-        # Retrieve custom `cache_dir` filepath if set:
-        self.cache_dir_ami = os.environ.get("CACHE_DIR_AMI", None)
-        if self.cache_dir_ami is None:
-            print("WARNING: `CACHE_DIR_AMI` environment variable not set. Using default cache directory.")
-        else:
-            print(f"Using cache directory: `{self.cache_dir_ami}`.")
+        self._load_cache_dir_from_env_var()
         
         super().__init__(streaming=streaming, subset=subset)
     
@@ -44,3 +39,12 @@ class AMITestSet(BaseDatasetGroup):
         }
         
         self.str2dataset["ami_test"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami_test"])
+
+
+    def _load_cache_dir_from_env_var(self) -> None:
+        self.cache_dir_ami = os.environ.get("CACHE_DIR_AMI", None)
+        if self.cache_dir_ami is None:
+            print("WARNING: `CACHE_DIR_AMI` environment variable not set. Using default cache directory.")
+        else:
+            print(f"Using cache directory: `{self.cache_dir_ami}`.")
+        return
