@@ -62,10 +62,6 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
         "all_edit_metrics": all_edit_metrics
     }
     
-    # If `dataset` has a `load_diagnostic` attribute, add it to the config:
-    if hasattr(dataset_group, "load_diagnostic"):
-        config["load_diagnostic"] = dataset_group.load_diagnostic
-    
     # Initialize W&B:
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT_EVALUATION"],

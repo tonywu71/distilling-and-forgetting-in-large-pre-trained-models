@@ -18,6 +18,8 @@ class AMITestSet(BaseDatasetGroup):
         super().__init__(streaming=streaming, subset=subset)
         self.is_ami_10h = is_ami_10h
         
+        assert self.is_ami_10h and not self.streaming, "Streaming is not supported for the 10h AMI set."
+        
         # Set the abstract class attributes:
         self.available_datasets = [
             "ami_test"

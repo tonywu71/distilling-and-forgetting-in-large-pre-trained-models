@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from collections import defaultdict
 
 import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 import pandas as pd
 from tqdm.auto import tqdm
@@ -76,8 +76,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                model=model,
                                tokenizer=processor.tokenizer,  # type: ignore
                                feature_extractor=processor.feature_extractor,  # type: ignore
-                               device=0  # use 1st GPU for Whisper
-        )
+                               device=device)
     
         # Create placeholders for the predictions and references:
         predictions = []

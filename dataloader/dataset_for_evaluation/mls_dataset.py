@@ -21,6 +21,8 @@ class MLSDataset(BaseDatasetGroup):
         super().__init__(streaming=streaming, subset=subset)
         self.load_diagnostic = load_diagnostic
         
+        assert self.load_diagnostic and not self.streaming, "Streaming is not supported for the MLS-diagnostic set."
+        
         # Set the abstract class attributes:
         self.dataset_path = "facebook/multilingual_librispeech"
         self.available_datasets = [
