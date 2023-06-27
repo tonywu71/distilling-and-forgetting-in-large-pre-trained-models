@@ -23,7 +23,8 @@ class EnvConfig:
     CACHE_DIR_MLS: Optional[str]
     
     # ------ Weight&Biases ------
-    WANDB_PROJECT: str
+    WANDB_PROJECT_TRAINING: str
+    WANDB_PROJECT_EVALUATION: str
     WANDB_CACHE_DIR: str
     
     # ------ Other ------

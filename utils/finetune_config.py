@@ -44,11 +44,12 @@ class FinetuneConfig:
     lowercase: bool = True  # set to False if and only if the text is not fully uppercased
     
     # ======== Optional (training) ========
-    zero_shot: bool = False
+    zero_shot_eval: bool = False
     eval_batch_size: Optional[int] = None
     eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     save_total_limit: Optional[int] = None
     early_stopping_patience: Optional[int] = None
+    save_final_model: bool = True
     
     # ======== Other ========
     smart_load: bool = True
@@ -73,7 +74,6 @@ class FinetuneConfig:
         # Sanity checks:
         assert self.save_total_limit is None or self.save_total_limit >= 2, \
             "The `save_total_limit` must be at least 2, or None."
-    
     
     
     @staticmethod

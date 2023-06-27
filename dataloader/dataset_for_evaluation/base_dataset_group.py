@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict
 from abc import ABC, abstractmethod
+from tqdm.auto import tqdm
 
 from dataloader.filtering import filter_audio_length, filter_labels
 from normalization.whisper_normalization import get_whisper_normalizer
@@ -19,8 +20,8 @@ class BaseDatasetGroup(ABC):
     
     
     def __init__(self,
-                 streaming: bool=False,
-                 subset: Optional[List[str]]=None) -> None:
+                 streaming: bool = False,
+                 subset: Optional[List[str]] = None) -> None:
         self.streaming = streaming
         self.subset = subset
         
@@ -50,7 +51,7 @@ class BaseDatasetGroup(ABC):
         pass
     
     
-    def preprocess_datasets(self, normalize: bool=True) -> None:
+    def preprocess_datasets(self, normalize: bool = True, verbose: bool = True) -> None:
         """
         Preprocess the datasets.
         """
@@ -63,8 +64,12 @@ class BaseDatasetGroup(ABC):
             def normalize_fct(batch):
                 batch[DEFAULT_LABEL_STR_COL] = whisper_norm(batch[DEFAULT_LABEL_STR_COL])
                 return batch
-        
-            for dataset_name in self.str2dataset:  # Loop over all the datasets...
+
+            tbar = tqdm(self.str2dataset, disable=not(verbose))
+            
+            for dataset_name in tbar:  # Loop over all the datasets...
+                tbar.set_description(f"Processing `{dataset_name}`...")
+
                 # Filter audio length and labels:
                 self.str2dataset[dataset_name] = filter_audio_length(self.str2dataset[dataset_name])
                 self.str2dataset[dataset_name] = filter_labels(self.str2dataset[dataset_name])
@@ -77,7 +82,11 @@ class BaseDatasetGroup(ABC):
                         self.str2dataset[dataset_name] = self.str2dataset[dataset_name].map(normalize_fct)  # type: ignore
         
         else:  # If multilingual...
-            for dataset_name in self.str2dataset:  # Loop over all the datasets...
+            tbar = tqdm(self.str2dataset, disable=not(verbose))
+            
+            for dataset_name in tbar:  # Loop over all the datasets...
+                tbar.set_description(f"Processing `{dataset_name}`...")
+                
                 # Filter audio length and labels:
                 self.str2dataset[dataset_name] = filter_audio_length(self.str2dataset[dataset_name])
                 self.str2dataset[dataset_name] = filter_labels(self.str2dataset[dataset_name])

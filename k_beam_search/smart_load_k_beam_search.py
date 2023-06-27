@@ -65,8 +65,8 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
     """
     
     # Sanity checks:
-    assert config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"], \
-        f'Invalid method `{config.method}`. Must be one of `["seq_level_k_best_uniform", "seq_level_k_best_ranked"]`.'
+    assert config.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"], \
+        f'Invalid method `{config.method_distil}`. Must be one of `["seq_level_k_best_uniform", "seq_level_k_best_ranked"]`.'
     assert config.distillation_num_beams is not None, \
         "The `distillation_num_beams` must be set for sequence-level distillation."
     

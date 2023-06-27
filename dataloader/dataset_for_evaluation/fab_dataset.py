@@ -1,6 +1,7 @@
 import os
 
 from typing import Optional, List
+from toolz import dicttoolz
 from datasets import load_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from dataloader.dataloader_for_training.dataloader_librispeech import remove_unnecessary_cols_for_librispeech
@@ -20,6 +21,7 @@ class FABDataset(BaseDatasetGroup):
             "librispeech_en_other",
             "tedlium",
             "librispeech_fr",
+            "librispeech_pt"
         ]
         
         self.is_multilingual = True
@@ -27,7 +29,8 @@ class FABDataset(BaseDatasetGroup):
             "librispeech_en_clean": "en",
             "librispeech_en_other": "en",
             "tedlium": "en",
-            "librispeech_fr": "fr"
+            "librispeech_fr": "fr",
+            "librispeech_pt": "pt"
         }
         
         
@@ -56,6 +59,7 @@ class FABDataset(BaseDatasetGroup):
             "librispeech_en_other": self.cache_dir_librispeech,
             "tedlium": self.cache_dir_esb,
             "librispeech_fr": self.cache_dir_mls,
+            "librispeech_pt": self.cache_dir_mls
         }
         
         
@@ -88,11 +92,20 @@ class FABDataset(BaseDatasetGroup):
                                            split="test",
                                            cache_dir=self.dataset_name_to_cache_dir["librispeech_fr"],
                                            streaming=self.streaming,
+                                           use_auth_token=True),
+            "librispeech_pt": load_dataset(path="facebook/multilingual_librispeech",
+                                           name="portuguese",
+                                           split="test",
+                                           cache_dir=self.dataset_name_to_cache_dir["librispeech_pt"],
+                                           streaming=self.streaming,
                                            use_auth_token=True)
         }
         
+        self.str2dataset = dicttoolz.keyfilter(lambda k: k in self.subset, self.str2dataset)
+        
         # Remove unnecessary columns from the datasets:
-        self.str2dataset["librispeech_en_clean"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_en_clean"])
-        self.str2dataset["librispeech_en_other"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_en_other"])
+        for ds_name in ["librispeech_en_clean", "librispeech_en_other"]:
+            if ds_name in self.str2dataset:
+                self.str2dataset[ds_name] = remove_unnecessary_cols_for_librispeech(self.str2dataset[ds_name])
         
         return

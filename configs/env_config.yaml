@@ -16,7 +16,8 @@ CACHE_DIR_MLS: /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/h
 
 
 # ==============================     WANDB     ==============================
-WANDB_PROJECT: distilling-and-forgetting-in-large-pre-trained-models
+WANDB_PROJECT_TRAINING: distilling_and_forgetting-training
+WANDB_PROJECT_EVALUATION: distilling_and_forgetting-evaluation
 WANDB_CACHE_DIR: /home/tw581/rds/hpc-work/cache/wandb
 
 

@@ -2,18 +2,18 @@ from transformers import WhisperTokenizer
 from utils.distil_config import DistilConfig
 
 
-def distillation_sanity_check(config: DistilConfig) -> None:
+def assert_if_distillation_tokenizers_match(config: DistilConfig) -> None:
     """
     Sanity checks for distillation experiments.
     """
     
     # --- Tokenizer ---
-    teacher_processor = WhisperTokenizer.from_pretrained(
+    teacher_tokenizer = WhisperTokenizer.from_pretrained(
         config.student_model_name_or_path,
         language=config.lang_name,
         task=config.task
     )
-    student_processor = WhisperTokenizer.from_pretrained(
+    student_tokenizer = WhisperTokenizer.from_pretrained(
         config.student_model_name_or_path,
         language=config.lang_name,
         task=config.task
@@ -24,12 +24,7 @@ def distillation_sanity_check(config: DistilConfig) -> None:
     list_attributes = ["vocab_size", "model_max_length", "is_fast", "padding_side",
                        "truncation_side", "clean_up_tokenization_spaces"]
     for attribute in list_attributes:
-        assert getattr(teacher_processor, attribute) == getattr(student_processor, attribute), \
+        assert getattr(teacher_tokenizer, attribute) == getattr(student_tokenizer, attribute), \
             f"The teacher and the student must have the same tokenizer.{attribute} attribute."
-    
-    
-    # # --- W&B ---
-    # assert not config.log_preds_to_wandb, "Logging predictions to W&B is not supported for distillation."
-    
     
     return

@@ -51,14 +51,16 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper_on_fab.py openai/whisper-tiny --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_fab.py openai/whisper-tiny.en --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_fab.py openai/whisper-tiny --subset librispeech_clean --subset librispeech_other --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_fab.py openai/whisper-base --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_fab.py openai/whisper-small --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_fab.py openai/whisper-small.en --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_fab.py openai/whisper-medium --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_on_fab.py openai/whisper-large-v2 --dataset-name fab >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name fab >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny.en --dataset-name fab >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --subset librispeech_clean --subset librispeech_other --dataset-name fab >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-base --dataset-name fab >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-small --dataset-name fab >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-small.en --dataset-name fab >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-medium --dataset-name fab >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-large-v2 --dataset-name fab >> $LOG 2> $ERR
+
+python scripts/eval_whisper.py openai/whisper-tiny --dataset-name fab --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt >> $LOG 2> $ERR
 
 #! #############################################
 

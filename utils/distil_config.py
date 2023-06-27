@@ -24,7 +24,7 @@ class DistilConfig:
     experiment_name: str
     lang_name: str
     task: str
-    method: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+    method_distil: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
     teacher_model_name_or_path: str
     student_model_name_or_path: str
     is_tokenizer_multilingual: bool
@@ -51,11 +51,12 @@ class DistilConfig:
     
     
     # ======== Optional (training) ========
-    zero_shot: bool = True
+    zero_shot_eval: bool = False
     eval_batch_size: Optional[int] = None
     eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     save_total_limit: Optional[int] = None
     early_stopping_patience: Optional[int] = None
+    save_final_model: bool = True
     
     
     # ======== Knowledge distillation hyperparameters ========
@@ -102,19 +103,19 @@ class DistilConfig:
     def _validate_distillation_args(self) -> None:
         """Validate the distillation arguments."""
         
-        assert self.method in AVAILABLE_KD_METHODS, \
-            f"Invalid distillation method `{self.method}`. Available methods: {AVAILABLE_KD_METHODS}."
+        assert self.method_distil in AVAILABLE_KD_METHODS, \
+            f"Invalid distillation method `{self.method_distil}`. Available methods: {AVAILABLE_KD_METHODS}."
         
-        if self.method == "word_level":
+        if self.method_distil == "word_level":
             assert self.temperature is not None, \
                 "The `temperature` must be set for `word_level` distillation."
-        if self.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
+        if self.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
             assert self.distillation_num_beams is not None, \
                 "The `distillation_num_beams` must be set for sequence-level distillation."
-        if self.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
+        if self.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
             assert self.distillation_num_beams is not None and self.distillation_num_beams > 0, \
                 "The `distillation_num_beams` must be greater than 0 for sequence-level distillation."
-        if self.method == "seq_level_k_best_ranked":
+        if self.method_distil == "seq_level_k_best_ranked":
             assert self.beta_decay is not None, \
                 "The `beta_decay` must be set for `seq_level_k_best_ranked` distillation."
             assert self.beta_decay > 0, \

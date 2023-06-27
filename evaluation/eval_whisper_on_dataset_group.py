@@ -26,7 +26,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   task: str = "transcribe",
                                   zero_shot: bool = False,
                                   num_beams: int = 1,
-                                  batch_size: int = 16) -> pd.DataFrame:
+                                  batch_size: int = 64) -> pd.DataFrame:
     
     assert ds_group.is_preprocessed, "The dataset group must be preprocessed."
     
@@ -42,7 +42,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
     tbar = tqdm(ds_group.items())
     
     for dataset_name, dataset in tbar:
-        tbar.set_description(f"Processing {dataset_name}...")
+        tbar.set_description(f"Evaluating {dataset_name}...")
         
         if not ds_group.is_multilingual:
             language = ds_group.language
@@ -56,18 +56,18 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         else:
             whisper_norm = get_whisper_normalizer(language=language)
         
-        
         processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path,
                                                      language=language,
                                                      task=task)
         
-        # The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
-        # These token ids control the transcription language and task for zero-shot ASR. If `zero_shot` is enabled in config, we will set
-        # these ids to None, as we will evaluate the model on predicting the correct language and task (which are provided in the tokenized input).
+        # Set config parameters for generation:
         if zero_shot:
             model.config.forced_decoder_ids = []
         else:
             model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=language, task=task)  # type: ignore
+        # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
+        #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
+        #       this also affects evaluation.
         
         whisper_asr = pipeline(task="automatic-speech-recognition",
                                model=model,

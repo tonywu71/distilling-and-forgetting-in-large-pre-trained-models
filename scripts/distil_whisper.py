@@ -33,22 +33,32 @@ from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
 from evaluation.wer_metric import compute_wer_fct
 from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
+from trainer.tac_distillation import TACDistillationTrainer, TACDistillationTrainingArguments
 from utils.constants import GEN_MAX_LENGTH
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
-from utils.sanity_checks import distillation_sanity_check
+from utils.sanity_checks import assert_if_distillation_tokenizers_match
+from utils.tac_distil_config import TACDistilConfig
 
 
 
-def main(config_filepath: str):
+def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file."),
+         tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
+                                              "Flag should be used if only if the config file is for TAC distillation.")):
     """
-    Distil the Whisper model on the LibriSpeech dataset.
+    Distil Whisper based on the provided config file.
     """
-    # --------------------   Load config   --------------------
-    config = DistilConfig.from_yaml(config_filepath)
-    distillation_sanity_check(config)
     
-    is_seq_level = config.method in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+    # --------------------   Load config   --------------------
+    if tac:
+        config = TACDistilConfig.from_yaml(config_filepath)
+    else:
+        config = DistilConfig.from_yaml(config_filepath)
+    
+    # Sanity check:
+    assert_if_distillation_tokenizers_match(config)
+    
+    is_seq_level = config.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]
     
     if is_seq_level:
         print(f"Sequence-level distillation will be performed. Although the batch size is set to {config.batch_size}, " + \
@@ -61,14 +71,17 @@ def main(config_filepath: str):
     fix_model_dir_conflicts(config)
     
     # Prepare tags for W&B:
-    list_tags = [config.method]
+    list_tags = [config.dataset_name,
+                 config.method_distil]
     if config.is_hpt:
         list_tags.append("hpt")
+    if tac:
+        list_tags.append("tac")
     
     # -----------------------   W&B   -----------------------
     wandb.login()
-    wandb.init(project=os.environ["WANDB_PROJECT"],
-               job_type="distillation",
+    wandb.init(project=os.environ["WANDB_PROJECT_TRAINING"],
+               job_type="distillation_with_tac" if tac else "distillation",
                tags=list_tags,
                name=config.experiment_name,
                config=asdict(config))
@@ -96,14 +109,21 @@ def main(config_filepath: str):
         language=config.lang_name,
         task=config.task
     )
+    # Note: Because `language` and `task` have been set, the processor will append the associated
+    #       special tokens to the decoded sentence.
+    
     
     # Create the data collator that will be used to prepare the data for training:
     if not is_seq_level:  # If word-level...
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
-                                                             return_attention_mask_labels=True)
+                                                             return_attention_mask=True,
+                                                             replace_padded_with_loss_mask_for_labels=True,
+                                                             discard_first_bos_token=True)
     else:
         data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
-                                                             return_attention_mask_labels=True,
+                                                             return_attention_mask=True,
+                                                             replace_padded_with_loss_mask_for_labels=True,
+                                                             discard_first_bos_token=True,
                                                              add_k_beam_features=True)
     
     # Load the dataset and preprocess it:
@@ -162,19 +182,25 @@ def main(config_filepath: str):
         decoder._requires_grad = False  # type: ignore
     
     
-    # Notes:
-    # - The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
-    #   These token ids control the transcription language and task for zero-shot ASR. If `zero_shot` is enabled in config, we will set
-    #   these ids to None, as we will train the model to predict the correct language and task (which are provided in the tokenized input).
-    # - There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
-    #   set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
-    for model in [teacher_model, student_model]:
-        if model is not None:  # ignore teacher model if not used
-            if config.zero_shot:
-                model.config.forced_decoder_ids = None
-            else:
-                model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
-            model.config.suppress_tokens = []
+    # Set config parameters for generation:
+    if config.zero_shot_eval:
+        student_model.config.forced_decoder_ids = None
+    else:
+        student_model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+    # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
+    #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
+    #       this also affects evaluation.
+    student_model.config.suppress_tokens = []  # type: ignore
+    # Note: There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
+    #       set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
+    
+
+    if teacher_model is not None:  # ignore teacher model if not used
+        if config.zero_shot_eval:
+            teacher_model.config.forced_decoder_ids = None
+        else:
+            teacher_model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+        teacher_model.config.suppress_tokens = []
     
     # Since only the student model is trained, we can keep caching for the teacher model:
     if config.gradient_checkpointing:
@@ -184,8 +210,8 @@ def main(config_filepath: str):
     # Prepare training:
     Path(config.model_dir).mkdir(parents=True, exist_ok=True)
     
-    training_args = DistillationTrainingArguments(
-        method=config.method,
+    training_arguments_dict = dict(
+        method_distil=config.method_distil,
         alpha_ce=config.alpha_ce,
         temperature=config.temperature,
         distillation_num_beams=config.distillation_num_beams,
@@ -215,9 +241,17 @@ def main(config_filepath: str):
         remove_unused_columns=not(is_seq_level),  # keep the K-beam features if sequence-level, remove them if word-level
         load_best_model_at_end=True,
         metric_for_best_model="wer",
-        greater_is_better=False,  # the lower the WER, the better (same for the loss)
+        greater_is_better=False,  # the lower the WER, the better
         report_to="wandb"  # type: ignore
     )
+    
+    if isinstance(config, TACDistilConfig):  # equivalent to `if tac`
+        training_args = TACDistillationTrainingArguments(languages_to_preserve=config.languages_to_preserve,
+                                                         method_tac=config.method_tac,
+                                                         gamma_tac=config.gamma_tac,
+                                                         **training_arguments_dict)
+    else:
+        training_args = DistillationTrainingArguments(**training_arguments_dict)  # type: ignore
     
     # Define the compute_metrics function:
     compute_wer = partial(compute_wer_fct,
@@ -245,7 +279,7 @@ def main(config_filepath: str):
     
     
     # Create the trainer:
-    distillation_trainer = DistillationTrainer(
+    trainer_args = dict(
         args=training_args,
         model=student_model,  # type: ignore
         student_processor=student_processor,
@@ -254,10 +288,17 @@ def main(config_filepath: str):
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
-        tokenizer=student_processor.tokenizer,  # type: ignore
+        tokenizer=student_processor,  # use processor for saving  # type: ignore
         callbacks=callbacks
     )
     
+    if tac:
+        distillation_trainer = TACDistillationTrainer(**trainer_args)
+    else:
+        distillation_trainer = DistillationTrainer(**trainer_args)
+    
+    
+    print("\n-----------------------\n")
     print("Starting distillation...")
         
     # Distil the model:
@@ -265,11 +306,11 @@ def main(config_filepath: str):
     
     print("Distillation finished.")
     
-    # Save the model:
-    final_model_dir = Path(config.model_dir) / "final"
-    distillation_trainer.save_model(final_model_dir)
-    
-    print(f"Model saved to `{final_model_dir}`.")
+    if config.save_final_model:
+        # Save the model:
+        final_model_dir = str(Path(config.model_dir) / "final")
+        distillation_trainer.save_model(final_model_dir)
+        print(f"Model saved to `{final_model_dir}`.")
     
     wandb.finish()
     

@@ -1,0 +1,39 @@
+# Total training steps:
+# - 2676 for batch_size = 32 and num_train_epochs = 3
+
+experiment_name: finetune_tac-tiny-librispeech_clean_100h-gamma_2e-1
+lang_name: english
+task: transcribe
+pretrained_model_name_or_path: openai/whisper-tiny
+is_tokenizer_multilingual: True
+model_dir: ./checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/
+freeze_encoder: True
+freeze_decoder: False
+batch_size: 32
+gradient_accumulation_steps: 1
+gradient_checkpointing: True
+dataset_name: librispeech_clean_100h
+optim: adamw_torch
+learning_rate: 1e-5
+warmup_steps: 130
+eval_steps: 500
+generation_num_beams: 1  # to speed up eval
+logging_steps: 250
+save_steps: 500
+num_train_epochs: 3
+
+zero_shot_eval: False
+eval_batch_size: 256
+eval_accumulation_steps:
+save_total_limit:  # save all to plot forgetting wrt steps
+early_stopping_patience: -1
+
+gamma_tac: 0.2
+languages_to_preserve: [french]
+
+smart_load: True
+force_reprocess_dataset: False
+eval_first_step: False
+log_preds_to_wandb: True
+log_raw_str: True
+n_samples_per_wandb_logging_step: 8

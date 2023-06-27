@@ -33,28 +33,41 @@ from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_wer_fct
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
+from trainer.tac_finetuning import TACFinetuningTrainer, TACFinetuningTrainingArguments
 from utils.constants import GEN_MAX_LENGTH
 from utils.file_io import fix_model_dir_conflicts
 from utils.finetune_config import FinetuneConfig
+from utils.tac_finetune_config import TACFinetuneConfig
 
 
-def main(config_filepath: str):
+def main(config_filepath: str,
+         tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
+                                              "Flag should be used if only if the config file is for TAC distillation. " + \
+                                              "TAC is not compatible with zero-shot.")):
     """
     Fine-tune the Whisper model on the LibriSpeech dataset.
     """
     # --------------------   Load config   --------------------
-    config = FinetuneConfig.from_yaml(config_filepath)
+    if tac:
+        config = TACFinetuneConfig.from_yaml(config_filepath)
+    else:
+        config = FinetuneConfig.from_yaml(config_filepath)
     
     # If a previous run has its checkpoints saved in the same directory,
     # add a timestamp to the model directory. This is to avoid overwriting
     # previous models. Note that `config` is modified in-place.
     fix_model_dir_conflicts(config)
     
+    # Prepare tags for W&B:
+    list_tags = [config.dataset_name]
+    if tac:
+        list_tags.append("tac")
     
     # -----------------------   W&B   -----------------------
     wandb.login()
-    wandb.init(project=os.environ["WANDB_PROJECT"],
+    wandb.init(project=os.environ["WANDB_PROJECT_TRAINING"],
                job_type="finetuning",
+               tags=list_tags,
                name=config.experiment_name,
                config=asdict(config))
     
@@ -75,13 +88,16 @@ def main(config_filepath: str):
     
     # ----------------------   Main   ----------------------
 
-    # Load processor (contains both tokenizer and feature extractor)
+    # Load processor (contains both tokenizer and feature extractor):
     processor = WhisperProcessor.from_pretrained(
         config.pretrained_model_name_or_path,
         language=config.lang_name,
         task=config.task
     )
+    # Note: Because `language` and `task` have been set, the processor will append the associated
+    #       special tokens to the decoded sentence.
 
+    
     # Create the data collator that will be used to prepare the data for training:
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor,
                                                          replace_padded_with_loss_mask_for_labels=True,
@@ -128,27 +144,28 @@ def main(config_filepath: str):
             param.requires_grad = False
         decoder._requires_grad = False  # type: ignore
     
+    # Set config parameters for training:
+    if config.gradient_checkpointing:
+        model.config.use_cache = False  # type: ignore
     
-    # The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
-    # These token ids control the transcription language and task for zero-shot ASR. If `zero_shot` is enabled in config, we will set
-    # these ids to None, as we will train the model to predict the correct language and task (which are provided in the tokenized input).
-    if config.zero_shot:
+    # Set config parameters for generation:
+    if config.zero_shot_eval:
         model.config.forced_decoder_ids = None
     else:
         model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
-    
-    # There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
-    # set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
+    # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
+    #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
+    #       this also affects evaluation.
     model.config.suppress_tokens = []  # type: ignore
+    # Note: There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
+    #       set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
     
-    if config.gradient_checkpointing:
-        model.config.use_cache = False  # type: ignore
     
     
     # Prepare training:
     Path(config.model_dir).mkdir(parents=True, exist_ok=True)
     
-    training_args = Seq2SeqTrainingArguments(
+    training_arguments_dict = dict(
         output_dir=config.model_dir,
         per_device_train_batch_size=config.batch_size,
         per_device_eval_batch_size=config.eval_batch_size,
@@ -177,6 +194,13 @@ def main(config_filepath: str):
         report_to="wandb"  # type: ignore
     )
     
+    if isinstance(config, TACFinetuneConfig):  # equivalent to `if tac`
+        training_args = TACFinetuningTrainingArguments(languages_to_preserve=config.languages_to_preserve,
+                                                       gamma_tac=config.gamma_tac,
+                                                       **training_arguments_dict)
+    else:
+        training_args = Seq2SeqTrainingArguments(**training_arguments_dict)  # type: ignore
+    
     # Define the compute_metrics function:
     compute_wer = partial(compute_wer_fct,
                           processor=processor,
@@ -202,18 +226,24 @@ def main(config_filepath: str):
     
     
     # Create the trainer:
-    trainer = Seq2SeqTrainer(
+    trainer_args = dict(
         args=training_args,
         model=model,  # type: ignore
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
         compute_metrics=compute_wer,  # type: ignore
-        tokenizer=processor.tokenizer,  # type: ignore
+        tokenizer=processor,  # use processor for saving  # type: ignore
         callbacks=callbacks
     )
     
+    if tac:
+        trainer = TACFinetuningTrainer(processor=processor, **trainer_args)
+    else:
+        trainer = Seq2SeqTrainer(**trainer_args)
     
+    
+    print("\n-----------------------\n")
     print("Starting training...")
     
     # Train the model:
@@ -222,11 +252,11 @@ def main(config_filepath: str):
     print("Training finished.")
     
     
-    # Save the model:
-    final_model_dir = str(Path(config.model_dir) / "final")
-    trainer.save_model(final_model_dir)
-    
-    print(f"Model saved to `{final_model_dir}`.")
+    if config.save_final_model:
+        # Save the model:
+        final_model_dir = str(Path(config.model_dir) / "final")
+        trainer.save_model(final_model_dir)
+        print(f"Model saved to `{final_model_dir}`.")
     
     wandb.finish()
     
