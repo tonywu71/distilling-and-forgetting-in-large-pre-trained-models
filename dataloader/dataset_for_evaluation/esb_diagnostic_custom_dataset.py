@@ -19,7 +19,9 @@ class ESBDiagnosticCustomDataset(BaseDatasetGroup):
     def __init__(self,
                  streaming: bool=False,
                  subset: Optional[List[str]]=None) -> None:
+        super().__init__(streaming=streaming, subset=subset)
         
+        # Set the abstract class attributes:
         self.dataset_path = "esb/diagnostic-dataset"
         self.available_datasets = [
             "librispeech",
@@ -47,7 +49,7 @@ class ESBDiagnosticCustomDataset(BaseDatasetGroup):
             "ami": self.cache_dir_ami,
         }
         
-        super().__init__(streaming=streaming, subset=subset)
+        self.post_init()
     
     
     def _prepare_str2dataset(self) -> None:

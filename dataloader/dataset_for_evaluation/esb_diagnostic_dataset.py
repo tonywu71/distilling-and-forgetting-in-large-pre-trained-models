@@ -13,6 +13,4 @@ class ESBDiagnosticDataset(ESBDataset):
     def __init__(self,
                  streaming: bool=False,
                  subset: Optional[List[str]]=None) -> None:
-        
         super().__init__(streaming=streaming, load_diagnostic=True, subset=subset)
-    

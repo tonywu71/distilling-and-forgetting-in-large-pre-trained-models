@@ -15,7 +15,9 @@ class FABDataset(BaseDatasetGroup):
     def __init__(self,
                  streaming: bool=False,
                  subset: Optional[List[str]]=None) -> None:
+        super().__init__(streaming=streaming, subset=subset)
         
+        # Set the abstract class attributes:
         self.available_datasets = [
             "librispeech_en_clean",
             "librispeech_en_other",
@@ -23,7 +25,6 @@ class FABDataset(BaseDatasetGroup):
             "librispeech_fr",
             "librispeech_pt"
         ]
-        
         self.is_multilingual = True
         self.ds_name_to_lang = {
             "librispeech_en_clean": "en",
@@ -43,8 +44,7 @@ class FABDataset(BaseDatasetGroup):
             "librispeech_pt": self.cache_dir_mls
         }
         
-        
-        super().__init__(streaming=streaming, subset=subset)
+        self.post_init()
     
     
     def _prepare_str2dataset(self) -> None:

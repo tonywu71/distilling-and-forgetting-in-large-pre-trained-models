@@ -18,7 +18,10 @@ class MLSDataset(BaseDatasetGroup):
                  streaming: bool=False,
                  load_diagnostic: bool=False,
                  subset: Optional[List[str]]=None) -> None:    
+        super().__init__(streaming=streaming, subset=subset)
+        self.load_diagnostic = load_diagnostic
         
+        # Set the abstract class attributes:
         self.dataset_path = "facebook/multilingual_librispeech"
         self.available_datasets = [
             "dutch",
@@ -30,7 +33,6 @@ class MLSDataset(BaseDatasetGroup):
             "portuguese",
             "spanish"
         ]
-        
         self.is_multilingual = True
         self.ds_name_to_lang = {
             "dutch": "dutch",
@@ -42,9 +44,6 @@ class MLSDataset(BaseDatasetGroup):
             "portuguese": "portuguese",
             "spanish": "spanish"
         }
-        
-        # If `load_diagnostic` is True, we will only load a 10h-subset of the MLS dataset:
-        self.load_diagnostic = load_diagnostic
         
         self._load_cache_dir_from_env_var()
         

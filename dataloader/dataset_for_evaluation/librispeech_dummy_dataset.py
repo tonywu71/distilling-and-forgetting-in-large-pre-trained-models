@@ -4,9 +4,9 @@ from datasets import load_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 
 
-class LibriSpeechCleanTestSet(BaseDatasetGroup):
+class LibriSpeechDummyDataset(BaseDatasetGroup):
     """
-    Util DatasetGroup to eval the vanilla Whisper model on the LibriSpeech clean test set.
+    Debug DatasetGroup with the lightweight validation set from `hf-internal-testing/librispeech_asr_dummy`.
     """
     
     def __init__(self,
@@ -16,7 +16,7 @@ class LibriSpeechCleanTestSet(BaseDatasetGroup):
         
         # Set the abstract class attributes:
         self.available_datasets = [
-            "librispeech_clean_test"
+            "librispeech_dummy"
         ]
         self.is_multilingual = False
         self.language = "english"
@@ -26,19 +26,14 @@ class LibriSpeechCleanTestSet(BaseDatasetGroup):
     
     def _prepare_str2dataset(self) -> None:
         self.str2dataset = {
-            "librispeech_clean_test": load_dataset(path="librispeech_asr",
-                                                   name="clean",
-                                                   split="test",
-                                                   streaming=self.streaming,
-                                                   cache_dir=self.cache_dir_librispeech)
+            "librispeech_dummy": load_dataset("hf-internal-testing/librispeech_asr_dummy",
+                                              name="clean",
+                                              split="validation",
+                                              cache_dir=self.cache_dir_librispeech)
         }
 
 
     def _load_cache_dir_from_env_var(self) -> None:
-        """
-        Load the cache directory from the environment variables.
-        Will be called in `self.post_init()`
-        """
         self.cache_dir_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
         if self.cache_dir_librispeech is None:
             print("WARNING: `CACHE_DIR_LIBRISPEECH` environment variable not set. Using default cache directory.")

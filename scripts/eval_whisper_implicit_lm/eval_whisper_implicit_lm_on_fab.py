@@ -63,11 +63,6 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     print(f"Loaded datasets: {list(fab_dataset.keys())}")
     
     
-    # Preprocess:
-    print("Preprocessing datasets...")
-    fab_dataset.preprocess_datasets(normalize=True)
-    
-    
     # Evaluate:
     print("Evaluating...")
     results = eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path=pretrained_model_name_or_path,

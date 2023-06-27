@@ -16,9 +16,12 @@ class ESBDataset(BaseDatasetGroup):
     
     def __init__(self,
                  streaming: bool=False,
-                 load_diagnostic: bool=True,
-                 subset: Optional[List[str]]=None) -> None:
+                 subset: Optional[List[str]]=None,
+                 load_diagnostic: bool=True) -> None:
+        super().__init__(streaming=streaming, subset=subset)
+        self.load_diagnostic = load_diagnostic
         
+        # Set the abstract class attributes:
         self.dataset_path = "esb/datasets" if not load_diagnostic else "esb/diagnostic-dataset"
         self.available_datasets = [
             "librispeech",
@@ -33,8 +36,6 @@ class ESBDataset(BaseDatasetGroup):
         self.is_multilingual = False
         self.language = "english"
         
-        self.load_diagnostic = load_diagnostic
-        
         self._load_cache_dir_from_env_var()
         
         self.dataset_name_to_cache_dir = {
@@ -48,8 +49,7 @@ class ESBDataset(BaseDatasetGroup):
             "ami": self.cache_dir_esb,
         }
         
-        
-        super().__init__(streaming=streaming, subset=subset)
+        self.post_init()
     
     
     def _prepare_str2dataset(self) -> None:

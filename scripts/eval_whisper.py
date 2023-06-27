@@ -31,6 +31,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
          dataset_name: str = typer.Option(..., help="Name of the dataset to evaluate on."),
          streaming: bool = typer.Option(False, help="Whether to use streaming inference."),
          subset: Optional[List[str]] = typer.Option(None, help="Subset of the ESB dataset to evaluate on."),
+         filter_audio_length: bool = typer.Option(False, help="Whether to filter out audio files that are too short or too long. Disabled by default."),
          task: str = typer.Option("transcribe", help="Task to evaluate on."),
          zero_shot: bool = typer.Option(False, help="Whether to use zero-shot inference. Defaults to False."),
          num_beams: int = typer.Option(DEFAULT_EVAL_NUM_BEAMS, help="Number of beams for the ASR pipeline."),
@@ -84,9 +85,10 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     # Print loaded datasets:
     print(f"Loaded datasets: {list(dataset_group.keys())}")
     
-    # Preprocess:
-    print("Preprocessing the datasets...")
-    dataset_group.preprocess_datasets(normalize=True, verbose=True)
+    # If needed, filter out audio files that are too short or too long:
+    if filter_audio_length:
+        print("Filtering out audio files that are too short or too long...")
+        dataset_group.filter_audio_length(verbose=True)
     
     # Evaluate:
     print("Evaluating...")

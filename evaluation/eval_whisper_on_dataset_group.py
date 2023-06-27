@@ -91,8 +91,8 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
             if not ref.strip():
                 continue  # skip empty references to avoid error in WER computation
             
-            predictions.append(pred)
             references.append(ref)
+            predictions.append(pred)
         
         # Compute the WER in percent:
         string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=references, predictions=predictions))

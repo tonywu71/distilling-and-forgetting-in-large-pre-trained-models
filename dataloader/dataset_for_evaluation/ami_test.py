@@ -15,18 +15,17 @@ class AMITestSet(BaseDatasetGroup):
                  streaming: bool=False,
                  is_ami_10h: bool = False,
                  subset: Optional[List[str]]=None) -> None:
+        super().__init__(streaming=streaming, subset=subset)
+        self.is_ami_10h = is_ami_10h
         
+        # Set the abstract class attributes:
         self.available_datasets = [
             "ami_test"
         ]
-        
         self.is_multilingual = False
         self.language = "english"
-        self.is_ami_10h = is_ami_10h
         
-        self._load_cache_dir_from_env_var()
-        
-        super().__init__(streaming=streaming, subset=subset)
+        self.post_init()
     
     
     def _prepare_str2dataset(self) -> None:
