@@ -14,7 +14,7 @@ from dataloader.dataset_for_evaluation.librispeech_clean_test import LibriSpeech
 DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
     "librispeech_clean_test": LibriSpeechCleanTestSet,
     "ami_test": AMITestSet,
-    "ami_10h_test": partial(AMITestSet, is_ami_10h=True),
+    "ami_test_10h": partial(AMITestSet, is_ami_10h=True),
     "esb_diagnostic": ESBDiagnosticDataset,
     "esb_diagnostic_custom": ESBDiagnosticCustomDataset,
     "mls": partial(MLSDataset, load_diagnostic=True),

@@ -13,6 +13,7 @@ def save_wer_to_csv(wer_metrics: pd.Series,
     """
     Save the WER metrics to a CSV file.
     """
+    
     if savepath is None:
         savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}.csv"
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
@@ -25,6 +26,7 @@ def log_wer_to_wandb(wer_metrics: pd.Series) -> None:
     """
     Log the WER metrics to W&B.
     """
+    
     barplot = wandb.plot.bar(wandb.Table(dataframe=wer_metrics.to_frame().reset_index()),  # type: ignore
                              label=wer_metrics.index.name,  # "Dataset"
                              value=str(wer_metrics.name),  # "WER (%)"
@@ -40,6 +42,7 @@ def save_edit_metrics_to_csv(df_edit_metrics: pd.DataFrame,
     """
     Save the edit metrics to a CSV file.
     """
+    
     savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-edit_metrics.csv"
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     df_edit_metrics.to_csv(savepath)
@@ -50,12 +53,6 @@ def log_edit_metrics_to_wandb(df_edit_metrics: pd.DataFrame) -> None:
     """
     Log the edit metrics to W&B.
     """
-    print("\n-----------------------\n")
-    
-    print("All edit metrics:")
-    print(df_edit_metrics)
-    
-    print("\n-----------------------\n")
     
     df_edit_metrics_per_dataset = df_edit_metrics.T
     df_edit_metrics_per_dataset.index.name = "Metric"

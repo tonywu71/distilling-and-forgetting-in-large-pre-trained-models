@@ -27,8 +27,9 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   zero_shot: bool = False,
                                   num_beams: int = 1,
                                   batch_size: int = 64) -> pd.DataFrame:
-    
-    assert ds_group.is_preprocessed, "The dataset group must be preprocessed."
+    """
+    Evaluate a Whisper model on a dataset group and return a DataFrame with the results.
+    """
     
     if ds_group.is_multilingual:
         assert ds_group.language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."

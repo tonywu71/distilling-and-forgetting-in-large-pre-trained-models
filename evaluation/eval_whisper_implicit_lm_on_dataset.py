@@ -25,8 +25,6 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
                                         ds_group: BaseDatasetGroup,
                                         task: str="transcribe") -> pd.Series:
     
-    assert ds_group.is_preprocessed, "The dataset group must be preprocessed."
-    
     if ds_group.is_multilingual:
         assert ds_group.language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."
     
