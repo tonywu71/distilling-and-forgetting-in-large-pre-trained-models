@@ -18,7 +18,7 @@ from dataloader.dataloader import gen_from_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from evaluation.string_edit_metrics import get_string_edit_metrics
 from normalization.whisper_normalization import get_whisper_normalizer
-from utils.constants import DEFAULT_LABEL_STR_COL
+from utils.constants import DEFAULT_LABEL_STR_COL, GEN_MAX_LENGTH
 
 
 def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
@@ -72,6 +72,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
         #       this also affects evaluation.
         
+        device = 0 if torch.cuda.is_available() else -1
         whisper_asr = pipeline(task="automatic-speech-recognition",
                                model=model,
                                tokenizer=processor.tokenizer,  # type: ignore
@@ -84,7 +85,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         
         for out in whisper_asr(gen_from_dataset(dataset),
                                batch_size=batch_size,
-                               generate_kwargs={"num_beams": num_beams}):  # type: ignore
+                               generate_kwargs={"max_length": GEN_MAX_LENGTH, "num_beams": num_beams}):  # type: ignore
             ref = whisper_norm(out["reference"][0])
             pred = whisper_norm(out[DEFAULT_LABEL_STR_COL])
             
