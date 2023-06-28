@@ -5,7 +5,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from collections import defaultdict
 
 import torch
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 import pandas as pd
 from tqdm.auto import tqdm
@@ -72,6 +71,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
         #       this also affects evaluation.
         
+        device = 0 if torch.cuda.is_available() else -1
         whisper_asr = pipeline(task="automatic-speech-recognition",
                                model=model,
                                tokenizer=processor.tokenizer,  # type: ignore
