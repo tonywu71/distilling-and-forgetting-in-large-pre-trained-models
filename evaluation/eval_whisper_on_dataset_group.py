@@ -10,7 +10,9 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from transformers import (pipeline,
-                          WhisperProcessor,
+                          WhisperTokenizer,
+                          WhisperTokenizerFast,
+                          WhisperFeatureExtractor,
                           WhisperForConditionalGeneration)
 
 from dataloader.dataloader import gen_from_dataset
@@ -25,7 +27,8 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   task: str = "transcribe",
                                   zero_shot: bool = False,
                                   num_beams: int = 1,
-                                  batch_size: int = 64) -> pd.DataFrame:
+                                  batch_size: int = 64,
+                                  fast_tokenizer: bool = True) -> pd.DataFrame:
     """
     Evaluate a Whisper model on a dataset group and return a DataFrame with the results.
     """
@@ -56,7 +59,12 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         else:
             whisper_norm = get_whisper_normalizer(language=language)
         
-        processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path)
+        if fast_tokenizer:
+            tokenizer = WhisperTokenizerFast.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
+        else:
+            tokenizer = WhisperTokenizer.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
+        
+        feature_extractor = WhisperFeatureExtractor(pretrained_model_name_or_path)
         
         # Note: There is no need to set `language` and `task` for the processor here as the special tokens will be removed
         #       from the input text before comparison.
@@ -74,8 +82,8 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         device = 0 if torch.cuda.is_available() else -1
         whisper_asr = pipeline(task="automatic-speech-recognition",
                                model=model,
-                               tokenizer=processor.tokenizer,  # type: ignore
-                               feature_extractor=processor.feature_extractor,  # type: ignore
+                               tokenizer=tokenizer,  # type: ignore
+                               feature_extractor=feature_extractor,  # type: ignore
                                device=device)
     
         # Create placeholders for the predictions and references:

@@ -1,7 +1,7 @@
 from functools import partial
 from typing import Any, Dict
 
-from transformers import WhisperFeatureExtractor, WhisperTokenizer
+from transformers import WhisperFeatureExtractor, WhisperTokenizer, WhisperTokenizerFast
 from datasets import Audio, DatasetDict
 from dataloader.filtering import filter_audio_length, filter_labels
 
@@ -33,7 +33,7 @@ def prepare_dataset_fct(batch: Dict[str, Any],
 
 
 def preprocess_dataset(dataset_dict: DatasetDict,
-                       tokenizer: WhisperTokenizer,
+                       tokenizer: WhisperTokenizer | WhisperTokenizerFast,
                        feature_extractor: WhisperFeatureExtractor,
                        lowercase: bool = True,
                        augment: bool = False) -> DatasetDict:
