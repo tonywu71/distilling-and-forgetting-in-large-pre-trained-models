@@ -64,8 +64,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         else:
             tokenizer = WhisperTokenizer.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
         
-        feature_extractor = WhisperFeatureExtractor(pretrained_model_name_or_path)
-        
+        feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
         # Note: There is no need to set `language` and `task` for the processor here as the special tokens will be removed
         #       from the input text before comparison.
         
@@ -73,7 +72,10 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         if zero_shot:
             model.config.forced_decoder_ids = []
         else:
-            model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=language, task=task)  # type: ignore
+            model.config.forced_decoder_ids = tokenizer.get_decoder_prompt_ids(language=language, task=task)
+        
+        model.config.suppress_tokens = []  # FIXME: keep to be consistent with training?
+        
         
         # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
         #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
