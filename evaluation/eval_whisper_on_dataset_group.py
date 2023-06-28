@@ -81,11 +81,19 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
         #       this also affects evaluation.
         
-        device = 0 if torch.cuda.is_available() else -1
+        if torch.cuda.is_available():
+            device = "cuda:0"
+            torch_dtype = torch.float16  # see https://huggingface.co/learn/audio-course/chapter5/evaluation?fw=pt
+        else:
+            device = "cpu"
+            torch_dtype = torch.float32
+        
+        # Create pipeline:
         whisper_asr = pipeline(task="automatic-speech-recognition",
                                model=model,
-                               tokenizer=tokenizer,  # type: ignore
-                               feature_extractor=feature_extractor,  # type: ignore
+                               tokenizer=tokenizer,
+                               feature_extractor=feature_extractor,
+                               torch_dtype=torch_dtype,
                                device=device)
     
         # Create placeholders for the predictions and references:
