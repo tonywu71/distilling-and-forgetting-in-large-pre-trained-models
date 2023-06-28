@@ -54,7 +54,8 @@ def get_k_beam_cache_dir(config: DistilConfig, parent_cache_dir: Path) -> str | 
 
 
 def smart_load_dataset_with_k_beam_search(config: DistilConfig,
-                                          dataset_dict: DatasetDict | Dataset) -> DatasetDict | Dataset:
+                                          dataset_dict: DatasetDict | Dataset,
+                                          zero_shot: bool = False) -> DatasetDict | Dataset:
     """
     Return a dataset with K-Beam search results. If a suitable cached dataset is found, it is loaded from disk.
     Otherwise, the dataset is preprocessed from scratch.
@@ -116,6 +117,11 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         # Initialize the model from pretrained checkpoint:
         print(f"Loading teacher model for K-Beam search from `{config.teacher_model_name_or_path}`...")
         model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
+        
+        if zero_shot:
+            model.config.forced_decoder_ids = []
+        else:
+            model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
         
         # Get the mapping function:
         prepare_k_beam_features = partial(prepare_k_beam_features_fct,
