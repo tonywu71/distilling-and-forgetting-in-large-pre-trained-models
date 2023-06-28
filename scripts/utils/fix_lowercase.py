@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from utils.initialize import initialize_env
 initialize_env()
-ß
+
 from pathlib import Path
 from typing import Dict, Any
 from transformers import WhisperTokenizerFast
@@ -25,7 +25,7 @@ def main(dirpath: str = typer.Argument(..., help="Path to the dataset directory.
     
     for split in dataset_dict:
         print(f"Preprocessing the {split} set...")
-        dataset_dict[split] = dataset_dict[split].map(map_fct, batched=True, batch_size=256)
+        dataset_dict[split] = dataset_dict[split].map(map_fct)
     
     Path(savepath).parent.mkdir(parents=True, exist_ok=True)
     dataset_dict.save_to_disk(savepath)
