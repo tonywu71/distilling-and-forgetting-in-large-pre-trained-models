@@ -35,10 +35,10 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
     
     if ds_group.is_multilingual:
         assert ds_group.language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."
-    
+
     try:
         if torch.backends.mps.is_available():
-            torch.device('mps')
+            device = torch.device('mps')
             torch_dtype = torch.float32  # float16 not supported by MPS
         else:
             device = "cpu"
@@ -83,18 +83,6 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         # Note: There is no need to set `language` and `task` for the processor here as the special tokens will be removed
         #       from the input text before comparison.
         
-        # Set config parameters for generation:
-        if zero_shot:
-            model.config.forced_decoder_ids = []
-        else:
-            model.config.forced_decoder_ids = tokenizer.get_decoder_prompt_ids(language=language, task=task)
-        
-        model.config.suppress_tokens = []  # FIXME: keep to be consistent with training?
-        
-        
-        # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
-        #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
-        #       this also affects evaluation.
         
         # Create pipeline:
         whisper_asr = pipeline(task="automatic-speech-recognition",
@@ -108,9 +96,17 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         predictions = []
         references = []
         
-        for out in whisper_asr(gen_from_dataset(dataset),
-                               batch_size=batch_size,
-                               generate_kwargs={"num_beams": num_beams}):  # type: ignore
+        # Prepare the generation kwargs:
+        generate_kwargs = {"num_beams": num_beams}
+        if not zero_shot:
+            generate_kwargs.update({"language": language, "task": task})
+        
+        num_rows = dataset.num_rows if hasattr(dataset, "num_rows") else None
+        
+        for out in tqdm(whisper_asr(gen_from_dataset(dataset),
+                                    batch_size=batch_size,
+                                    generate_kwargs=generate_kwargs),
+                        total=num_rows):
             ref = whisper_norm(out["reference"][0])
             pred = whisper_norm(out[DEFAULT_LABEL_STR_COL])
             
