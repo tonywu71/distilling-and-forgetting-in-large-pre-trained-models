@@ -77,13 +77,18 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
         
         # Create pipeline:
-        whisper_asr = pipeline(task="automatic-speech-recognition",
-                               model=model,
-                               tokenizer=tokenizer,
-                               feature_extractor=feature_extractor,
-                               torch_dtype=torch_dtype,
-                               device=device,
-                               accelerator="bettertransformer")
+        pipeline_args = dict(
+            task="automatic-speech-recognition",
+            model=model,
+            tokenizer=tokenizer,
+            feature_extractor=feature_extractor,
+            torch_dtype=torch_dtype,
+            device=device
+        )
+        if torch.cuda.is_available():
+            pipeline_args.update({"accelerator": "bettertransformer"})
+        
+        whisper_asr = pipeline(**pipeline_args)
     
         # Create placeholders for the predictions and references:
         predictions = []
