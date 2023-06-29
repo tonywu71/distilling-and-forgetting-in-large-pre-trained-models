@@ -9,13 +9,13 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J cache_ami
+#SBATCH -J rm_dir
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-CPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How much wallclock time will be required?
-#SBATCH --time=08:00:00
+#SBATCH --time=01:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -23,7 +23,7 @@
 ##SBATCH --no-requeue
 
 #! Do not change (CPU-only partition):
-#SBATCH -p cclake-himem
+#SBATCH -p skylake
 #! ############################################################
 
 
@@ -45,7 +45,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/cache_datasets/cache_ami.py >> $LOG 2> $ERR
+# rm -rd /home/tw581/rds/hpc-work/cache/huggingface/custom_datasets/librispeech/
 
 #! #############################################
 

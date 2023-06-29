@@ -27,7 +27,7 @@ def main():
         print(f"Using cache directory: `{cache_dir_ami}`.")
     
     
-    print("Loading MLS dataset...")
+    print("Loading the AMI dataset...")
     
     dataset_dict = {}
     dataset_dict["train"] = load_dataset("edinburghcstr/ami",
