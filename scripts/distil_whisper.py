@@ -31,7 +31,7 @@ from dataloader.dataloader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
-from evaluation.wer_metric import compute_wer_fct
+from evaluation.wer_metric import compute_string_edit_metrics_fct
 from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
 from trainer.tac_distillation import TACDistillationTrainer, TACDistillationTrainingArguments
 from utils.constants import GEN_MAX_LENGTH
@@ -254,10 +254,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         training_args = DistillationTrainingArguments(**training_arguments_dict)  # type: ignore
     
     # Define the compute_metrics function:
-    compute_wer = partial(compute_wer_fct,
-                          processor=student_processor,
-                          normalize=True,
-                          log_string_edit_metrics_on_wandb=True)
+    compute_metrics = partial(compute_string_edit_metrics_fct,
+                              processor=student_processor,
+                              normalize=True)
     
     
     # Define callbacks:
@@ -287,7 +286,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
-        compute_metrics=compute_wer,  # type: ignore
+        compute_metrics=compute_metrics,  # type: ignore
         tokenizer=student_processor,  # use processor for saving  # type: ignore
         callbacks=callbacks
     )

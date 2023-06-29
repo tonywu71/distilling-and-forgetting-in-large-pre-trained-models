@@ -31,7 +31,7 @@ from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.dataloader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from evaluation.wer_metric import compute_wer_fct
+from evaluation.wer_metric import compute_string_edit_metrics_fct
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
 from trainer.tac_finetuning import TACFinetuningTrainer, TACFinetuningTrainingArguments
 from utils.constants import GEN_MAX_LENGTH
@@ -202,10 +202,9 @@ def main(config_filepath: str,
         training_args = Seq2SeqTrainingArguments(**training_arguments_dict)  # type: ignore
     
     # Define the compute_metrics function:
-    compute_wer = partial(compute_wer_fct,
-                          processor=processor,
-                          normalize=True,
-                          log_string_edit_metrics_on_wandb=True)
+    compute_metrics = partial(compute_string_edit_metrics_fct,
+                              processor=processor,
+                              normalize=True)
     
     
     # Define callbacks:
@@ -232,7 +231,7 @@ def main(config_filepath: str,
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
-        compute_metrics=compute_wer,  # type: ignore
+        compute_metrics=compute_metrics,  # type: ignore
         tokenizer=processor,  # use processor for saving  # type: ignore
         callbacks=callbacks
     )

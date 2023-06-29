@@ -1,21 +1,20 @@
 from typing import Dict
 
-import pandas as pd
-import torch
 from transformers import WhisperProcessor, EvalPrediction
 
-import wandb
+from toolz import dicttoolz
 
 from evaluation.string_edit_metrics import get_string_edit_metrics
 from utils.constants import LOSS_MASK_IDX
 
 
-def compute_wer_fct(pred: EvalPrediction,
-                    processor: WhisperProcessor,
-                    normalize: bool = True,
-                    log_string_edit_metrics_on_wandb: bool = False) -> Dict[str, float]:
+def compute_string_edit_metrics_fct(pred: EvalPrediction,
+                                    processor: WhisperProcessor,
+                                    normalize: bool = True) -> Dict[str, float]:
     """
-    Compute the WER metric in percent for the given predictions and labels.
+    Compute the string edit metrics (WER, substitutions, deletions, insertions) in percent
+    for the given predictions and labels.
+    
     Setting `normalize` to `True` (default) will use the Whisper text normalizer.
     
     IMPORTANT: Due to a bug in the HuggingFace implementation of the Whisper, using
@@ -39,12 +38,7 @@ def compute_wer_fct(pred: EvalPrediction,
     label_str = processor.tokenizer.batch_decode(label_ids, skip_special_tokens=True, normalize=normalize)  # type: ignore
 
     # Compute the string edit metrics in percent:
-    string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=label_str, predictions=pred_str))
+    string_edit_metrics = get_string_edit_metrics(references=label_str, predictions=pred_str)
+    string_edit_metrics = dicttoolz.valmap(lambda x: x * 100, string_edit_metrics)
     
-    # Log the string edit metrics to wandb:
-    if log_string_edit_metrics_on_wandb:
-        wandb.log({"eval/substitutions_student_%": string_edit_metrics["sub"]})
-        wandb.log({"eval/insertions_student_%": string_edit_metrics["ins"]})
-        wandb.log({"eval/deletions_student_%": string_edit_metrics["del"]})
-    
-    return {"wer": string_edit_metrics["wer"]}
+    return string_edit_metrics  # keys: (wer, sub, del, ins)
