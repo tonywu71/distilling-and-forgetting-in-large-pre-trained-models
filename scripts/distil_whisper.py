@@ -182,29 +182,23 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         decoder._requires_grad = False  # type: ignore
     
     
-    # Set config parameters for generation:
-    if config.zero_shot_eval:
-        student_model.config.forced_decoder_ids = None
-    else:
-        student_model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
-    # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
-    #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
-    #       this also affects evaluation.
-    student_model.config.suppress_tokens = []  # type: ignore
-    # Note: There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
-    #       set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
-    
-
-    if teacher_model is not None:  # ignore teacher model if not used
-        if config.zero_shot_eval:
-            teacher_model.config.forced_decoder_ids = None
-        else:
-            teacher_model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
-        teacher_model.config.suppress_tokens = []
-    
-    # Since only the student model is trained, we can keep caching for the teacher model:
+    # Set config parameters for training:
     if config.gradient_checkpointing:
-        student_model.config.use_cache = False
+        model.config.use_cache = False  # type: ignore
+    
+    
+    # Set language and task for generation if not zero-shot. Also re-enable caching to speed-up evaluation:
+    if config.zero_shot_eval:
+        student_model.generate = partial(student_model.generate, language=None, task=None, use_cache=True)
+        student_model.config.suppress_tokens = []
+    else:
+        student_model.generate = partial(student_model.generate, language=config.lang_name, task=config.task, use_cache=True)
+    
+    
+    # Same for the teacher model.
+    if teacher_model is not None:  # ignore teacher model if not used
+        teacher_model.generate = partial(teacher_model.generate, language=config.lang_name, task=config.task, use_cache=True)
+        # Note: The teacher model geneartion is NOT zero-shot.
     
     
     # Prepare training:
@@ -223,6 +217,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         eval_accumulation_steps=config.eval_accumulation_steps,
         gradient_checkpointing=config.gradient_checkpointing,
         fp16=True,
+        fp16_full_eval=True,
         learning_rate=config.learning_rate,
         warmup_steps=config.warmup_steps,
         optim=config.optim,

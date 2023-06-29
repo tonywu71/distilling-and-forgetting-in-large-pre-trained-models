@@ -144,22 +144,18 @@ def main(config_filepath: str,
             param.requires_grad = False
         decoder._requires_grad = False  # type: ignore
     
+    
     # Set config parameters for training:
     if config.gradient_checkpointing:
         model.config.use_cache = False  # type: ignore
     
-    # Set config parameters for generation:
-    if config.zero_shot_eval:
-        model.config.forced_decoder_ids = None
-    else:
-        model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
-    # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
-    #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
-    #       this also affects evaluation.
-    model.config.suppress_tokens = []  # type: ignore
-    # Note: There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
-    #       set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
     
+    # Set language and task for generation if not zero-shot. Also re-enable caching to speed-up evaluation:
+    if config.zero_shot_eval:
+        model.generate = partial(model.generate, language=None, task=None, use_cache=True)
+        model.config.suppress_tokens = []
+    else:
+        model.generate = partial(model.generate, language=config.lang_name, task=config.task, use_cache=True)
     
     
     # Prepare training:
@@ -173,6 +169,7 @@ def main(config_filepath: str,
         eval_accumulation_steps=config.eval_accumulation_steps,
         gradient_checkpointing=config.gradient_checkpointing,
         fp16=True,
+        fp16_full_eval=True,
         learning_rate=config.learning_rate,
         warmup_steps=config.warmup_steps,
         optim=config.optim,
