@@ -51,10 +51,10 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_diagnostic_custom --all >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-medium --dataset-name esb_diagnostic_custom --all >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_diagnostic_custom >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-medium --dataset-name esb_diagnostic_custom >> $LOG 2> $ERR
 
-python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_diagnostic_custom --subset tedlium --all >> $LOG 2> $ERR
+python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_diagnostic_custom --subset tedlium >> $LOG 2> $ERR
 
 #! #############################################
 

@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/librispeech_clean_100h/final --dataset-name ami_test_10h --all >> $LOG 2> $ERR
+python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/librispeech_clean_100h/final --dataset-name ami_test_10h >> $LOG 2> $ERR
 
 #! #############################################
 
