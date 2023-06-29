@@ -9,6 +9,7 @@ from dataloader.dataset_for_evaluation.esb_diagnostic_dataset import ESBDiagnost
 from dataloader.dataset_for_evaluation.esb_diagnostic_custom_dataset import ESBDiagnosticCustomDataset
 from dataloader.dataset_for_evaluation.fab_dataset import FABDataset
 from dataloader.dataset_for_evaluation.mls_dataset import MLSDataset
+from dataloader.dataset_for_evaluation.mls_diagnostic_dataset import MLSDiagnosticDataset
 
 
 DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
@@ -18,6 +19,7 @@ DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
     "ami_test_10h": partial(AMITestSet, is_ami_10h=True),
     "esb_diagnostic": ESBDiagnosticDataset,
     "esb_diagnostic_custom": ESBDiagnosticCustomDataset,
-    "mls": partial(MLSDataset, load_diagnostic=True),
+    "mls": MLSDataset,
+    "mls_diagnostic": MLSDiagnosticDataset,
     "fab": FABDataset,
 }
