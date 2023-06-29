@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple, Union
 
 import torch
-from transformers import WhisperProcessor
+from transformers import WhisperTokenizer, WhisperTokenizerFast, WhisperFeatureExtractor
 
 from utils.constants import DEFAULT_LABEL_TOKENIZED_COL, LOSS_MASK_IDX
 
@@ -12,12 +12,14 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     """
     
     def __init__(self,
-                 processor: WhisperProcessor,
+                 tokenizer: WhisperTokenizer | WhisperTokenizerFast,
+                 feature_extractor: WhisperFeatureExtractor,
                  return_attention_mask: bool = False,
                  replace_padded_with_loss_mask_for_labels: bool = False,
                  discard_first_bos_token: bool = False,
                  add_k_beam_features: bool = False):
-        self.processor = processor
+        self.tokenizer = tokenizer
+        self.feature_extractor = feature_extractor
         self.return_attention_mask = return_attention_mask
         self.replace_padded_with_loss_mask_for_labels = replace_padded_with_loss_mask_for_labels
         self.discard_first_bos_token = discard_first_bos_token
@@ -46,11 +48,10 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         >> }
         """
         
-        
         # --- Input features ---
         # `features`: list of `batch_size` dicts (each key is a column name)
         input_features = [{"input_features": feature["input_features"]} for feature in features]  # get only the feature of interest
-        batch = self.processor.feature_extractor.pad(input_features, return_tensors="pt")  # type: ignore
+        batch = self.feature_extractor.pad(input_features, return_tensors="pt")
         
         
         # --- Labels (tokenized) ---
@@ -108,7 +109,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         """
         
         # Pad the features:
-        labels_batch = self.processor.tokenizer.pad(features, return_tensors="pt")  # type: ignore
+        labels_batch = self.tokenizer.pad(features, return_tensors="pt")  # type: ignore
         
         # Note: The output `labels_batch` contains the following keys: ["input_ids", "attention_mask"].
         labels = labels_batch["input_ids"]
@@ -122,7 +123,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             # If a BOS ("Beginning Of Sequence") token was appended in previous tokenization step (which is
             # the case with the default Whisper tokenizer), discard it as it will get appended later anyway
             # when computing loss (see the `shift_tokens_right` method).
-            if (labels[:, 0] == self.processor.tokenizer.bos_token_id).all().cpu().item():  # type: ignore
+            if (labels[:, 0] == self.tokenizer.bos_token_id).all().cpu().item():  # type: ignore
                 labels = labels[:, 1:]
                 attention_mask = attention_mask[:, 1:]
         

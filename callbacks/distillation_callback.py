@@ -44,13 +44,15 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         assert isinstance(self.config, DistilConfig), "config must be `DistilConfig`"
         
         self.table_name = "sample_predictions-distill"
-        self.data_collator_no_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
+        self.data_collator_no_k_beam = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=self.processor.tokenizer,
+                                                                            feature_extractor=self.processor.feature_extractor,
                                                                             add_k_beam_features=False)
         
         self.is_seq_level = (self.config.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"])
         
         if self.is_seq_level:  # If sequence-level distillation...
-            self.data_collator_with_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
+            self.data_collator_with_k_beam = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=self.processor.tokenizer,
+                                                                                  feature_extractor=self.processor.feature_extractor,
                                                                                   add_k_beam_features=True)
         else:  # If word-level distillation...
             assert teacher_model is not None, "`teacher_model` must be provided for word-level distillation"

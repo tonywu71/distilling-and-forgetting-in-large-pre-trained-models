@@ -12,6 +12,7 @@ from transformers.modeling_outputs import Seq2SeqLMOutput
 from transformers.models.whisper.modeling_whisper import shift_tokens_right
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from dataloader.utils import get_fast_tokenizer_from_tokenizer
 from trainer.trainer_utils import get_language_token
 
 
@@ -50,7 +51,7 @@ class DistillationTrainer(Seq2SeqTrainer):
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.student_processor = student_processor
-        self.student_tokenizer: WhisperTokenizer = self.student_processor.tokenizer
+        self.student_tokenizer = get_fast_tokenizer_from_tokenizer(self.student_processor.tokenizer)
         self.teacher_model = teacher_model
         
         # Sanity checks:
@@ -73,7 +74,8 @@ class DistillationTrainer(Seq2SeqTrainer):
         if eval_dataset is None and self.eval_dataset is None:
             raise ValueError("Trainer: evaluation requires an eval_dataset.")
         eval_dataset = eval_dataset if eval_dataset is not None else self.eval_dataset
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.student_processor,
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=self.student_tokenizer,
+                                                             feature_extractor=self.student_processor.feature_extractor,
                                                              return_attention_mask=False)
         
         return DataLoader(

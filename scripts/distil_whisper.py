@@ -18,6 +18,8 @@ from pathlib import Path
 from pprint import pprint
 
 from transformers import (WhisperForConditionalGeneration,
+                          WhisperTokenizerFast,
+                          WhisperFeatureExtractor,
                           WhisperProcessor,
                           EarlyStoppingCallback,
                           TrainerCallback)
@@ -103,24 +105,40 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     # ----------------------   Main   ----------------------
     
-    # Load student processor (contains both tokenizer and feature extractor):
+    # Load student tokenizer and feature extractor:
+    student_tokenizer = WhisperTokenizerFast.from_pretrained(
+        config.student_model_name_or_path,
+        language=config.lang_name,
+        task=config.task
+    )
+    
+    # Note: Because `language` and `task` have been set, the tokenizer will append the associated
+    #       special tokens to the decoded sentence.
+    
+    student_feature_extractor = WhisperFeatureExtractor.from_pretrained(
+        config.student_model_name_or_path,
+        language=config.lang_name,
+        task=config.task
+    )
+    
+    # Load student processor (to wrap the whole pipeline for saving):
     student_processor = WhisperProcessor.from_pretrained(
         config.student_model_name_or_path,
         language=config.lang_name,
         task=config.task
     )
-    # Note: Because `language` and `task` have been set, the processor will append the associated
-    #       special tokens to the decoded sentence.
     
     
     # Create the data collator that will be used to prepare the data for training:
     if not is_seq_level:  # If word-level...
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=student_tokenizer,
+                                                             feature_extractor=student_feature_extractor,
                                                              return_attention_mask=True,
                                                              replace_padded_with_loss_mask_for_labels=True,
                                                              discard_first_bos_token=True)
     else:
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=student_tokenizer,
+                                                             feature_extractor=student_feature_extractor,
                                                              return_attention_mask=True,
                                                              replace_padded_with_loss_mask_for_labels=True,
                                                              discard_first_bos_token=True,

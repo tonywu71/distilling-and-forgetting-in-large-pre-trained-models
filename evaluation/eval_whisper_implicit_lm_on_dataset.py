@@ -58,7 +58,8 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
                                                      task=task)
         
         # Load data collator:
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor,
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=processor.tokenizer,
+                                                             feature_extractor=processor.feature_extractor,
                                                              replace_padded_with_loss_mask_for_labels=True)
         
         # Set the forced decoder ids:
