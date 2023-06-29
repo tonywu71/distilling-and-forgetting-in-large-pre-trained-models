@@ -36,20 +36,15 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
     if ds_group.is_multilingual:
         assert ds_group.language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."
 
-    try:
-        if torch.backends.mps.is_available():
-            device = torch.device('mps')
-            torch_dtype = torch.float32  # float16 not supported by MPS
-        else:
-            device = "cpu"
-            torch_dtype = torch.float32
-    except:
-        if torch.cuda.is_available():
-            device = "cuda:0"
-            torch_dtype = torch.float16  # see https://huggingface.co/learn/audio-course/chapter5/evaluation?fw=pt
-        else:
-            device = "cpu"
-            torch_dtype = torch.float32
+    if torch.cuda.is_available():
+        device = "cuda:0"
+        torch_dtype = torch.float16  # see https://huggingface.co/learn/audio-course/chapter5/evaluation?fw=pt
+    elif torch.backends.mps.is_available():  # for Apple Silicon
+        device = torch.device('mps')
+        torch_dtype = torch.float32  # float16 not supported by MPS
+    else:
+        device = "cpu"
+        torch_dtype = torch.float32
     
     # Load model:
     model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path, torch_dtype=torch_dtype)
