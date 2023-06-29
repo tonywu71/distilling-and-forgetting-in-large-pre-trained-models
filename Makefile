@@ -1,5 +1,8 @@
-# -------------------------------------   HPC-related   -------------------------------------
-clean-wandb-cache:
+# -------------------------------------   Clear logs and cache  -------------------------------------
+clear-logs:
+	rm -rf logs/*
+
+clear-wandb-cache:
 	rm -rf wandb/*
 
 

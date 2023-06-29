@@ -1,4 +1,5 @@
 # Custom
+logs/
 outputs/**/*.csv
 outputs/**/*.png
 wandb/
