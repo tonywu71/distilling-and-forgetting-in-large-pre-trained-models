@@ -36,8 +36,23 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
     if ds_group.is_multilingual:
         assert ds_group.language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."
     
+    try:
+        if torch.backends.mps.is_available():
+            torch.device('mps')
+            torch_dtype = torch.float32  # float16 not supported by MPS
+        else:
+            device = "cpu"
+            torch_dtype = torch.float32
+    except:
+        if torch.cuda.is_available():
+            device = "cuda:0"
+            torch_dtype = torch.float16  # see https://huggingface.co/learn/audio-course/chapter5/evaluation?fw=pt
+        else:
+            device = "cpu"
+            torch_dtype = torch.float32
+    
     # Load model:
-    model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path)
+    model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path, torch_dtype=torch_dtype)
     
     # Loop over the datasets:
     dict_string_edit_metrics = defaultdict(list)
@@ -80,13 +95,6 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
         #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
         #       this also affects evaluation.
-        
-        if torch.cuda.is_available():
-            device = "cuda:0"
-            torch_dtype = torch.float16  # see https://huggingface.co/learn/audio-course/chapter5/evaluation?fw=pt
-        else:
-            device = "cpu"
-            torch_dtype = torch.float32
         
         # Create pipeline:
         whisper_asr = pipeline(task="automatic-speech-recognition",
