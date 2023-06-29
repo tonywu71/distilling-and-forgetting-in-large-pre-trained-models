@@ -9,11 +9,15 @@ import torch
 import pandas as pd
 from tqdm.auto import tqdm
 
-from transformers import (pipeline,
-                          WhisperTokenizer,
-                          WhisperTokenizerFast,
-                          WhisperFeatureExtractor,
-                          WhisperForConditionalGeneration)
+from transformers.models.whisper import (WhisperTokenizer,
+                                         WhisperTokenizerFast,
+                                         WhisperFeatureExtractor,
+                                         WhisperForConditionalGeneration)
+
+if torch.cuda.is_available():
+    from optimum.pipelines import pipeline
+else:
+    from transformers.pipelines import pipeline
 
 from dataloader.dataloader import gen_from_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
@@ -78,7 +82,8 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                tokenizer=tokenizer,
                                feature_extractor=feature_extractor,
                                torch_dtype=torch_dtype,
-                               device=device)
+                               device=device,
+                               accelerator="bettertransformer")
     
         # Create placeholders for the predictions and references:
         predictions = []
