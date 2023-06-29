@@ -19,7 +19,7 @@ from dataloader.dataloader import gen_from_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from evaluation.string_edit_metrics import get_string_edit_metrics
 from normalization.whisper_normalization import get_whisper_normalizer
-from utils.constants import DEFAULT_LABEL_STR_COL, GEN_MAX_LENGTH
+from utils.constants import DEFAULT_EVAL_BATCH_SIZE, DEFAULT_LABEL_STR_COL, GEN_MAX_LENGTH
 
 
 def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
@@ -27,7 +27,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   task: str = "transcribe",
                                   zero_shot: bool = False,
                                   num_beams: int = 1,
-                                  batch_size: int = 64,
+                                  batch_size: int = DEFAULT_EVAL_BATCH_SIZE,
                                   fast_tokenizer: bool = True) -> pd.DataFrame:
     """
     Evaluate a Whisper model on a dataset group and return a DataFrame with the results.
@@ -76,9 +76,6 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
             tokenizer = WhisperTokenizer.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
         
         feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
-        # Note: There is no need to set `language` and `task` for the processor here as the special tokens will be removed
-        #       from the input text before comparison.
-        
         
         # Create pipeline:
         whisper_asr = pipeline(task="automatic-speech-recognition",

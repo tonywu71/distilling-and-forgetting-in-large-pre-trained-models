@@ -13,6 +13,7 @@ DEFAULT_LABEL_TOKENIZED_COL = "labels"  # default column name used by the Huggin
 MIN_INPUT_LENGTH = 0.0
 MAX_INPUT_LENGTH = 30.0
 
+DEFAULT_EVAL_BATCH_SIZE = 32
 DEFAULT_EVAL_NUM_BEAMS = 3
 
 LOSS_MASK_IDX = -100  # see https://huggingface.co/docs/transformers/model_doc/whisper#transformers.WhisperForConditionalGeneration.forward for the `labels` argument
