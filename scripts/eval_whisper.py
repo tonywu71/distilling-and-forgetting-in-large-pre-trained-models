@@ -56,8 +56,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
         "task": task,
         "zero_shot": zero_shot,
         "num_beams": num_beams,
-        "batch_size": batch_size,
-        "all_edit_metrics": all_edit_metrics
+        "batch_size": batch_size
     }
     
     # Initialize W&B:

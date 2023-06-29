@@ -37,7 +37,6 @@ def main(checkpoints: List[str] = typer.Argument(..., help="List of paths to the
          zero_shot: bool = typer.Option(False, help="Whether to use zero-shot inference. Defaults to False."),
          num_beams: int = typer.Option(DEFAULT_EVAL_NUM_BEAMS, help="Number of beams for the ASR pipeline."),
          batch_size: int = typer.Option(64, help="Batch size for the ASR pipeline."),
-         all_edit_metrics: bool = typer.Option(False, "-a", "--all", help="Whether to save and log all edit metrics on top of the WER."),
          savepath: Optional[str] = typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
     """
@@ -142,13 +141,12 @@ def main(checkpoints: List[str] = typer.Argument(..., help="List of paths to the
                         savepath=savepath)
         log_wer_to_wandb(wer_metrics)
         
-        if all_edit_metrics:
-            # Save and log all edit metrics:
-            save_edit_metrics_to_csv(df_edit_metrics=df_edit_metrics,
-                                    pretrained_model_name_or_path=pretrained_model_name_or_path,
-                                    dataset_name=dataset_name,
-                                    savepath=savepath)
-            log_edit_metrics_to_wandb(df_edit_metrics=df_edit_metrics)
+        # Save and log all edit metrics:
+        save_edit_metrics_to_csv(df_edit_metrics=df_edit_metrics,
+                                pretrained_model_name_or_path=pretrained_model_name_or_path,
+                                dataset_name=dataset_name,
+                                savepath=savepath)
+        log_edit_metrics_to_wandb(df_edit_metrics=df_edit_metrics)
         
         wandb.finish()
     
