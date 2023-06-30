@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J finetune_tac-benchmark-librispeech
+#SBATCH -J distil_whisper_ami_10h_word_level
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=04:00:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,10 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/finetune_whisper.py configs/finetune_tac_configs/librispeech_clean_100h/finetune_tiny-librispeech_100h-benchmark.yaml >> $LOG 2> $ERR
-# python scripts/finetune_whisper.py configs/finetune_tac_configs/librispeech_clean_100h/finetune_tac-tiny-librispeech_clean_100h-gamma_1e-3.yaml --tac >> $LOG 2> $ERR
-# python scripts/finetune_whisper.py configs/finetune_tac_configs/librispeech_clean_100h/finetune_tac-tiny-librispeech_clean_100h-gamma_1e-2.yaml --tac >> $LOG 2> $ERR
-# python scripts/finetune_whisper.py configs/finetune_tac_configs/librispeech_clean_100h/finetune_tac-tiny-librispeech_clean_100h-gamma_2e-1.yaml --tac >> $LOG 2> $ERR
+python scripts/distil_whisper.py configs/distil_configs/ami_10h/distil_medium_to_tiny-ami_10h-word_level.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

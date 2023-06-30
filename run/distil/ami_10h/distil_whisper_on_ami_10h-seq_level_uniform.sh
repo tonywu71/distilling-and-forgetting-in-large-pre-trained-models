@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_whisper_ami_100h_seq_level_ranked
+#SBATCH -J distil_whisper_ami_10h_seq_level_uniform
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=12:00:00
+#SBATCH --time=08:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,7 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper.py configs/distil_configs/ami_100h/distil_medium_to_tiny-ami_100h-seq_level_ranked-k_3.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper.py configs/distil_configs/ami_10h/distil_medium_to_tiny-ami_10h-seq_level_uniform-k_3.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

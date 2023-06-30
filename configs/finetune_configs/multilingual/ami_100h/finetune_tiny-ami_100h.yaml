@@ -1,6 +1,7 @@
 # Total training steps:
 # - 5088 for batch_size = 64 and num_train_epochs = 3
 # - 6782 for batch_size = 32 and num_train_epochs = 2
+
 experiment_name: finetune-whisper_tiny-ami_100h
 lang_name: english
 task: transcribe
