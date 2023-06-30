@@ -16,7 +16,7 @@ from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGrou
 from evaluation.dataset_name_to_dataset_group import DATASET_NAME_TO_DATASET_GROUP
 from evaluation.eval_whisper_on_dataset_group import eval_whisper_on_dataset_group
 from evaluation.eval_whisper_utils import save_wer_to_csv, log_wer_to_wandb, save_edit_metrics_to_csv, log_edit_metrics_to_wandb
-from utils.constants import DEFAULT_EVAL_NUM_BEAMS
+from utils.constants import DEFAULT_EVAL_BATCH_SIZE, DEFAULT_EVAL_NUM_BEAMS
 from utils.file_io import extract_exp_name_from_model_path
 
 
@@ -29,7 +29,7 @@ def main(checkpoints: List[str] = typer.Argument(..., help="List of paths to the
          task: str = typer.Option("transcribe", help="Task to evaluate on."),
          zero_shot: bool = typer.Option(False, help="Whether to use zero-shot inference. Defaults to False."),
          num_beams: int = typer.Option(DEFAULT_EVAL_NUM_BEAMS, help="Number of beams for the ASR pipeline."),
-         batch_size: int = typer.Option(64, help="Batch size for the ASR pipeline."),
+         batch_size: int = typer.Option(DEFAULT_EVAL_BATCH_SIZE, help="Batch size for the ASR pipeline."),
          savepath: Optional[str] = typer.Option(
              None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename.")) -> None:
     """

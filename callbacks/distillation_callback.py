@@ -48,7 +48,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
                                                                             feature_extractor=self.processor.feature_extractor,
                                                                             add_k_beam_features=False)
         
-        self.is_seq_level = (self.config.method_distil in ["seq_level_uniform", "seq_level_k_best_ranked"])
+        self.is_seq_level = (self.config.method_distil in ["seq_level_uniform", "seq_level_ranked"])
         
         if self.is_seq_level:  # If sequence-level distillation...
             self.data_collator_with_k_beam = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=self.processor.tokenizer,

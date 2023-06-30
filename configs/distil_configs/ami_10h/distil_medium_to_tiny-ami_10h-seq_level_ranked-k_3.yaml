@@ -1,14 +1,14 @@
 # Total training steps:
 # - 340 for batch_size = 32 and num_train_epochs = 1
 
-experiment_name: distil_whisper_medium_to_tiny-ami_10h-seq_level_k_best_ranked-k_3
+experiment_name: distil_whisper_medium_to_tiny-ami_10h-seq_level_ranked-k_3
 lang_name: english
 task: transcribe
-method_distil: seq_level_k_best_ranked
+method_distil: seq_level_ranked
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/seq_level_k_best_ranked-k_3
+model_dir: ./checkpoints/distillation/whisper_medium_to_tiny/ami_10h/seq_level_ranked-k_3
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32

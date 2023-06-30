@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=02:00:00
+#SBATCH --time=01:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -52,56 +52,27 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 # python scripts/eval_whisper_multiple_checkpoints.py \
-#     checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/checkpoint-500 \
-#     checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/checkpoint-1000 \
-#     checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/checkpoint-1500 \
-#     checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/checkpoint-2000 \
-#     checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/checkpoint-2500 \
-#     checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/checkpoint-500 \
-#     checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/checkpoint-1000 \
-#     checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/checkpoint-1500 \
-#     checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/checkpoint-2000 \
-#     checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/checkpoint-2500 \
-#     checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/checkpoint-500 \
-#     checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/checkpoint-1000 \
-#     checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/checkpoint-1500 \
-#     checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/checkpoint-2000 \
-#     checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/checkpoint-2500 \
-#     --dataset-name fab \
-#     --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt \
-#     --batch-size 256 \
-#     >> $LOG 2> $ERR
-
-# python scripts/eval_whisper_multiple_checkpoints.py \
-#     checkpoints/finetuning/whisper_tiny/ami_10h-benchmark/checkpoint-68 \
-#     checkpoints/finetuning/whisper_tiny/ami_10h-benchmark/checkpoint-136 \
-#     checkpoints/finetuning/whisper_tiny/ami_10h-benchmark/checkpoint-204 \
-#     checkpoints/finetuning/whisper_tiny/ami_10h-benchmark/checkpoint-272 \
-#     checkpoints/finetuning/whisper_tiny/ami_10h-benchmark/checkpoint-340 \
-#     checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-2/checkpoint-68 \
-#     checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-2/checkpoint-136 \
-#     checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-2/checkpoint-204 \
-#     checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-2/checkpoint-272 \
-#     checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-2/checkpoint-340 \
+#     checkpoints/finetuning/whisper_tiny/ami_10h/checkpoint-68 \
+#     checkpoints/finetuning/whisper_tiny/ami_10h/checkpoint-136 \
+#     checkpoints/finetuning/whisper_tiny/ami_10h/checkpoint-204 \
+#     checkpoints/finetuning/whisper_tiny/ami_10h/checkpoint-272 \
+#     checkpoints/finetuning/whisper_tiny/ami_10h/checkpoint-340 \
 #     checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-1/checkpoint-68 \
 #     checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-1/checkpoint-136 \
 #     checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-1/checkpoint-204 \
 #     checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-1/checkpoint-272 \
 #     checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-1/checkpoint-340 \
 #     --dataset-name fab \
-#     --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt \
-#     --batch-size 256 \
+#     --subset ami_test --subset librispeech_fr --subset librispeech_pt \
 #     >> $LOG 2> $ERR
 
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/finetuning/whisper_tiny/ami_10h-benchmark/checkpoint-204 \
-    checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-2/checkpoint-204 \
-    checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-1/checkpoint-204 \
-    --dataset-name fab_with_ami_10h \
-    --subset ami_10h --subset librispeech_fr --subset librispeech_pt \
-    --batch-size 256 \
+    checkpoints/finetuning/whisper_tiny/ami_10h/checkpoint-340 \
+    checkpoints/finetune_tac/whisper_tiny/ami_10h-gamma_1e-1/checkpoint-340 \
+    --dataset-name fab \
+    --subset ami_test --subset librispeech_fr --subset librispeech_pt \
+    --batch-size 512 \
     >> $LOG 2> $ERR
-
 
 #! #############################################
 
