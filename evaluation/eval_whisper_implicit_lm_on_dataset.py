@@ -44,7 +44,7 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
         
         
         # Handle the special case of the English dataset with the basic normalizer.
-        # Note: `whisper_norm` is actually unused for perplexity computation but we
+        # NOTE: `whisper_norm` is actually unused for perplexity computation but we
         # keep it for consistency with `eval_whisper_on_dataset`.
         if language == "english-basic_normalizer":
             whisper_norm = get_whisper_normalizer(language=None)

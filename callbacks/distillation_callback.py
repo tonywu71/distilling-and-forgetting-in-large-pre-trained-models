@@ -79,7 +79,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
                model: PreTrainedModel,
                logs: Optional[Dict[str, float]]=None,
                **kwargs):
-        # Note: `model` corresponds to the student model in this method.
+        # NOTE: `model` corresponds to the student model in this method.
         
         # Call `BaseWandbTrainingCallback`'s parent (`WandbCallback`) method `on_log` for basic logging:
         super(BaseWandbTrainingCallback, self).on_log(args, state, control, model, logs, **kwargs)  # type: ignore
@@ -165,7 +165,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         
         else:  # If word-level distillation...
             # Collate the data into batches of size 1:
-            # Note: `data_collator_no_k_beam` because we haven't loaded the dataset with k-beam
+            # NOTE: `data_collator_no_k_beam` because we haven't loaded the dataset with k-beam
             data = self.data_collator_no_k_beam([data])  # type: ignore
             
             # Note that we need to move the data to the device manually (which is not the case with Trainer):

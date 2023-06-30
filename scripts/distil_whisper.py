@@ -111,7 +111,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         task=config.task
     )
     
-    # Note: Because `language` and `task` have been set, the tokenizer will append the associated
+    # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
     #       special tokens to the decoded sentence.
     
     student_feature_extractor = WhisperFeatureExtractor.from_pretrained(
@@ -163,7 +163,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
                                                              dataset_dict=dataset_dict)
     
-        # Note: Technically, the K-beam search features are not needed for the word-level distillation. However,
+        # NOTE: Technically, the K-beam search features are not needed for the word-level distillation. However,
         #       we still load them for simplicity and because they are needed for `WandbDistillationCallback`.
     
         print("\n-----------------------\n")
@@ -215,7 +215,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Same for the teacher model.
     if teacher_model is not None:  # ignore teacher model if not used
         teacher_model.generate = partial(teacher_model.generate, language=config.lang_name, task=config.task, use_cache=True)
-        # Note: The teacher model geneartion is NOT zero-shot.
+        # NOTE: The teacher model geneartion is NOT zero-shot.
     
     
     # Prepare training:

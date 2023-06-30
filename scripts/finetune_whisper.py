@@ -93,7 +93,7 @@ def main(config_filepath: str,
         task=config.task
     )
     
-    # Note: Because `language` and `task` have been set, the tokenizer will append the associated
+    # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
     #       special tokens to the decoded sentence.
     
     feature_extractor = WhisperFeatureExtractor.from_pretrained(

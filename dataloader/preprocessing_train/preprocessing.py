@@ -22,7 +22,7 @@ def prepare_dataset_fct(batch: Dict[str, Any],
     audio = batch["audio"]
     
     # Extract features from audio (including log-Mel input features):
-    # Note: the sampling rate arg is redundant but required to dismiss warnings.
+    # NOTE: the sampling rate arg is redundant but required to dismiss warnings.
     batch["input_features"] = feature_extractor(audio["array"],
                                                 sampling_rate=feature_extractor.sampling_rate).input_features[0]  # drop batch dimension
     

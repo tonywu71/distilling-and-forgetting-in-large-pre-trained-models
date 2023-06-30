@@ -29,7 +29,7 @@ def prepare_k_beam_features_fct(batch: Dict[str, Any],
                              num_return_sequences=num_beams,
                              output_scores=True,
                              return_dict_in_generate=True)
-    # Note:
+    # NOTE:
     # - outputs.sequences -> (batch_size * num_beams, n_tokens)
     # - outputs.sequences_scores -> (batch_size * num_beams,)
     

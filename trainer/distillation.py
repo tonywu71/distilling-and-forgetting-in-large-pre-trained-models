@@ -148,7 +148,7 @@ class DistillationTrainer(Seq2SeqTrainer):
         # - `KLDivLoss` expects log-probabilities for `input` to avoid underflow issues
         
         # Soften probabilities and compute distillation loss:
-        # Note: `input` should be log-probabilities according to the documentation of `KLDivLoss`.
+        # NOTE: `input` should be log-probabilities according to the documentation of `KLDivLoss`.
         loss_kd = self.args.temperature ** 2 * kl_div_loss(
             input=F.log_softmax(logits_student / self.args.temperature, dim=-1),
             target=F.softmax(logits_teacher / self.args.temperature, dim=-1))  # (1,)
@@ -216,7 +216,7 @@ class DistillationTrainer(Seq2SeqTrainer):
                                                                            decoder_attention_mask=attention_mask_labels,
                                                                            labels=labels)
         
-        # Note: `shift_tokens_right` already added the BOS token and replaced the loss mask token with the pad token, so we can safely use the sequence as decoder input.
+        # NOTE: `shift_tokens_right` already added the BOS token and replaced the loss mask token with the pad token, so we can safely use the sequence as decoder input.
         
         # Compute the cross-entropy loss:
         loss_ce = student_output_wrt_labels.loss  # (1,)
@@ -242,10 +242,10 @@ class DistillationTrainer(Seq2SeqTrainer):
         # Reshape back to original shape:
         student_log_prob_all = student_log_prob_all.reshape(batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
         
-        # Note: The first `K = distillation_num_beams` rows of output_log_prob_all_masked correspond to the same example but with different beams.
+        # NOTE: The first `K = distillation_num_beams` rows of output_log_prob_all_masked correspond to the same example but with different beams.
         
         # Set the values associated to the pad tokens to 0:
-        # Note: Because we will sum the log-probabilities to make use of the product rule in the log space,
+        # NOTE: Because we will sum the log-probabilities to make use of the product rule in the log space,
         #       a sufficient method to ignore the padded values is to set them to 0.
         
         # Repeat attention_mask for the n_vocab dimension:

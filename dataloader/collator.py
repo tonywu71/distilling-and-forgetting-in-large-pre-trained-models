@@ -68,12 +68,12 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         # Add K-beam features if distillation:
         if self.add_k_beam_features:
             # --- Teacher sequences ---
-            # Note: `tokenizer.pad` only accepts 1D-tensors which is not the case here as here they have shape (num_beams, n_tokens).
+            # NOTE: `tokenizer.pad` only accepts 1D-tensors which is not the case here as here they have shape (num_beams, n_tokens).
             #       However, we can take advantage of the fact that batch and beam dimensions are indifferent. Hence, we can simply
             #       iterate over the batch dimension and pad each tensor individually.
             batch_size = len(features)
             
-            # Note: `teacher_sequences_features` contains the teacher sequences of all beams for all samples in the batch.
+            # NOTE: `teacher_sequences_features` contains the teacher sequences of all beams for all samples in the batch.
             #       This has nothing to do with the input features.
             
             teacher_sequences_features = []
@@ -111,7 +111,11 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         # Pad the features:
         labels_batch = self.tokenizer.pad(features, return_tensors="pt")  # type: ignore
         
-        # Note: The output `labels_batch` contains the following keys: ["input_ids", "attention_mask"].
+        # NOTE: With a fast tokenizer, using the `__call__` method is faster than using a method to encode the text
+        #       followed by a call to the `pad` method to get a padded encoding. However, we have already tokenized
+        #       the labels during preprocessing, so we can simply use the `pad` method here.
+        
+        # Get the labels and attention mask:
         labels = labels_batch["input_ids"]
         attention_mask = labels_batch["attention_mask"]
         
