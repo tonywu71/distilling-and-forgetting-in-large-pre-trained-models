@@ -7,7 +7,6 @@ import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
 
 from utils.initialize import initialize_env
 initialize_env()
@@ -31,6 +30,8 @@ def main(pretrained_model_name_or_path: str=typer.Argument(..., help="Path to th
     Evaluate the whisper implicit language model on the FAB benchmark.
     Note that only greedy decoding is supported for now.
     """
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # Set up the parameters:
     task = "transcribe"

@@ -6,8 +6,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import List
 
 import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
-device = torch.device("cuda:0")
 
 from utils.initialize import initialize_env, print_envs
 initialize_env()
@@ -17,12 +15,11 @@ from functools import partial
 from pathlib import Path
 from pprint import pprint
 
-from transformers import (WhisperForConditionalGeneration,
-                          WhisperTokenizerFast,
-                          WhisperFeatureExtractor,
-                          WhisperProcessor,
-                          EarlyStoppingCallback,
-                          TrainerCallback)
+from transformers.models.whisper import (WhisperForConditionalGeneration,
+                                         WhisperTokenizerFast,
+                                         WhisperFeatureExtractor,
+                                         WhisperProcessor)
+from transformers import EarlyStoppingCallback, TrainerCallback
 
 import wandb
 
@@ -50,6 +47,8 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     """
     Distil Whisper based on the provided config file.
     """
+    
+    device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
     
     # --------------------   Load config   --------------------
     if tac:

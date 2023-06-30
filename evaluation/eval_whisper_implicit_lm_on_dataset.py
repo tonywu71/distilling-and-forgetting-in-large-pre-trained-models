@@ -4,12 +4,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
 
 import pandas as pd
 from tqdm.auto import tqdm
 
-from transformers import WhisperProcessor
+from transformers.models.whisper import WhisperProcessor
 
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding

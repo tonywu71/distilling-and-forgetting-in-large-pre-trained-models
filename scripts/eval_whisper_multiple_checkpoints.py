@@ -3,28 +3,21 @@ import typer
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-
 from utils.initialize import initialize_env
 initialize_env()
-
 
 from typing import List, Optional
 from pprint import pprint
 from tqdm.auto import tqdm
 
-import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
-
 import wandb
 
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
-
-from evaluation.eval_whisper_on_dataset_group import eval_whisper_on_dataset_group
-from utils.file_io import extract_exp_name_from_model_path
-
 from evaluation.dataset_name_to_dataset_group import DATASET_NAME_TO_DATASET_GROUP
+from evaluation.eval_whisper_on_dataset_group import eval_whisper_on_dataset_group
 from evaluation.eval_whisper_utils import save_wer_to_csv, log_wer_to_wandb, save_edit_metrics_to_csv, log_edit_metrics_to_wandb
 from utils.constants import DEFAULT_EVAL_NUM_BEAMS
+from utils.file_io import extract_exp_name_from_model_path
 
 
 

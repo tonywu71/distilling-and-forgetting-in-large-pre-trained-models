@@ -1,13 +1,7 @@
 from typing import Tuple
-
 from time import perf_counter
-
 import numpy as np
-
-import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
-
-from transformers import Pipeline
+from transformers.pipelines import Pipeline
 
 
 def get_speed_benchmark(pipeline: Pipeline,

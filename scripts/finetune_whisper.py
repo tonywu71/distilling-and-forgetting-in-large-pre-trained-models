@@ -3,24 +3,20 @@ import typer
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from typing import List
-
-import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
-
 from utils.initialize import initialize_env, print_envs
 initialize_env()
 
+from typing import List
 from dataclasses import asdict
 from functools import partial
 from pathlib import Path
 from pprint import pprint
 
-from transformers import (WhisperForConditionalGeneration,
-                          WhisperTokenizerFast,
-                          WhisperFeatureExtractor,
-                          WhisperProcessor,
-                          Seq2SeqTrainingArguments,
+from transformers.models.whisper import (WhisperForConditionalGeneration,
+                                         WhisperTokenizerFast,
+                                         WhisperFeatureExtractor,
+                                         WhisperProcessor)
+from transformers import (Seq2SeqTrainingArguments,
                           Seq2SeqTrainer,
                           EarlyStoppingCallback,
                           TrainerCallback)

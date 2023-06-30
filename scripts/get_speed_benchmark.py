@@ -6,7 +6,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pathlib import Path
 
 import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
 
 from utils.initialize import initialize_env
 initialize_env()
@@ -26,11 +25,11 @@ from utils.file_io import extract_exp_name_from_model_path, extract_output_savep
 
 
 def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to pretrained model.")):
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
     
     LIBRISPEECH_DUMMY_PATH = "hf-internal-testing/librispeech_asr_dummy"
     LANGUAGE = "english"
     TASK = "transcribe"
-    NUM_GPU = 1
     NUM_BEAMS = 5
     NUM_WARMUP = 10
     NUM_TIMED_RUNS = 100
@@ -42,7 +41,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
         "task": TASK,
         "dataset_name": LIBRISPEECH_DUMMY_PATH,
         "query_label": None,
-        "num_gpu": NUM_GPU,
+        "DEVICE": device,
         "num_beams": NUM_BEAMS,
         "num_warmup": NUM_WARMUP,
         "num_timed_runs": NUM_TIMED_RUNS
@@ -95,7 +94,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
                             model=model,  # type: ignore
                             tokenizer=processor.tokenizer,  # type: ignore
                             feature_extractor=processor.feature_extractor,  # type: ignore
-                            device=0  # use 1st GPU for Whisper
+                            device=device
     )
     
     # Get speed benchmark:
