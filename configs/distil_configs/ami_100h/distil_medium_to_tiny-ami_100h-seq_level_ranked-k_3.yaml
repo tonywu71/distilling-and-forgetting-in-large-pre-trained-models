@@ -1,3 +1,6 @@
+# Total training steps:
+# - 5088 for batch_size = 64 and num_train_epochs = 3
+# - 6782 for batch_size = 32 and num_train_epochs = 2
 experiment_name: distil_whisper_medium_to_tiny-ami_100h-seq_level_k_best_ranked-k_3
 lang_name: english
 task: transcribe
@@ -32,7 +35,7 @@ distillation_num_beams: 3
 beta_decay: 2.0
 
 smart_load: True
-eval_first_step: True
+eval_first_step: False
 log_preds_to_wandb: True
 log_raw_str: True
 n_samples_per_wandb_logging_step: 8
