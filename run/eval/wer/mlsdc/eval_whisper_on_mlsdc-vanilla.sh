@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_esb_diagnostic_custom-vanilla
+#SBATCH -J eval_whisper_on_mlsdc-vanilla
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=00:30:00
+#SBATCH --time=01:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,10 +51,13 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_diagnostic_custom >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-medium --dataset-name esb_diagnostic_custom >> $LOG 2> $ERR
+python scripts/eval_whisper.py openai/whisper-tiny --dataset-name mlsdc >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-base --dataset-name mlsdc >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-small --dataset-name mlsdc >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-small.en --dataset-name mlsdc >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-medium --dataset-name mlsdc >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-large-v2 --dataset-name mlsdc >> $LOG 2> $ERR
 
-python scripts/eval_whisper.py openai/whisper-tiny --dataset-name esb_diagnostic_custom --subset tedlium >> $LOG 2> $ERR
 
 #! #############################################
 
