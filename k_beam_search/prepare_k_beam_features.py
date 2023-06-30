@@ -1,15 +1,13 @@
 from typing import Dict, Any
 import torch
-from transformers import WhisperForConditionalGeneration
+from transformers.models.whisper import WhisperForConditionalGeneration
 from utils.constants import GEN_MAX_LENGTH
-
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def prepare_k_beam_features_fct(batch: Dict[str, Any],
                                 model: WhisperForConditionalGeneration,
-                                num_beams: int) -> Dict[str, Any]:
+                                num_beams: int,
+                                device: str | torch.DeviceObjType) -> Dict[str, Any]:
     """
     Utility to create K-Beam features for a dataset. Should be used with `Dataset.map()`.
     
@@ -21,7 +19,7 @@ def prepare_k_beam_features_fct(batch: Dict[str, Any],
     """
     
     input_features = batch["input_features"].to(device)
-
+    
     # Generate teacher predictions using K-beam search:
     outputs = model.generate(input_features,
                              max_length=GEN_MAX_LENGTH,

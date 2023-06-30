@@ -1,20 +1,18 @@
 from functools import partial
 
 import os
-import re
 from pathlib import Path
 
 import torch
 
-from transformers import WhisperForConditionalGeneration
+from transformers.models.whisper import WhisperForConditionalGeneration
+from optimum.bettertransformer import BetterTransformer
 from datasets import load_from_disk, DatasetDict, Dataset
 
 from k_beam_search.prepare_k_beam_features import prepare_k_beam_features_fct
 from utils.distil_config import DistilConfig
 from utils.file_io import extract_exp_name_from_model_path
 
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def get_k_beam_cache_dir(config: DistilConfig, parent_cache_dir: Path) -> str | None:
@@ -94,19 +92,24 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         if config.distillation_num_beams == 1:
             raise NotImplementedError("K-Beam search with K=1 is not supported.")
         
+        # Get the device:
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        
         # Initialize the model from pretrained checkpoint:
         print(f"Loading teacher model for K-Beam search from `{config.teacher_model_name_or_path}`...")
-        model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
+        model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)
         
-        if zero_shot:
-            model.config.forced_decoder_ids = []
-        else:
-            model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
+        if device == "cuda:0":
+            model = BetterTransformer.transform(model)
+        
+        model.generate = partial(model.generate, language=config.lang_name, task=config.task, use_cache=True)
+        
         
         # Get the mapping function:
         prepare_k_beam_features = partial(prepare_k_beam_features_fct,
                                           model=model,
-                                          num_beams=config.distillation_num_beams)
+                                          num_beams=config.distillation_num_beams,
+                                          device=device)
         
         # Map the dataset:
         print("\nGenerating K-Beam search output...")
