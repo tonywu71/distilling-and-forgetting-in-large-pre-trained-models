@@ -1,6 +1,5 @@
-import os
-
 from typing import Optional, List
+import os
 from toolz import dicttoolz
 from datasets import load_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
@@ -21,7 +20,7 @@ class FABDataset(BaseDatasetGroup):
         self.available_datasets = [
             "librispeech_en_clean",
             "librispeech_en_other",
-            "ami_test",
+            "ami",
             "tedlium",
             "librispeech_fr",
             "librispeech_pt"
@@ -30,7 +29,7 @@ class FABDataset(BaseDatasetGroup):
         self.ds_name_to_lang = {
             "librispeech_en_clean": "en",
             "librispeech_en_other": "en",
-            "ami_test": "en",
+            "ami": "en",
             "tedlium": "en",
             "librispeech_fr": "fr",
             "librispeech_pt": "pt"
@@ -41,7 +40,7 @@ class FABDataset(BaseDatasetGroup):
         self.dataset_name_to_cache_dir = {
             "librispeech_en_clean": self.cache_dir_librispeech,
             "librispeech_en_other": self.cache_dir_librispeech,
-            "ami_test": self.cache_dir_ami,
+            "ami": self.cache_dir_ami,
             "tedlium": self.cache_dir_esb,
             "librispeech_fr": self.cache_dir_mls,
             "librispeech_pt": self.cache_dir_mls
@@ -64,7 +63,7 @@ class FABDataset(BaseDatasetGroup):
                                                  cache_dir=self.dataset_name_to_cache_dir["librispeech_en_other"],
                                                  streaming=self.streaming,
                                                  use_auth_token=True),
-            "ami_test": load_dataset("edinburghcstr/ami",
+            "ami": load_dataset("edinburghcstr/ami",
                                      name="ihm",
                                      split="test",
                                      cache_dir=self.cache_dir_ami,
