@@ -9,7 +9,7 @@ from dataloader.dataset_for_evaluation.esb_diagnostic_dataset import ESBDiagnost
 from dataloader.dataset_for_evaluation.esb_diagnostic_custom_dataset import ESBDiagnosticCustomDataset
 from dataloader.dataset_for_evaluation.fab_dataset import FABDataset
 from dataloader.dataset_for_evaluation.mls_dataset import MLSDataset
-from dataloader.dataset_for_evaluation.mls_diagnostic_dataset import MLSDiagnosticDatasetCustom
+from dataloader.dataset_for_evaluation.mls_diagnostic_dataset_custom import MLSDiagnosticDatasetCustom
 
 
 DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
