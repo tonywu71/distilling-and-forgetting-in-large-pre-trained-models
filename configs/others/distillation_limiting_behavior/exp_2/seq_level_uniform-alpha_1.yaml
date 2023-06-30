@@ -3,7 +3,7 @@
 experiment_name: exp_2-seq_level_uniform-alpha_1
 lang_name: english
 task: transcribe
-method_distil: seq_level_k_best_uniform
+method_distil: seq_level_uniform
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True

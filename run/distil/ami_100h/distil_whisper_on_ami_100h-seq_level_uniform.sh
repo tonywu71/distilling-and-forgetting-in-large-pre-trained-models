@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_whisper-ami_10h-seq_level_k_best_uniform
+#SBATCH -J distil_whisper-ami_100h-seq_level_uniform
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,8 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper.py configs/distil_configs/seq_level_k_best_uniform/ami_10h/distil_medium_to_tiny-ami_10h-seq_level_k_best_uniform-k_3.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/seq_level_k_best_uniform/ami_10h/distil_medium_to_tiny-ami_10h-seq_level_k_best_uniform-k_5.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper.py configs/distil_configs/ami_100h/distil_medium_to_tiny-ami_100h-seq_level_uniform-k_3.yaml >> $LOG 2> $ERR
 
 #! #############################################
 
