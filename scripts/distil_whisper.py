@@ -3,23 +3,21 @@ import typer
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from typing import List
-
-import torch
-
 from utils.initialize import initialize_env, print_envs
 initialize_env()
 
+from typing import List
 from dataclasses import asdict
 from functools import partial
 from pathlib import Path
 from pprint import pprint
 
+import torch
 from transformers.models.whisper import (WhisperForConditionalGeneration,
                                          WhisperTokenizerFast,
                                          WhisperFeatureExtractor,
                                          WhisperProcessor)
-from transformers import EarlyStoppingCallback, TrainerCallback
+from transformers.trainer_callback import TrainerCallback, EarlyStoppingCallback
 
 import wandb
 

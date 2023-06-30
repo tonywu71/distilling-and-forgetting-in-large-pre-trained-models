@@ -12,14 +12,12 @@ from functools import partial
 from pathlib import Path
 from pprint import pprint
 
+from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 from transformers.models.whisper import (WhisperForConditionalGeneration,
                                          WhisperTokenizerFast,
                                          WhisperFeatureExtractor,
                                          WhisperProcessor)
-from transformers import (Seq2SeqTrainingArguments,
-                          Seq2SeqTrainer,
-                          EarlyStoppingCallback,
-                          TrainerCallback)
+from transformers.trainer_callback import TrainerCallback, EarlyStoppingCallback
 
 import wandb
 
