@@ -21,7 +21,7 @@ class FABDataset(BaseDatasetGroup):
         self.available_datasets = [
             "librispeech_en_clean",
             "librispeech_en_other",
-            "ami_test"
+            "ami_test",
             "tedlium",
             "librispeech_fr",
             "librispeech_pt"
