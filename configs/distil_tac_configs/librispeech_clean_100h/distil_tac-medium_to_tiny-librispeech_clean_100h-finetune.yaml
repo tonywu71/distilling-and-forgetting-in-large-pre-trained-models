@@ -21,7 +21,7 @@ optim: adamw_torch
 learning_rate: 1e-5
 warmup_steps: 100
 eval_steps: 500
-generation_num_beams: 1  # to speed up eval
+generation_num_beams: 1
 logging_steps: 250
 save_steps: 500
 num_train_epochs: 3
