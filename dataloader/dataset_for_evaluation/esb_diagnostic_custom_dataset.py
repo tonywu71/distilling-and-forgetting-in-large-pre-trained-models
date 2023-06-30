@@ -57,25 +57,25 @@ class ESBDiagnosticCustomDataset(BaseDatasetGroup):
             if dataset_name in self.subset:  # type: ignore
                 if dataset_name == "librispeech":
                     self.str2dataset["librispeech_clean"] = load_dataset(path="librispeech_asr",
-                                                                            name="clean",
-                                                                            split="test",
-                                                                            cache_dir=self.dataset_name_to_cache_dir["librispeech"],
-                                                                            streaming=self.streaming,
-                                                                            use_auth_token=True)
+                                                                         name="clean",
+                                                                         split="test",
+                                                                         cache_dir=self.dataset_name_to_cache_dir["librispeech"],
+                                                                         streaming=self.streaming,
+                                                                         use_auth_token=True)
                     self.str2dataset["librispeech_other"] = load_dataset(path="librispeech_asr",
-                                                                            name="other",
-                                                                            split="test",
-                                                                            cache_dir=self.dataset_name_to_cache_dir["librispeech"],
-                                                                            streaming=self.streaming,
-                                                                            use_auth_token=True)
+                                                                         name="other",
+                                                                         split="test",
+                                                                         cache_dir=self.dataset_name_to_cache_dir["librispeech"],
+                                                                         streaming=self.streaming,
+                                                                         use_auth_token=True)
                     self.str2dataset["librispeech_clean"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_clean"])
                     self.str2dataset["librispeech_other"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_other"])
                 
                 elif dataset_name == "ami":
                     self.str2dataset["ami"] = load_dataset("edinburghcstr/ami",
-                                                            name="ihm",
-                                                            split="test",
-                                                            cache_dir=self.cache_dir_ami)
+                                                           name="ihm",
+                                                           split="test",
+                                                           cache_dir=self.cache_dir_ami)
                     self.str2dataset["ami"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami"])
                 
                 else:

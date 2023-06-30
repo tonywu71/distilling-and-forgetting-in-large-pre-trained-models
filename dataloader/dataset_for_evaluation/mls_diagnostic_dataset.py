@@ -5,18 +5,15 @@ from dataloader.dataset_for_evaluation.mls_dataset import MLSDataset
 
 
 
-class MLSDiagnosticDataset(MLSDataset):
+class MLSDiagnosticDatasetCustom(MLSDataset):
     """
-    Class that regroups the Multilingual LibriSpeech (MLS) datasets.
-    See for more details:
-    - https://arxiv.org/abs/2012.03411
-    - https://huggingface.co/datasets/facebook/multilingual_librispeech
+    Custom and lightweight version of the MLS dataset.
     """
     
     def __init__(self,
                  streaming: bool=False,
                  subset: Optional[List[str]]=None) -> None:    
-        assert not self.streaming, "Streaming is not supported for MLSDiagnosticDataset."
+        assert not self.streaming, "Streaming is not supported for MLSDiagnosticDatasetCustom."
         super().__init__(streaming=streaming, subset=subset)
     
     
