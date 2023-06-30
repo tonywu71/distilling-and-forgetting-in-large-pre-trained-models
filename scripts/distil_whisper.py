@@ -199,7 +199,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     # Set config parameters for training:
     if config.gradient_checkpointing:
-        model.config.use_cache = False  # type: ignore
+        student_model.config.use_cache = False  # type: ignore
     
     
     # Set language and task for generation if not zero-shot. Also re-enable caching to speed-up evaluation:
