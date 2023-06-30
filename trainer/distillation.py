@@ -239,7 +239,7 @@ class DistillationTrainer(Seq2SeqTrainer):
         #       a sufficient method to ignore the padded values is to set them to 0.
         
         # Repeat attention_mask for the n_vocab dimension:
-        student_log_prob_all_mask = attention_mask_teacher_sequences.expand(-1, -1, vocab_size)  # right-shifted -> (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
+        student_log_prob_all_mask = attention_mask_teacher_sequences[:, :, None].expand(-1, -1, vocab_size)  # right-shifted -> (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
         output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
         
         # Get log-probabilities for each generation step:
