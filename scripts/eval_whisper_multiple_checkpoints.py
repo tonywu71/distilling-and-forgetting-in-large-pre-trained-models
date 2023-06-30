@@ -63,10 +63,6 @@ def main(checkpoints: List[str] = typer.Argument(..., help="List of paths to the
     
     del config["checkpoints"]
     
-    # If `dataset` has a `load_diagnostic` attribute, add it to the config:
-    if hasattr(dataset_group, "load_diagnostic"):
-        config["load_diagnostic"] = dataset_group.load_diagnostic
-    
     # Log in to W&B:
     wandb.login()
     
@@ -111,6 +107,14 @@ def main(checkpoints: List[str] = typer.Argument(..., help="List of paths to the
                                                         batch_size=batch_size,
                                                         num_beams=num_beams)
         
+        print("\n-----------------------\n")
+    
+        print("Results:")
+        print(df_edit_metrics)
+        
+        print("\n-----------------------\n")
+        
+        
         # Save the WER metrics:
         wer_metrics = df_edit_metrics["WER (%)"]
         
@@ -120,12 +124,6 @@ def main(checkpoints: List[str] = typer.Argument(..., help="List of paths to the
         # Round the results:
         wer_metrics = wer_metrics.round(2)
         
-        print("\n-----------------------\n")
-        
-        print("Results:")
-        print(wer_metrics)
-        
-        print("\n-----------------------\n")
         
         # Save and log the WER metrics:
         save_wer_to_csv(wer_metrics=wer_metrics,
@@ -134,12 +132,14 @@ def main(checkpoints: List[str] = typer.Argument(..., help="List of paths to the
                         savepath=savepath)
         log_wer_to_wandb(wer_metrics)
         
+        
         # Save and log all edit metrics:
         save_edit_metrics_to_csv(df_edit_metrics=df_edit_metrics,
                                 pretrained_model_name_or_path=pretrained_model_name_or_path,
                                 dataset_name=dataset_name,
                                 savepath=savepath)
         log_edit_metrics_to_wandb(df_edit_metrics=df_edit_metrics)
+        
         
         wandb.finish()
     
