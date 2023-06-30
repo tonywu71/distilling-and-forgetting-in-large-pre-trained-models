@@ -189,16 +189,6 @@ class DistillationTrainer(Seq2SeqTrainer):
         distillation_num_beams = self.args.distillation_num_beams
         n_tokens_teacher_seq = teacher_sequences.shape[-1]
         
-        # Sanity check:
-        assert distillation_num_beams <= teacher_sequences.shape[1], \
-            f"The number of beams for distillation must be <= the number of beams used for generation. " \
-            f"Got {distillation_num_beams} beams for distillation and {teacher_sequences.shape[1]} beams for generation."
-        
-        # Retrieve only the beams of interest:
-        teacher_sequences = teacher_sequences[:, :distillation_num_beams, :]  # (batch_size, distillation_num_beams, n_tokens_teacher_seq)
-        attention_mask_teacher_sequences = attention_mask_teacher_sequences[:, :distillation_num_beams, :]  # (batch_size, distillation_num_beams, n_tokens_teacher_seq)
-        teacher_sequences_scores = teacher_sequences_scores[:, :distillation_num_beams]  # (batch_size, distillation_num_beams)
-        
         # Re-normalize scores using only the K-best sequences by applying a softmax over the beam dimension:
         teacher_sequences_prob = torch.nn.functional.softmax(teacher_sequences_scores, dim=-1)  # (batch_size, distillation_num_beams)
         
