@@ -13,8 +13,8 @@ class MLSDiagnosticDatasetCustom(MLSDataset):
     def __init__(self,
                  streaming: bool=False,
                  subset: Optional[List[str]]=None) -> None:    
-        assert not self.streaming, "Streaming is not supported for MLSDiagnosticDatasetCustom."
-        super().__init__(streaming=streaming, subset=subset)
+        assert not streaming, "Streaming is not supported for MLSDiagnosticDatasetCustom."
+        super().__init__(streaming=False, subset=subset)
     
     
     def _prepare_str2dataset(self) -> None:

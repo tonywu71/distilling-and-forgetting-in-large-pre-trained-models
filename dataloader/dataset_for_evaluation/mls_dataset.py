@@ -56,7 +56,7 @@ class MLSDataset(BaseDatasetGroup):
             "spanish": self.cache_dir_non_english_librispeech
         }
         
-        super().__init__(streaming=streaming, subset=subset)
+        self.post_init()
     
     
     def _prepare_str2dataset(self) -> None:
