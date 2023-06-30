@@ -21,6 +21,7 @@ class FABDataset(BaseDatasetGroup):
         self.available_datasets = [
             "librispeech_en_clean",
             "librispeech_en_other",
+            "ami_test"
             "tedlium",
             "librispeech_fr",
             "librispeech_pt"
@@ -29,6 +30,7 @@ class FABDataset(BaseDatasetGroup):
         self.ds_name_to_lang = {
             "librispeech_en_clean": "en",
             "librispeech_en_other": "en",
+            "ami_test": "en",
             "tedlium": "en",
             "librispeech_fr": "fr",
             "librispeech_pt": "pt"
@@ -39,6 +41,7 @@ class FABDataset(BaseDatasetGroup):
         self.dataset_name_to_cache_dir = {
             "librispeech_en_clean": self.cache_dir_librispeech,
             "librispeech_en_other": self.cache_dir_librispeech,
+            "ami_test": self.cache_dir_ami,
             "tedlium": self.cache_dir_esb,
             "librispeech_fr": self.cache_dir_mls,
             "librispeech_pt": self.cache_dir_mls
@@ -61,13 +64,17 @@ class FABDataset(BaseDatasetGroup):
                                                  cache_dir=self.dataset_name_to_cache_dir["librispeech_en_other"],
                                                  streaming=self.streaming,
                                                  use_auth_token=True),
+            "ami_test": load_dataset("edinburghcstr/ami",
+                                     name="ihm",
+                                     split="test",
+                                     cache_dir=self.cache_dir_ami,
+                                     streaming=self.streaming),
             "tedlium": load_dataset(path="esb/diagnostic-dataset",
                                     name="tedlium",
                                     split="clean",
                                     cache_dir=self.dataset_name_to_cache_dir["tedlium"],
                                     streaming=self.streaming,
-                                    use_auth_token=True
-                                    ).rename_column("norm_transcript", "text"),
+                                    use_auth_token=True).rename_column("norm_transcript", "text"),
             "librispeech_fr": load_dataset(path="facebook/multilingual_librispeech",
                                            name="french",
                                            split="test",
@@ -104,6 +111,12 @@ class FABDataset(BaseDatasetGroup):
             print("WARNING: `CACHE_DIR_ESB_DIAGNOSTIC` environment variable not set. Using default cache directory.")
         else:
             print(f"Using cache directory: `{self.cache_dir_esb}`.")
+        
+        self.cache_dir_ami = os.environ.get("CACHE_DIR_AMI", None)
+        if self.cache_dir_ami is None:
+            print("WARNING: `CACHE_DIR_AMI` environment variable not set. Using default cache directory.")
+        else:
+            print(f"Using cache directory: `{self.cache_dir_ami}`.")
         
         self.cache_dir_mls = os.environ.get("CACHE_DIR_MLS", None)
         if self.cache_dir_mls is None:
