@@ -23,12 +23,12 @@ save_steps: 500
 num_train_epochs: 3
 
 zero_shot_eval: False
-eval_batch_size: 256
+eval_batch_size: 512
 eval_accumulation_steps:
 save_total_limit:  # save all to plot forgetting wrt steps
 early_stopping_patience: -1
 
-gamma_tac: 0.2
+gamma_tac: 0.1
 languages_to_preserve: [french]
 
 smart_load: True

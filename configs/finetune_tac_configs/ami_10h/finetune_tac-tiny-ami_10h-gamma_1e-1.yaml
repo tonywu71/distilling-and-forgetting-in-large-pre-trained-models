@@ -23,13 +23,13 @@ save_steps: 68
 num_train_epochs: 1
 
 zero_shot_eval: False
-eval_batch_size: 256
+eval_batch_size: 512
 eval_accumulation_steps:
 save_total_limit:
 early_stopping_patience: -1
 save_final_model: False
 
-gamma_tac: 0.2
+gamma_tac: 0.1
 languages_to_preserve: [french]
 
 smart_load: True
