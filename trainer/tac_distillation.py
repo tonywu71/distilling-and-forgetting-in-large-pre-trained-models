@@ -14,7 +14,7 @@ class TACDistillationTrainingArguments(DistillationTrainingArguments):
     Training arguments used for `TACDistillationTrainer`.
     """
     def __init__(self,
-                 method_distil: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"],
+                 method_distil: Literal["word_level", "seq_level_uniform", "seq_level_k_best_ranked"],
                  languages_to_preserve: Optional[List[str]] = None,
                  method_tac: Optional[str] = None,
                  gamma_tac: float = 0.5,
@@ -59,7 +59,7 @@ class TACDistillationTrainer(DistillationTrainer):
         assert self.args.method_tac == "word_level", \
             "Task Alignment Consolidation (TAC) is only supported for `word_level` distillation for now."
         
-        # TODO: Add support for `seq_level_k_best_uniform` and `seq_level_k_best_ranked` distillation
+        # TODO: Add support for `seq_level_uniform` and `seq_level_k_best_ranked` distillation
         #       This will require to run k-beam search on the orginial student model as well... thus
         #       we will need run smart caching one more time in the distil script.
         

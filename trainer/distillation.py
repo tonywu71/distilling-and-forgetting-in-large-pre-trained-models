@@ -25,7 +25,7 @@ class DistillationTrainingArguments(Seq2SeqTrainingArguments):
     Only supports distillation for non-sequential tasks.
     """
     def __init__(self,
-                 method_distil: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"],
+                 method_distil: Literal["word_level", "seq_level_uniform", "seq_level_k_best_ranked"],
                  alpha_ce: float,
                  temperature: Optional[float] = None,
                  distillation_num_beams: Optional[int] = None,
@@ -62,7 +62,7 @@ class DistillationTrainer(Seq2SeqTrainer):
         
         self.METHOD_DISTIL_TO_LOSS_FCT = {
             "word_level": self._compute_loss_word_level,
-            "seq_level_k_best_uniform": self._compute_loss_seq_level_k_best_uniform,
+            "seq_level_uniform": self._compute_loss_seq_level_uniform,
             "seq_level_k_best_ranked": self._compute_loss_seq_level_k_best_ranked
         }
     
@@ -274,7 +274,7 @@ class DistillationTrainer(Seq2SeqTrainer):
         return loss, student_output_wrt_teacher
     
     
-    def _compute_loss_seq_level_k_best_uniform(self,
+    def _compute_loss_seq_level_uniform(self,
                                                student_model: PreTrainedModel,
                                                inputs,
                                                teacher_model: PreTrainedModel = None,

@@ -4,7 +4,7 @@ from typing import Literal, Optional
 import yaml
 
 
-AVAILABLE_KD_METHODS = ["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+AVAILABLE_KD_METHODS = ["word_level", "seq_level_uniform", "seq_level_k_best_ranked"]
 
 
 @dataclass
@@ -24,7 +24,7 @@ class DistilConfig:
     experiment_name: str
     lang_name: str
     task: str
-    method_distil: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+    method_distil: Literal["word_level", "seq_level_uniform", "seq_level_k_best_ranked"]
     teacher_model_name_or_path: str
     student_model_name_or_path: str
     is_tokenizer_multilingual: bool
@@ -67,7 +67,7 @@ class DistilConfig:
     # `word_level`:
     temperature: float = 2
     
-    # Sequence-level (`seq_level_k_best_uniform`, `seq_level_k_best_ranked`)
+    # Sequence-level (`seq_level_uniform`, `seq_level_k_best_ranked`)
     distillation_num_beams: Optional[int] = None
     
     # `seq_level_k_best_ranked`:
@@ -110,10 +110,10 @@ class DistilConfig:
         if self.method_distil == "word_level":
             assert self.temperature is not None, \
                 "The `temperature` must be set for `word_level` distillation."
-        if self.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
+        if self.method_distil in ["seq_level_uniform", "seq_level_k_best_ranked"]:
             assert self.distillation_num_beams is not None, \
                 "The `distillation_num_beams` must be set for sequence-level distillation."
-        if self.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
+        if self.method_distil in ["seq_level_uniform", "seq_level_k_best_ranked"]:
             assert self.distillation_num_beams is not None and self.distillation_num_beams > 0, \
                 "The `distillation_num_beams` must be greater than 0 for sequence-level distillation."
         if self.method_distil == "seq_level_k_best_ranked":

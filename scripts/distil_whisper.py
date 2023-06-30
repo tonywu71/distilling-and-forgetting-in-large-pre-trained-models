@@ -59,7 +59,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Sanity check:
     assert_if_distillation_tokenizers_match(config)
     
-    is_seq_level = config.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+    is_seq_level = config.method_distil in ["seq_level_uniform", "seq_level_k_best_ranked"]
     
     if is_seq_level:
         print(f"Sequence-level distillation will be performed. Although the batch size is set to {config.batch_size}, " + \
