@@ -43,6 +43,7 @@ class FinetuneConfig:
     lowercase: bool = True  # set to False if and only if the text is not fully uppercased
     
     # ======== Optional (training) ========
+    lr_scheduler_type: str = "constant_with_warmup"  # see possible values at https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/optimizer_schedules#transformers.SchedulerType
     zero_shot_eval: bool = False
     generation_num_beams: int = 1  # greedy search by default
     eval_batch_size: Optional[int] = None
