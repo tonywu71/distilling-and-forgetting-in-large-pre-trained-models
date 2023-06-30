@@ -39,7 +39,6 @@ class DistilConfig:
     learning_rate: float
     warmup_steps: int
     eval_steps: int
-    generation_num_beams: int
     save_steps: int
     logging_steps: int
     num_train_epochs: int
@@ -52,6 +51,7 @@ class DistilConfig:
     
     # ======== Optional (training) ========
     zero_shot_eval: bool = False
+    generation_num_beams: int = 1  # greedy search by default
     eval_batch_size: Optional[int] = None
     eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     save_total_limit: Optional[int] = None
