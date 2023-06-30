@@ -13,11 +13,8 @@ from transformers.models.whisper import (WhisperTokenizer,
                                          WhisperTokenizerFast,
                                          WhisperFeatureExtractor,
                                          WhisperForConditionalGeneration)
-
-if torch.cuda.is_available():
-    from optimum.pipelines import pipeline
-else:
-    from transformers.pipelines import pipeline
+from transformers.pipelines import pipeline
+from optimum.bettertransformer import BetterTransformer
 
 from dataloader.dataloader import gen_from_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
@@ -51,7 +48,10 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         torch_dtype = torch.float32
     
     # Load model:
-    model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path, torch_dtype=torch_dtype)
+    model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path, torch_dtype=torch_dtype).to(device)
+    
+    if device == "cuda:0":
+        model = BetterTransformer.transform(model)
     
     # Loop over the datasets:
     dict_string_edit_metrics = defaultdict(list)
@@ -76,19 +76,13 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         
         feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
         
-        # Create pipeline:
-        pipeline_args = dict(
-            task="automatic-speech-recognition",
-            model=model,
-            tokenizer=tokenizer,
-            feature_extractor=feature_extractor,
-            torch_dtype=torch_dtype,
-            device=device
-        )
-        if torch.cuda.is_available():
-            pipeline_args.update({"accelerator": "bettertransformer"})
-        
-        whisper_asr = pipeline(**pipeline_args)
+        # Create pipeline:        
+        whisper_asr = pipeline(task="automatic-speech-recognition",
+                               model=model,
+                               tokenizer=tokenizer,
+                               feature_extractor=feature_extractor,
+                               torch_dtype=torch_dtype,
+                               device=device)
     
         # Create placeholders for the predictions and references:
         predictions = []
