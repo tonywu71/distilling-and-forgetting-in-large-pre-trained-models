@@ -12,7 +12,7 @@ freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
 gradient_accumulation_steps: 1
-gradient_checkpointing: True
+gradient_checkpointing: False
 dataset_name: ami_10h
 force_reprocess_dataset: False
 optim: adamw_torch

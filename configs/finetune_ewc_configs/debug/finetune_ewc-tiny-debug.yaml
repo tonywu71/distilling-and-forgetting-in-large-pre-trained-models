@@ -1,12 +1,12 @@
 # Total training steps:
 # - 30 for batch_size = 32 and num_train_epochs = 10
 
-experiment_name: finetune_tac-tiny-librispeech_dummy-debug
+experiment_name: finetune_ewc-tiny-librispeech_dummy-debug
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/finetune_tac/whisper_tiny/librispeech_dummy/
+model_dir: ./checkpoints/finetune_ewc/whisper_tiny/librispeech_dummy
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -24,12 +24,12 @@ num_train_epochs: 10
 
 eval_batch_size: 512
 eval_accumulation_steps:
-save_total_limit: 2
+save_total_limit:
 early_stopping_patience: -1
 save_final_model: False
 
-gamma_tac: 0.2
-languages_to_preserve: [french]
+dirpath_ewc: checkpoints/whisper-tiny/french/transcribe/mls_french/validation
+lambda_ewc: 0.5
 
 smart_load: True
 force_reprocess_dataset: False

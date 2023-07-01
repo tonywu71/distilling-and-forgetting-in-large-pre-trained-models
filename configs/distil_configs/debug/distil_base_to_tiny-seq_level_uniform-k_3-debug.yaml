@@ -13,7 +13,7 @@ freeze_decoder: False
 batch_size: 32
 gradient_accumulation_steps: 1
 eval_accumulation_steps:
-gradient_checkpointing: True
+gradient_checkpointing: False
 data_augmentation: False
 dataset_name: librispeech_dummy
 force_reprocess_dataset: False

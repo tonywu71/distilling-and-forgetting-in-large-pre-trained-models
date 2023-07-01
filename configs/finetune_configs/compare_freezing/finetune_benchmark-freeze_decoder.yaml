@@ -8,7 +8,7 @@ freeze_encoder: False
 freeze_decoder: True
 batch_size: 16
 gradient_accumulation_steps: 2
-gradient_checkpointing: True
+gradient_checkpointing: False
 data_augmentation: False
 dataset_name: librispeech_clean_100h
 force_reprocess_dataset: False
