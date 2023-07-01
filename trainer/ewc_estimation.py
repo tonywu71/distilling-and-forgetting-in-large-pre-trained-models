@@ -10,7 +10,6 @@ from transformers.models.whisper import (WhisperTokenizerFast,
                                          WhisperFeatureExtractor,
                                          WhisperForConditionalGeneration)
 from transformers.models.whisper import WhisperForConditionalGeneration
-from optimum.bettertransformer import BetterTransformer
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.dataset_loader import load_dataset_dict
@@ -87,7 +86,7 @@ def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
     feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
     
     # Load and prepare the dataset:
-    ds = load_dataset_dict(dataset_name)["validation"]
+    ds = load_dataset_dict(dataset_name)["train"]
     prepare_dataset = partial(prepare_dataset_fct,
                               tokenizer=tokenizer,
                               feature_extractor=feature_extractor)
