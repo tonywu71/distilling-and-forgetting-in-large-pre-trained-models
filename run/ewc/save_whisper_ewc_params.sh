@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=03:00:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -55,13 +55,17 @@ echo "python `which python`": >> $LOG
 #     --language french \
 #     --task transcribe \
 #     --dataset-name mls_french \
-#     --split validation >> $LOG 2> $ERR
+#     --skip-lowercase \
+#     --split validation \
+#     --cache-dir /home/tw581/rds/hpc-work/ewc_dataset_cache/mls_french_validation >> $LOG 2> $ERR
 
 python scripts/save_whisper_ewc_params.py openai/whisper-tiny \
     --language french \
     --task transcribe \
     --dataset-name mls_french \
-    --split train >> $LOG 2> $ERR
+    --skip-lowercase \
+    --split train \
+    --cache-dir /home/tw581/rds/hpc-work/ewc_dataset_cache/mls_french_train >> $LOG 2> $ERR
 
 #! #############################################
 
