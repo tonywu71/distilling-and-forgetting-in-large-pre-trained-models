@@ -51,12 +51,12 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name ami_test_10h >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-medium --dataset-name ami_test_10h >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name ami_10h >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-medium --dataset-name ami_10h >> $LOG 2> $ERR
 
-# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name ami_test_10h --num-beams 1 --batch-size 64 >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name ami_test_10h --num-beams 1 --batch-size 32 >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name ami_test_10h --num-beams 5 --batch-size 64 >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name ami_10h --num-beams 1 --batch-size 64 >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name ami_10h --num-beams 1 --batch-size 32 >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name ami_10h --num-beams 5 --batch-size 64 >> $LOG 2> $ERR
 
 #! #############################################
 
