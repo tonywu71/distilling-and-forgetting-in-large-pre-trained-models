@@ -25,6 +25,7 @@ class EnvConfig:
     # ------ Weight&Biases ------
     WANDB_PROJECT_TRAINING: str
     WANDB_PROJECT_EVALUATION: str
+    WANDB_PROJECT_OTHERS: str
     WANDB_CACHE_DIR: str
     
     # ------ Other ------
