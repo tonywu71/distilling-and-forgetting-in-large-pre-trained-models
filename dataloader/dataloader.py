@@ -4,6 +4,7 @@ from datasets import DatasetDict
 
 from dataloader.dataloader_for_training.dataloader_librispeech import load_librispeech, load_librispeech_dummy
 from dataloader.dataloader_for_training.dataloader_ami import load_ami_100h, load_ami_10h
+from dataloader.dataloader_for_training.dataloader_mls_french import load_mls_subset_train
 from utils.constants import DEFAULT_LABEL_STR_COL
 
 
@@ -12,7 +13,8 @@ DATASET_NAME_TO_LOAD_FCT = {
     "librispeech_clean_360h": partial(load_librispeech, train_split="train.360"),
     "librispeech_dummy": load_librispeech_dummy,
     "ami_100h": load_ami_100h,
-    "ami_10h": load_ami_10h
+    "ami_10h": load_ami_10h,
+    "mls_french": partial(load_mls_subset_train, language="french"),
 }
 
 
