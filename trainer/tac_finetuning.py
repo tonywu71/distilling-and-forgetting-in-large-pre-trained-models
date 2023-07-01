@@ -40,8 +40,6 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         print("Creating a copy of the original model...")
         self.original_model = WhisperForConditionalGeneration.from_pretrained(self.model.config._name_or_path).to(self.device)
         
-        self.original_model.config.suppress_tokens = []
-        
         # Freeze the copy of the original model:
         for param in self.original_model.parameters():
             param.requires_grad = False

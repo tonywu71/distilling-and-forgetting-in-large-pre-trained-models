@@ -168,7 +168,6 @@ def main(config_filepath: str,
     # Set language and task for generation if not zero-shot. Also re-enable caching to speed-up evaluation:
     if config.zero_shot_eval:
         model.generate = partial(model.generate, language=None, task=None, use_cache=True)
-        model.config.suppress_tokens = []
     else:
         model.generate = partial(model.generate, language=config.lang_name, task=config.task, use_cache=True)
     
