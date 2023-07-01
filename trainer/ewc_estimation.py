@@ -1,5 +1,6 @@
 from typing import Dict, Tuple
 from tqdm.auto import tqdm
+from functools import partial
 
 import torch
 from torch.utils.data import DataLoader
@@ -13,6 +14,8 @@ from optimum.bettertransformer import BetterTransformer
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.dataset_loader import load_dataset_dict
+from dataloader.preprocessing_train.preprocessing import prepare_dataset_fct
+from utils.constants import DEFAULT_NUM_PROC
 
 
 def get_mean_params(model: WhisperForConditionalGeneration) -> Dict[str, torch.Tensor]:
@@ -84,8 +87,14 @@ def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
     tokenizer = WhisperTokenizerFast.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
     feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
     
-    # Get the dataloader:
+    # Load and prepare the dataset:
     ds = load_dataset_dict(dataset_name)["validation"]
+    prepare_dataset = partial(prepare_dataset_fct,
+                              tokenizer=tokenizer,
+                              feature_extractor=feature_extractor)
+    ds = ds.map(prepare_dataset, num_proc=DEFAULT_NUM_PROC)
+    
+    # Get the dataloader:
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=tokenizer,
                                                          feature_extractor=feature_extractor,
                                                          return_attention_mask=True,
