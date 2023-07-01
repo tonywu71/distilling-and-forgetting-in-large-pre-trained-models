@@ -28,8 +28,7 @@ def get_k_beam_cache_dir(config: DistilConfig, parent_cache_dir: Path) -> str | 
     
     assert config.distillation_num_beams is not None, \
         "The `distillation_num_beams` must be set for sequence-level distillation."
-
-    # Get list of all the Pickle files in `dataset_dir_all`:
+    
     for x in parent_cache_dir.iterdir():
         if x.is_dir() and x.stem == f"k_{config.distillation_num_beams}":
             return str(x)
