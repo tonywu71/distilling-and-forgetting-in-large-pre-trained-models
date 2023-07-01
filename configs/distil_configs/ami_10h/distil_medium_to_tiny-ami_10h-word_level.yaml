@@ -4,7 +4,7 @@
 experiment_name: distil_whisper_medium_to_tiny-ami_10h-word-level
 lang_name: english
 task: transcribe
-method_distil: seq_level_uniform
+method_distil: word_level
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
