@@ -12,7 +12,7 @@ from pprint import pprint
 import wandb
 
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
-from evaluation.dataset_name_to_dataset_group import DATASET_NAME_TO_DATASET_GROUP
+from evaluation.eval_dataset_name_to_dataset_group import EVAL_DATASET_NAME_TO_DATASET_GROUP
 from evaluation.eval_whisper_on_dataset_group import eval_whisper_on_dataset_group
 from evaluation.eval_whisper_utils import save_wer_to_csv, log_wer_to_wandb, save_edit_metrics_to_csv, log_edit_metrics_to_wandb
 from utils.file_io import extract_exp_name_from_model_path
@@ -34,10 +34,10 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     Evaluate the pre-trained Whisper model on a DatasetGroup instance.
     """
     
-    assert dataset_name in DATASET_NAME_TO_DATASET_GROUP.keys(), f"Dataset name must be one of {list(DATASET_NAME_TO_DATASET_GROUP.keys())}."
+    assert dataset_name in EVAL_DATASET_NAME_TO_DATASET_GROUP.keys(), f"Dataset name must be one of {list(EVAL_DATASET_NAME_TO_DATASET_GROUP.keys())}."
     
     # Load dataset:
-    dataset_group: BaseDatasetGroup = DATASET_NAME_TO_DATASET_GROUP[dataset_name](streaming=streaming, subset=subset)
+    dataset_group: BaseDatasetGroup = EVAL_DATASET_NAME_TO_DATASET_GROUP[dataset_name](streaming=streaming, subset=subset)
     
     # Create config for wandb:
     config = {

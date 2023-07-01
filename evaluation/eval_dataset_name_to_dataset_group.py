@@ -12,7 +12,7 @@ from dataloader.dataset_for_evaluation.mls_dataset import MLSDataset
 from dataloader.dataset_for_evaluation.mls_diagnostic_dataset_custom import MLSDiagnosticDatasetCustom
 
 
-DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
+EVAL_DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
     "librispeech_clean_test": LibriSpeechCleanTestSet,
     "librispeech_dummy": LibriSpeechDummyDataset,
     "ami_test": AMITestSet,

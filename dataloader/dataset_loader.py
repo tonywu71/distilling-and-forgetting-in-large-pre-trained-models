@@ -8,7 +8,7 @@ from dataloader.dataset_for_training.dataset_loader_mls_french import load_mls
 from utils.constants import DEFAULT_LABEL_STR_COL
 
 
-DATASET_NAME_TO_LOAD_FCT = {
+TRAIN_DATASET_NAME_TO_LOAD_FCT = {
     "librispeech_clean_100h": partial(load_librispeech, train_split="train.100"),
     "librispeech_clean_360h": partial(load_librispeech, train_split="train.360"),
     "librispeech_dummy": load_librispeech_dummy,
@@ -21,8 +21,8 @@ DATASET_NAME_TO_LOAD_FCT = {
 
 def load_dataset_dict(dataset_name: str, **kwargs) -> DatasetDict:
     """Load the dataset dictionary."""
-    if dataset_name in DATASET_NAME_TO_LOAD_FCT:
-        dataset_dict = DATASET_NAME_TO_LOAD_FCT[dataset_name](**kwargs)
+    if dataset_name in TRAIN_DATASET_NAME_TO_LOAD_FCT:
+        dataset_dict = TRAIN_DATASET_NAME_TO_LOAD_FCT[dataset_name](**kwargs)
     else:
         raise ValueError(f"Dataset {dataset_name} not supported")
     
