@@ -32,21 +32,22 @@ def get_fisher_params(model: WhisperForConditionalGeneration,
     Returns the EWC parameters of the model.
     """
     
-    log_liklihoods = []
+    list_sum_fisher_params = [torch.zeros_like(param) for param in model.parameters()]
+    total = len(dataloader)
     
-    for inputs in tqdm(dataloader, total=len(dataloader)):
+    for inputs in tqdm(dataloader, total=total):
+        inputs = inputs.to(model.device)
         outputs = model(**inputs)
         log_prob_all = torch.nn.functional.log_softmax(outputs.logits, dim=-1)  # (batch_size, seq_len, vocab_size)
-        log_prob = log_prob_all.take_along_dim(outputs.labels[..., None], dim=-1)  # (batch_size, seq_len, 1)
+        log_prob = log_prob_all.take_along_dim(inputs.labels[..., None], dim=-1)  # (batch_size, seq_len, 1)
         log_prob = log_prob.squeeze().sum(dim=-1)  # (batch_size,)
         log_likelihood = torch.sum(log_prob)  # summation as we compute the prob of independent RV in log-space -> (1,)
-        log_liklihoods.append(log_likelihood)
+        grad_log_likelihood = torch.autograd.grad(log_likelihood, model.parameters())  # Tuple of P tensors (each tensor is a model param) where P=#params
+        
+        for idx, (fisher_param, grad_param) in enumerate(zip(list_sum_fisher_params, grad_log_likelihood)):
+            list_sum_fisher_params[idx] = fisher_param + grad_param.clone() ** 2
     
-    log_likelihood = torch.cat(log_liklihoods).mean()  # (1,)
-    
-    grad_log_likelihood = torch.autograd.grad(log_likelihood, model.parameters())
-    
-    fisher_params = {param_name: grad_param.clone() ** 2 for (param_name, param), grad_param in zip(model.named_parameters(), grad_log_likelihood)}
+    fisher_params = {param_name: (fisher_param / total) for (param_name, param), fisher_param in zip(model.named_parameters(), list_sum_fisher_params)}
     return fisher_params
 
 
