@@ -41,6 +41,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
          task: str = typer.Option("transcribe", help="The task of the pretrained model."),
          dataset_name: str = typer.Option(..., help="The name of the dataset."),
          split: str = typer.Option("train", help="The split of the dataset."),
+         skip_lowercase: bool = typer.Option(False, help="Whether to skip the lowercase preparation of the dataset."),
          batch_size: int = typer.Option(32, help="The batch size for the dataloader.")):
     
     # Create config for wandb:
@@ -50,6 +51,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
         "task": task,
         "dataset_name": dataset_name,
         "split": split,
+        "skip_lowercase": skip_lowercase,
         "batch_size": batch_size
     }
     
@@ -67,7 +69,8 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
                                                             task=task,
                                                             dataset_name=dataset_name,
                                                             split=split,
-                                                            batch_size=batch_size)
+                                                            batch_size=batch_size,
+                                                            lowercase=not(skip_lowercase))
     
     # Save the EWC params:
     dirpath = get_dirpath_ewc_params(pretrained_model_name_or_path,

@@ -1,19 +1,22 @@
-from typing import Dict, Tuple
-from tqdm.auto import tqdm
+from typing import Dict, Tuple, Optional
+import os
+from pathlib import Path
 from functools import partial
+from tqdm.auto import tqdm
 
 import torch
 from torch.utils.data import DataLoader
 
-from transformers import PreTrainedModel
+from transformers.modeling_utils import PreTrainedModel
 from transformers.models.whisper import (WhisperTokenizerFast,
                                          WhisperFeatureExtractor,
                                          WhisperForConditionalGeneration)
 from transformers.models.whisper import WhisperForConditionalGeneration
+from datasets import Dataset, load_from_disk
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.dataset_loader import load_dataset_dict
-from dataloader.preprocessing_train.preprocessing import prepare_dataset_fct
+from dataloader.preprocessing_train.preprocessing import lowercase_fct, prepare_dataset_fct
 from utils.constants import DEFAULT_NUM_PROC
 
 
@@ -60,12 +63,32 @@ def get_ewc_params(model: PreTrainedModel,
     return mean_params, fisher_params
 
 
+def load_and_prepare_dataset(dataset_name: str,
+                             split: str,
+                             tokenizer: WhisperTokenizerFast,
+                             feature_extractor: WhisperFeatureExtractor,
+                             lowercase: bool = True) -> Dataset:
+    """
+    Load and prepare the dataset.
+    """
+    ds = load_dataset_dict(dataset_name)[split]
+    prepare_dataset = partial(prepare_dataset_fct,
+                              tokenizer=tokenizer,
+                              feature_extractor=feature_extractor)
+    if lowercase:
+        ds = ds.map(lowercase_fct, num_proc=DEFAULT_NUM_PROC)
+    ds = ds.map(prepare_dataset, num_proc=DEFAULT_NUM_PROC)
+    return ds
+
+
 def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
                                language: str,
                                task: str,
                                dataset_name: str,
                                split: str = "train",
-                               batch_size: int = 32) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
+                               batch_size: int = 32,
+                               lowercase: bool = True,
+                               cache_dir: Optional[str] = None) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
     """
     Returns the EWC parameters for a pretrained Whisper model.
     """
@@ -89,11 +112,29 @@ def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
     feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
     
     # Load and prepare the dataset:
-    ds = load_dataset_dict(dataset_name)[split]
-    prepare_dataset = partial(prepare_dataset_fct,
-                              tokenizer=tokenizer,
-                              feature_extractor=feature_extractor)
-    ds = ds.map(prepare_dataset, num_proc=DEFAULT_NUM_PROC)
+    if cache_dir:
+        if os.path.isdir(cache_dir):
+            print(f"Found cache at `{cache_dir}`. Loading pre-processed dataset...")
+            ds = load_from_disk(cache_dir)
+            print("Successfully loaded pre-processed dataset.")
+        else:
+            print(f"Cache not found at `{cache_dir}`. The dataset will be pre-processed and cached for future use.")
+            Path(cache_dir).mkdir(parents=True, exist_ok=True)
+            ds = load_and_prepare_dataset(dataset_name=dataset_name,
+                                          split=split,
+                                          tokenizer=tokenizer,
+                                          feature_extractor=feature_extractor,
+                                          lowercase=lowercase)
+            ds.save_to_disk(cache_dir)
+            print(f"Dataset pre-processed and cached at `{cache_dir}`.")
+    else:
+        print("No cache directory provided. The dataset will be pre-processed but not cached.")
+        ds = load_and_prepare_dataset(dataset_name=dataset_name,
+                                      split=split,
+                                      tokenizer=tokenizer,
+                                      feature_extractor=feature_extractor,
+                                      lowercase=lowercase)
+        print("Dataset pre-processed.")
     
     # Get the dataloader:
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=tokenizer,
