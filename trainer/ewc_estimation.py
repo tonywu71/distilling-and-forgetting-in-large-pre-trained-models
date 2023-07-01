@@ -85,7 +85,7 @@ def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
     feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
     
     # Get the dataloader:
-    ds = load_dataset_dict(dataset_name)["train"]
+    ds = load_dataset_dict(dataset_name)["validation"]
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=tokenizer,
                                                          feature_extractor=feature_extractor,
                                                          return_attention_mask=True,
