@@ -27,9 +27,9 @@ def get_dirpath_ewc_params(pretrained_model_name_or_path: str) -> str:
 
 def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name or path of the pretrained model."),
          language: str = typer.Option(..., help="The language of the pretrained model."),
-         task: str = typer.Option(..., help="The task of the pretrained model."),
+         task: str = typer.Option("transcribe", help="The task of the pretrained model."),
          dataset_name: str = typer.Option(..., help="The name of the dataset."),
-         batch_size: int = typer.Option(1, help="The batch size for the dataloader.")):
+         batch_size: int = typer.Option(32, help="The batch size for the dataloader.")):
     
     # Get the EWC params:
     mean_params, fisher_params = get_ewc_params_for_whisper(pretrained_model_name_or_path=pretrained_model_name_or_path,
