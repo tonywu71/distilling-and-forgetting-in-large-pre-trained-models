@@ -50,9 +50,9 @@ def smart_load_dataset_dict(config: FinetuneConfig | DistilConfig,
         
         print(f"Preprocessing dataset `{config.dataset_name}`...")
         tokenizer = get_fast_tokenizer_from_tokenizer(processor.tokenizer) if fast_tokenizer else processor.tokenizer
-        dataset_dict = preprocess_dataset(dataset_dict,  # type: ignore
+        dataset_dict = preprocess_dataset(dataset_dict,
                                           tokenizer=tokenizer,
-                                          feature_extractor=processor.feature_extractor,  # type: ignore
+                                          feature_extractor=processor.feature_extractor,
                                           augment=config.data_augmentation)
         
         # NOTE: The pytorch tensor conversation will be done in the DataCollator.

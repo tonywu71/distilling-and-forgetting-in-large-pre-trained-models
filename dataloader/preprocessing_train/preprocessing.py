@@ -9,7 +9,7 @@ from dataloader.preprocessing_train.augmentation import augment_audio_fct
 from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL, DEFAULT_NUM_PROC
 
 
-def lowercase_fct(example: Dict[str, str]) -> Dict[str, str]:
+def lowercase_fct(example: Dict[str, Any]) -> Dict[str, Any]:
     return {DEFAULT_LABEL_STR_COL: example[DEFAULT_LABEL_STR_COL].lower()}
 
 
