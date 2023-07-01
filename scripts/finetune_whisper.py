@@ -131,7 +131,7 @@ def main(config_filepath: str,
     
     if config.dataset_name == "ami_100h":
         print("Subsampling the 100h AMI validation split to 10% of its original size for faster evaluation...")
-        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"] // 10))
+        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 10))
     
     print("\n-----------------------\n")
     
