@@ -53,10 +53,9 @@ echo "python `which python`": >> $LOG
 
 # python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 --dataset-name fab >> $LOG 2> $ERR
 
-# python scripts/eval_whisper.py checkpoints/distillation_tac/whisper_base_to_tiny/librispeech_debug/finetune/final --dataset-name fab --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt >> $LOG 2> $ERR
-# python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/final --dataset-name fab --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt >> $LOG 2> $ERR
-# python scripts/eval_whisper.py checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/final --dataset-name fab --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt >> $LOG 2> $ERR
-# python scripts/eval_whisper.py checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/final --dataset-name fab --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt >> $LOG 2> $ERR
+python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/ami_100h/final --dataset-name fab \
+    --subset ami --subset librispeech_fr --subset librispeech_pt \
+    --batch-size 512 >> $LOG 2> $ERR
 
 #! #############################################
 
