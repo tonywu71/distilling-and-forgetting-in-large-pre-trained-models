@@ -1,12 +1,12 @@
 from typing import Optional, List
 
 import torch
-
-from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer, PreTrainedModel, WhisperForConditionalGeneration, WhisperProcessor
+from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer, PreTrainedModel
+from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor
 from transformers.feature_extraction_utils import BatchFeature
-from utils.constants import GEN_MAX_LENGTH, LOSS_MASK_IDX
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from trainer.trainer_utils import get_padded_mask_from_tensor
+from utils.constants import GEN_MAX_LENGTH, LOSS_MASK_IDX
 
 
 class TACFinetuningTrainingArguments(Seq2SeqTrainingArguments):
@@ -33,11 +33,12 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
-        
         self.processor = processor
         
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
         print("Creating a copy of the original model...")
-        self.original_model = WhisperForConditionalGeneration.from_pretrained(self.model.config._name_or_path).to(device)  # type: ignore
+        self.original_model = WhisperForConditionalGeneration.from_pretrained(self.model.config._name_or_path).to(device)
         
         self.original_model.config.suppress_tokens = []
         
@@ -54,12 +55,10 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         """
         Override the `compute_loss` method from `Seq2SeqTrainer`.
         """
-        model.config.forced_decoder_ids = self.processor.get_decoder_prompt_ids(language="english", task="transcribe")
         loss, output_student = super().compute_loss(model, inputs, return_outputs=True)
         
         for language_to_preserve in self.args.languages_to_preserve:
             tac_inputs = self.get_tac_inputs(inputs, language=language_to_preserve)
-            model.config.forced_decoder_ids = self.processor.get_decoder_prompt_ids(language=language_to_preserve, task="transcribe")
             loss_other_task = super().compute_loss(model, tac_inputs, return_outputs=False)
             loss += self.args.gamma_tac * loss_other_task / len(self.args.languages_to_preserve)
         
@@ -79,36 +78,13 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         predicted_ids_tac = self.original_model.generate(inputs["input_features"],  # greedy decoding
                                                          max_length=GEN_MAX_LENGTH)
         
+        # TODO: Check if this is correct...
+        
         # Replace padding with correct token for correct loss computation:
-        padded_mask = self.get_padded_mask_from_tensor(predicted_ids_tac)
+        padded_mask = get_padded_mask_from_tensor(predicted_ids_tac)
         predicted_ids_tac = predicted_ids_tac.masked_fill(padded_mask.eq(1), LOSS_MASK_IDX)
         
         inputs_tac = inputs.copy()
         inputs_tac["labels"] = predicted_ids_tac
         
         return inputs_tac
-    
-    
-    def get_padded_mask_from_tensor(self, tensor: torch.Tensor) -> torch.Tensor:
-        """
-        Returns the padded mask from a tensor of shape (batch_size, n_tokens).
-        Used convention:
-        - 1 for tokens that are padded
-        - 0 otherwise.
-        
-        Example:
-        - Input: tensor([[50257.,  50362.,     76.,    1694.,    627.,   50256.],
-                         [50257.,  50362.,  13099.,   50256.,  50256.,   50256.]])
-        - Output: tensor([[0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 0, 1, 1]])
-        """
-        PAD_TOKEN_FROM_GENERATE = 50257  # different from the one used in the tokenizer
-        assert tensor.ndim == 2, \
-            f"The tensor must be 2D. Got {tensor.ndim} dimensions."
-        
-        indices = (tensor == PAD_TOKEN_FROM_GENERATE).long().argmax(dim=-1)
-        padded_mask = torch.zeros_like(tensor, dtype=torch.long)
-        for idx, row in zip(indices, padded_mask):
-            row[idx+1:] = 1  # ignore the first EOT token of each row
-        return padded_mask
-    
