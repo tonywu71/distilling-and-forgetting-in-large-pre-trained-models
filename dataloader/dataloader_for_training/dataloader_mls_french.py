@@ -8,7 +8,7 @@ from datasets import Dataset, DatasetDict, load_dataset
 
 def remove_unnecessary_cols_for_mls(dataset: Dataset | DatasetDict) -> Dataset | DatasetDict:
     """Remove unnecessary columns from the AMI dataset."""
-    return dataset.remove_columns(column_names=["meeting_id", "audio_id", "begin_time", "end_time", "microphone_id", "speaker_id"])
+    return dataset.remove_columns(column_names=["file", "speaker_id", "chapter_id", "id"])
 
 
 def load_mls_subset_train(language: str) -> DatasetDict:
