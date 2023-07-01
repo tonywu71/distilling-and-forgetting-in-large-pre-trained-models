@@ -1,7 +1,8 @@
 from typing import Optional, List
 
 import torch
-from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer, PreTrainedModel
+from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
+from transformers.modeling_utils import PreTrainedModel
 from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor
 from transformers.feature_extraction_utils import BatchFeature
 
@@ -11,7 +12,8 @@ from utils.constants import GEN_MAX_LENGTH, LOSS_MASK_IDX
 
 class TACFinetuningTrainingArguments(Seq2SeqTrainingArguments):
     """
-    Training arguments used for `TACFinetuningTrainer`.
+    Training arguments for fine-tuning with Task Alignment Consolidation (TAC).
+    Should be used with `TACFinetuningTrainer`.
     """
     def __init__(self,
                  languages_to_preserve: Optional[List[str]] = None,
@@ -25,7 +27,7 @@ class TACFinetuningTrainingArguments(Seq2SeqTrainingArguments):
 
 class TACFinetuningTrainer(Seq2SeqTrainer):
     """
-    Trainer class for distillation with Task Alignment Consolidation (TAC).
+    Trainer class for fine-tuning with Task Alignment Consolidation (TAC).
     Should be used with `args=TACFinetuningTrainingArguments`.
     """
     def __init__(self,

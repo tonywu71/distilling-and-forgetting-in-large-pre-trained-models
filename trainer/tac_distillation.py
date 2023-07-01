@@ -2,7 +2,8 @@ from typing import Optional, Literal, List
 
 import torch
 
-from transformers import PreTrainedModel, WhisperForConditionalGeneration, WhisperProcessor
+from transformers.modeling_utils import PreTrainedModel
+from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor
 
 from trainer.distillation import DistillationTrainingArguments, DistillationTrainer
 
@@ -11,7 +12,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class TACDistillationTrainingArguments(DistillationTrainingArguments):
     """
-    Training arguments used for `TACDistillationTrainer`.
+    Training arguments for distillation with Task Alignment Consolidation (TAC).
+    Should be used with `TACDistillationTrainer`.
     """
     def __init__(self,
                  method_distil: Literal["word_level", "seq_level_uniform", "seq_level_ranked"],
