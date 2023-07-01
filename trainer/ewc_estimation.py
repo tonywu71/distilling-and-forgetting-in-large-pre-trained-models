@@ -81,8 +81,6 @@ def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
     # Initialize the model from a pretrained checkpoint:
     print(f"Loading pretrained model from `{pretrained_model_name_or_path}`...")
     model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path).to(device)
-    if device == "cuda:0":
-        model = BetterTransformer.transform(model)
     
     # Initialize the tokenizer and feature extractor:
     tokenizer = WhisperTokenizerFast.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
