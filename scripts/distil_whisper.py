@@ -159,12 +159,14 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     if is_seq_level:
         # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
         dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
-                                                             dataset_dict=dataset_dict)
-    
-        # NOTE: Technically, the K-beam search features are not needed for the word-level distillation. However,
-        #       we still load them for simplicity and because they are needed for `WandbDistillationCallback`.
-    
+                                                             dataset_dict=dataset_dict)    
         print("\n-----------------------\n")
+    
+    
+    if config.dataset_name == "ami_100h":
+        print("Subsampling the 100h AMI validation split to 10% of its original size for faster evaluation...")
+        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"] // 10))
+    
     
     # Initialize the models from pretrained checkpoints:
     if not is_seq_level:  # If word-level...

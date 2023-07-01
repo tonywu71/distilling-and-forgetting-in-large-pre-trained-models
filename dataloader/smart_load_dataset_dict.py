@@ -2,7 +2,7 @@ import os
 import shutil
 from pathlib import Path
 
-from transformers import WhisperProcessor
+from transformers.models.whisper import WhisperProcessor
 from datasets import load_from_disk, DatasetDict, Dataset
 
 from dataloader.dataloader import load_dataset_dict
