@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.initialize import initialize_env
 initialize_env()
 
+from typing import Optional
 from pathlib import Path
 from safetensors.torch import save_file
 
@@ -42,7 +43,9 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
          dataset_name: str = typer.Option(..., help="The name of the dataset."),
          split: str = typer.Option("train", help="The split of the dataset."),
          skip_lowercase: bool = typer.Option(False, help="Whether to skip the lowercase preparation of the dataset."),
-         batch_size: int = typer.Option(32, help="The batch size for the dataloader.")):
+         batch_size: int = typer.Option(32, help="The batch size for the dataloader."),
+         cache_dir: Optional[str] = typer.Option(None, help="If set, will try to load an existing cached " + \
+             "pre-processed dataset. If doesn't exist, will cache the dataset after pre-processing.")):
     
     # Create config for wandb:
     config = {
@@ -52,7 +55,8 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
         "dataset_name": dataset_name,
         "split": split,
         "skip_lowercase": skip_lowercase,
-        "batch_size": batch_size
+        "batch_size": batch_size,
+        "cache_dir": cache_dir
     }
     
     # Initialize W&B:
@@ -70,7 +74,8 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
                                                             dataset_name=dataset_name,
                                                             split=split,
                                                             batch_size=batch_size,
-                                                            lowercase=not(skip_lowercase))
+                                                            lowercase=not(skip_lowercase),
+                                                            cache_dir=cache_dir)
     
     # Save the EWC params:
     dirpath = get_dirpath_ewc_params(pretrained_model_name_or_path,
