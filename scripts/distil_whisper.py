@@ -61,7 +61,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     if is_seq_level:
         print(f"Sequence-level distillation will be performed. Although the batch size is set to {config.batch_size}, " + \
-              f", because {config.distillation_num_beams} beams will be used for distillation, " + \
+              f"because {config.distillation_num_beams} beams will be used for distillation, " + \
               f"the actual batch size will {config.batch_size * config.distillation_num_beams}.")
     
     # If a previous run has its checkpoints saved in the same directory,
