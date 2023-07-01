@@ -1,3 +1,4 @@
+from typing import Optional
 from dataclasses import dataclass
 from pathlib import Path
 import yaml
@@ -7,7 +8,15 @@ from utils.finetune_config import FinetuneConfig
 
 @dataclass
 class EWCFinetuneConfig(FinetuneConfig):
-    lamda_ewc: float = 0.1    
+    dirpath_ewc: Optional[str] = None
+    lamda_ewc: float = 0.1
+    
+    
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        assert self.dirpath_ewc is not None, "`dirpath_ewc` must be specified."
+        assert Path(self.dirpath_ewc).exists(), f"`dirpath_ewc` does not exist: {self.dirpath_ewc}"
+    
     
     @staticmethod
     def from_yaml(config_file: str) -> "EWCFinetuneConfig":
