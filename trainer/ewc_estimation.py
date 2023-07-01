@@ -119,7 +119,6 @@ def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
             print("Successfully loaded pre-processed dataset.")
         else:
             print(f"Cache not found at `{cache_dir}`. The dataset will be pre-processed and cached for future use.")
-            Path(cache_dir).mkdir(parents=True, exist_ok=True)
             ds = load_and_prepare_dataset(dataset_name=dataset_name,
                                           split=split,
                                           tokenizer=tokenizer,
@@ -146,6 +145,7 @@ def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
     dataloader = DataLoader(ds, batch_size=batch_size, collate_fn=data_collator)
     
     # Get the EWC params:
+    print("Computing the EWC parameters...")
     mean_params, fisher_params = get_ewc_params(model, dataloader)
     
     return mean_params, fisher_params
