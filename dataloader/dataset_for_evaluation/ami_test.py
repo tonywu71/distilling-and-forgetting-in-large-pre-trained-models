@@ -2,7 +2,7 @@ import os
 from typing import Optional, List
 from datasets import load_dataset
 
-from dataloader.dataloader_for_training.dataloader_ami import remove_unnecessary_cols_for_ami
+from dataloader.dataset_for_training.dataset_loader_ami import remove_unnecessary_cols_for_ami
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 
 

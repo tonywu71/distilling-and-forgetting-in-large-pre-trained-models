@@ -16,7 +16,7 @@ from transformers.models.whisper import (WhisperTokenizer,
 from transformers.pipelines import pipeline
 from optimum.bettertransformer import BetterTransformer
 
-from dataloader.dataloader import gen_from_dataset
+from dataloader.dataset_loader import gen_from_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from evaluation.string_edit_metrics import get_string_edit_metrics
 from normalization.whisper_normalization import get_whisper_normalizer

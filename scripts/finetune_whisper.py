@@ -24,7 +24,7 @@ import wandb
 from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from callbacks.finetune_callback import WandbFinetuneCallback
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from dataloader.dataloader import load_dataset_dict
+from dataloader.dataset_loader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_string_edit_metrics_fct

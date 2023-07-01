@@ -2,9 +2,9 @@ from functools import partial
 from typing import Iterable
 from datasets import DatasetDict
 
-from dataloader.dataloader_for_training.dataloader_librispeech import load_librispeech, load_librispeech_dummy
-from dataloader.dataloader_for_training.dataloader_ami import load_ami_100h, load_ami_10h
-from dataloader.dataloader_for_training.dataloader_mls_french import load_mls_subset_train
+from dataloader.dataset_for_training.dataset_loader_librispeech import load_librispeech, load_librispeech_dummy
+from dataloader.dataset_for_training.dataset_loader_ami import load_ami_100h, load_ami_10h
+from dataloader.dataset_for_training.dataset_loader_mls_french import load_mls_subset_train
 from utils.constants import DEFAULT_LABEL_STR_COL
 
 

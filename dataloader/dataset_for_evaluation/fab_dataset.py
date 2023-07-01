@@ -3,7 +3,7 @@ import os
 from toolz import dicttoolz
 from datasets import load_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
-from dataloader.dataloader_for_training.dataloader_librispeech import remove_unnecessary_cols_for_librispeech
+from dataloader.dataset_for_training.dataset_loader_librispeech import remove_unnecessary_cols_for_librispeech
 
 
 class FABDataset(BaseDatasetGroup):

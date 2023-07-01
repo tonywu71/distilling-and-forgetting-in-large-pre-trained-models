@@ -5,7 +5,7 @@ from pathlib import Path
 from transformers.models.whisper import WhisperProcessor
 from datasets import load_from_disk, DatasetDict, Dataset
 
-from dataloader.dataloader import load_dataset_dict
+from dataloader.dataset_loader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.utils import get_fast_tokenizer_from_tokenizer
 from utils.finetune_config import FinetuneConfig

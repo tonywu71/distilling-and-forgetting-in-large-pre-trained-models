@@ -12,7 +12,7 @@ from transformers.models.whisper import WhisperForConditionalGeneration
 from optimum.bettertransformer import BetterTransformer
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from dataloader.dataloader import load_dataset_dict
+from dataloader.dataset_loader import load_dataset_dict
 
 
 def get_mean_params(model: WhisperForConditionalGeneration) -> Dict[str, torch.Tensor]:
