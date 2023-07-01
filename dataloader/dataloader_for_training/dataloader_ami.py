@@ -29,10 +29,6 @@ def load_ami_100h() -> DatasetDict:
                                               name="ihm",
                                               split="validation",
                                               cache_dir=cache_dir_ami)
-    dataset_dict["test"] = load_dataset("edinburghcstr/ami",
-                                        name="ihm",
-                                        split="test",
-                                        cache_dir=cache_dir_ami)
     dataset_dict = DatasetDict(dataset_dict)
     
     # Remove unnecessary columns from the dataset:
@@ -66,10 +62,6 @@ def load_ami_10h() -> DatasetDict:
                                               name="ihm",
                                               split="validation[:10%]",
                                               cache_dir=cache_dir_ami)
-    dataset_dict["test"] = load_dataset("edinburghcstr/ami",
-                                        name="ihm",
-                                        split="test[:10%]",
-                                        cache_dir=cache_dir_ami)
     dataset_dict = DatasetDict(dataset_dict)
     
     # Remove unnecessary columns from the dataset:

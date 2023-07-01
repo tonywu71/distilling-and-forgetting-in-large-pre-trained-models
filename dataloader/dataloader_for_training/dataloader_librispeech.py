@@ -13,7 +13,7 @@ def remove_unnecessary_cols_for_librispeech(dataset: Dataset | DatasetDict) -> D
 
 def load_librispeech_dummy() -> DatasetDict:
     """DEBUG ONLY. Load the LibriSpeech dummy dataset.
-    Important note: Because the dummy dataset only has 1 split available, we will use it for train, eval and test splits."""
+    Important note: Because the dummy dataset only has 1 split available, we will use it for train and validation splits."""
     
     cache_dir_librispeech = os.environ.get("CACHE_DIR_LIBRISPEECH", None)
     if cache_dir_librispeech is None:
@@ -30,10 +30,6 @@ def load_librispeech_dummy() -> DatasetDict:
                                               name="clean",
                                               split="validation",
                                               cache_dir=cache_dir_librispeech)
-    dataset_dict["test"] = load_dataset("hf-internal-testing/librispeech_asr_dummy",
-                                        name="clean",
-                                        split="validation",
-                                        cache_dir=cache_dir_librispeech)
     dataset_dict = DatasetDict(dataset_dict)
     
     # Remove unnecessary columns from the dataset:
@@ -65,10 +61,6 @@ def load_librispeech(train_split: str="train.100") -> DatasetDict:
                                               name="clean",
                                               split="validation",
                                               cache_dir=cache_dir_librispeech)
-    dataset_dict["test"] = load_dataset("librispeech_asr",
-                                        name="clean",
-                                        split="test",
-                                        cache_dir=cache_dir_librispeech)
     dataset_dict = DatasetDict(dataset_dict)
     
     # Remove unnecessary columns from the dataset:

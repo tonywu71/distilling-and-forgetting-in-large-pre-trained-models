@@ -83,11 +83,11 @@ class MLSDataset(BaseDatasetGroup):
                 
                 else:
                     self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
-                                                                name=dataset_name,
-                                                                split="test",
-                                                                cache_dir=self.dataset_name_to_cache_dir[dataset_name],
-                                                                streaming=self.streaming,
-                                                                use_auth_token=True)
+                                                                  name=dataset_name,
+                                                                  split="test",
+                                                                  cache_dir=self.dataset_name_to_cache_dir[dataset_name],
+                                                                  streaming=self.streaming,
+                                                                  use_auth_token=True)
 
 
     def _load_cache_dir_from_env_var(self) -> None:
