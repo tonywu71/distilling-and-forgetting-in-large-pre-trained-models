@@ -35,10 +35,10 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         super().__init__(*args, **kwargs)
         self.processor = processor
         
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         print("Creating a copy of the original model...")
-        self.original_model = WhisperForConditionalGeneration.from_pretrained(self.model.config._name_or_path).to(device)
+        self.original_model = WhisperForConditionalGeneration.from_pretrained(self.model.config._name_or_path).to(self.device)
         
         self.original_model.config.suppress_tokens = []
         
