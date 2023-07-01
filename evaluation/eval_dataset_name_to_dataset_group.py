@@ -13,7 +13,7 @@ from dataloader.dataset_for_evaluation.mls_diagnostic_dataset_custom import MLSD
 
 
 EVAL_DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
-    "librispeech_clean: LibriSpeechCleanTestSet,
+    "librispeech_clean": LibriSpeechCleanTestSet,
     "librispeech_dummy": LibriSpeechDummyDataset,
     "ami": AMITestSet,
     "ami_10h": partial(AMITestSet, is_ami_10h=True),

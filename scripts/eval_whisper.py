@@ -14,7 +14,7 @@ import wandb
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from evaluation.eval_dataset_name_to_dataset_group import EVAL_DATASET_NAME_TO_DATASET_GROUP
 from evaluation.eval_whisper_on_dataset_group import eval_whisper_on_dataset_group
-from evaluation.eval_whisper_utils import save_wer_to_csv, log_wer_to_wandb, save_edit_metrics_to_csv, log_edit_metrics_to_wandb
+from evaluation.eval_whisper_utils import log_wer_to_wandb, save_edit_metrics_to_csv, log_edit_metrics_to_wandb
 from utils.file_io import extract_exp_name_from_model_path
 from utils.constants import DEFAULT_EVAL_BATCH_SIZE, DEFAULT_EVAL_NUM_BEAMS
 
