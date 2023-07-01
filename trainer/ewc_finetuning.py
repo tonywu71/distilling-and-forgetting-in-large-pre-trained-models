@@ -56,6 +56,6 @@ class EWCFinetuningTrainer(Seq2SeqTrainer):
         
         # Compute and add the EWC penalty term for each weight tensor:
         for name, param in model.named_parameters():
-            loss += self.args.lamda_ewc * self.args.ewc_fisher_params * (param - self.args.ewc_mean_params[name]).pow(2).sum()
+            loss += self.args.lambda_ewc * (self.args.ewc_fisher_params[name] * (param - self.args.ewc_mean_params[name]) ** 2).sum()
         
         return (loss, output_student) if return_outputs else loss
