@@ -7,23 +7,29 @@ from utils.initialize import initialize_env
 initialize_env()
 
 from pathlib import Path
-
 from safetensors.torch import save_file
 
 from trainer.ewc_estimation import get_ewc_params_for_whisper
-from utils.constants import EWC_PARAMS_VANILLA
+from utils.constants import CHECKPOINTS_DIR
 
 
-def get_dirpath_ewc_params(pretrained_model_name_or_path: str) -> str:
+def get_dirpath_ewc_params(pretrained_model_name_or_path: str,
+                           language: str,
+                           task: str,
+                           dataset_name: str) -> str:
     """
     Get the directory path to save the EWC params.
     Handles the edge case where the pretrained model is a path to a HuggingFace Hub model.
     """
     if pretrained_model_name_or_path.startswith("openai/whisper-"):
-        EWC_PARAMS_VANILLA.mkdir(parents=True, exist_ok=True)        
-        return str(EWC_PARAMS_VANILLA / pretrained_model_name_or_path.split("openai/whisper-")[-1])
+        CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)        
+        prefix = CHECKPOINTS_DIR / pretrained_model_name_or_path.split("/")[-1]
     else:
-        return pretrained_model_name_or_path
+        prefix = Path(pretrained_model_name_or_path)
+        assert prefix.is_dir(), f"Invalid `pretrained_model_name_or_path`: {pretrained_model_name_or_path}"
+    
+    dirpath = os.path.join(prefix, language, task, dataset_name)
+    return dirpath
 
 
 def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name or path of the pretrained model."),
@@ -40,7 +46,10 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
                                                             batch_size=batch_size)
     
     # Save the EWC params:
-    dirpath = get_dirpath_ewc_params(pretrained_model_name_or_path)
+    dirpath = get_dirpath_ewc_params(pretrained_model_name_or_path,
+                                     language=language,
+                                     task=task,
+                                     dataset_name=dataset_name)
     Path(dirpath).mkdir(parents=True, exist_ok=True)
     
     mean_params_savepath = os.path.join(dirpath, "mean_params.safetensors")
