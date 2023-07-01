@@ -7,7 +7,8 @@ from utils.initialize import initialize_env
 initialize_env()
 
 from pathlib import Path
-import pickle
+
+from safetensors.torch import save_file
 
 from trainer.ewc_estimation import get_ewc_params_for_whisper
 from utils.constants import EWC_PARAMS_VANILLA
@@ -38,17 +39,17 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
                                                             dataset_name=dataset_name,
                                                             batch_size=batch_size)
     
-    # Dump the EWC params as pickle files:
+    # Save the EWC params:
     dirpath = get_dirpath_ewc_params(pretrained_model_name_or_path)
     Path(dirpath).mkdir(parents=True, exist_ok=True)
     
-    with open(os.path.join(dirpath, "mean_params.pkl"), "wb") as f:
-        pickle.dump(mean_params, f)
-        print(f"Dumped EWC mean params to `{os.path.join(dirpath, 'mean_params.pkl')}`.")
+    mean_params_savepath = os.path.join(dirpath, "mean_params.safetensors")
+    save_file(mean_params, mean_params_savepath)
+    print(f"Saved the EWC mean parameters to `{mean_params_savepath}`.")
     
-    with open(os.path.join(dirpath, "fisher_params.pkl"), "wb") as f:
-        pickle.dump(fisher_params, f)
-        print(f"Dumped EWC fisher params to `{os.path.join(dirpath, 'fisher_params.pkl')}`.")
+    fisher_params_savepath = os.path.join(dirpath, "fisher_params.safetensors")
+    save_file(fisher_params, fisher_params_savepath)
+    print(f"Saved the EWC Fisher parameters to `{fisher_params_savepath}`.")
     
     return
 
