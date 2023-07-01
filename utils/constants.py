@@ -20,5 +20,6 @@ LOSS_MASK_IDX = -100  # see https://huggingface.co/docs/transformers/model_doc/w
 GEN_MAX_LENGTH = 225
 
 # ------ Filepaths ------
-DEFAULT_LOG_DIR = Path("logs")
-DEFAULT_OUTPUT_DIR = Path("outputs")
+DEFAULT_LOG_DIR = Path("logs/")
+DEFAULT_OUTPUT_DIR = Path("outputs/")
+EWC_PARAMS_VANILLA = Path("checkpoints/ewc_params_vanilla/")
