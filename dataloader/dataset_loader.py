@@ -15,6 +15,7 @@ DATASET_NAME_TO_LOAD_FCT = {
     "ami_100h": load_ami_100h,
     "ami_10h": load_ami_10h,
     "mls_french": partial(load_mls, language="french"),
+    "mls_french_diagnostic": partial(load_mls, language="french", is_train_diagnostic=True),
 }
 
 
