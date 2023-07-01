@@ -1,7 +1,7 @@
 from functools import partial
 from typing import Any, Dict
 
-from transformers import WhisperFeatureExtractor, WhisperTokenizer, WhisperTokenizerFast
+from transformers.models.whisper import WhisperFeatureExtractor, WhisperTokenizer, WhisperTokenizerFast
 from datasets import Audio, DatasetDict
 from dataloader.filtering import filter_audio_length, filter_labels
 
@@ -14,7 +14,7 @@ def lowercase_fct(example: Dict[str, str]) -> Dict[str, str]:
 
 
 def prepare_dataset_fct(batch: Dict[str, Any],
-                        tokenizer: WhisperTokenizer,
+                        tokenizer: WhisperTokenizer | WhisperTokenizerFast,
                         feature_extractor: WhisperFeatureExtractor) -> Dict[str, Any]:
     """
     Utility to create features for a dataset.
