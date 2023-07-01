@@ -9,7 +9,7 @@ from utils.finetune_config import FinetuneConfig
 @dataclass
 class EWCFinetuneConfig(FinetuneConfig):
     dirpath_ewc: Optional[str] = None
-    lamda_ewc: float = 0.1
+    lambda_ewc: float = 0.1
     
     
     def __post_init__(self) -> None:

@@ -14,13 +14,13 @@ class EWCFinetuningTrainingArguments(Seq2SeqTrainingArguments):
     
     def __init__(self,
                  dirpath_ewc: str,
-                 lamda_ewc: float,
+                 lambda_ewc: float,
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
         
         self.dirpath_ewc = dirpath_ewc
-        self.lamda_ewc = lamda_ewc
+        self.lambda_ewc = lambda_ewc
         
         self.dirpath_ewc_mean = Path(self.dirpath_ewc) / "ewc_mean_params.safetensors"
         assert self.dirpath_ewc_mean.exists(), f"`dirpath_ewc_mean` does not exist: {self.dirpath_ewc_mean}"

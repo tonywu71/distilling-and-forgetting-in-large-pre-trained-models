@@ -29,22 +29,33 @@ from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_string_edit_metrics_fct
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
+from trainer.ewc_finetuning import EWCFinetuningTrainer, EWCFinetuningTrainingArguments
 from trainer.tac_finetuning import TACFinetuningTrainer, TACFinetuningTrainingArguments
-from utils.constants import GEN_MAX_LENGTH
 from utils.file_io import fix_model_dir_conflicts
 from utils.finetune_config import FinetuneConfig
+from utils.ewc_finetune_config import EWCFinetuneConfig
 from utils.tac_finetune_config import TACFinetuneConfig
+from utils.constants import GEN_MAX_LENGTH
+
 
 
 def main(config_filepath: str,
+         ewc: bool = typer.Option(False, help="Whether to use Elastic Weight Consolidation or not." + \
+                                              "Config file should be formatted for EWC fine-tuning."),
          tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
-                                              "Flag should be used if only if the config file is for TAC distillation. " + \
-                                              "TAC is not compatible with zero-shot.")):
+                                              "Config file should be formatted for TAC fine-tuning.")):
+
     """
     Fine-tune the Whisper model on the LibriSpeech dataset.
     """
+    
+    assert not (ewc and tac), "EWC and TAC cannot be used at the same time."
+    
+    
     # --------------------   Load config   --------------------
-    if tac:
+    if ewc:
+        config = EWCFinetuneConfig.from_yaml(config_filepath)
+    elif tac:
         config = TACFinetuneConfig.from_yaml(config_filepath)
     else:
         config = FinetuneConfig.from_yaml(config_filepath)
@@ -56,8 +67,11 @@ def main(config_filepath: str,
     
     # Prepare tags for W&B:
     list_tags = [config.dataset_name]
-    if tac:
+    if ewc:
+        list_tags.append("ewc")
+    elif tac:
         list_tags.append("tac")
+    
     
     # -----------------------   W&B   -----------------------
     wandb.login()
@@ -151,18 +165,18 @@ def main(config_filepath: str,
         
     if config.freeze_encoder:
         print("Freezing encoder...")
-        model.freeze_encoder()  # type: ignore
+        model.freeze_encoder()
     if config.freeze_decoder:
         print("Freezing decoder...")
-        decoder = model.get_decoder()  # type: ignore
+        decoder = model.get_decoder()
         for param in decoder.parameters():
             param.requires_grad = False
-        decoder._requires_grad = False  # type: ignore
+        decoder._requires_grad = False
     
     
     # Set config parameters for training:
     if config.gradient_checkpointing:
-        model.config.use_cache = False  # type: ignore
+        model.config.use_cache = False
     
     
     # Set language and task for generation if not zero-shot. Also re-enable caching to speed-up evaluation:
@@ -206,12 +220,17 @@ def main(config_filepath: str,
         report_to="wandb"  # type: ignore
     )
     
-    if isinstance(config, TACFinetuneConfig):  # equivalent to `if tac`
+    if isinstance(config, EWCFinetuneConfig):
+        training_args = EWCFinetuningTrainingArguments(dirpath_ewc=config.dirpath_ewc,
+                                                       lambda_ewc=config.lambda_ewc,
+                                                       **training_arguments_dict)
+    elif isinstance(config, TACFinetuneConfig):
         training_args = TACFinetuningTrainingArguments(languages_to_preserve=config.languages_to_preserve,
                                                        gamma_tac=config.gamma_tac,
                                                        **training_arguments_dict)
     else:
-        training_args = Seq2SeqTrainingArguments(**training_arguments_dict)  # type: ignore
+        training_args = Seq2SeqTrainingArguments(**training_arguments_dict)
+    
     
     # Define the compute_metrics function:
     compute_metrics = partial(compute_string_edit_metrics_fct,
@@ -226,12 +245,12 @@ def main(config_filepath: str,
         callbacks.append(EvalFirstStepCallback())
     
     if config.early_stopping_patience != -1:
-        callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore
+        callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))
     
     if config.log_preds_to_wandb:
         callbacks.append(WandbFinetuneCallback(config=config,
                                                processor=processor,
-                                               eval_dataset=dataset_dict["validation"],  # type: ignore
+                                               eval_dataset=dataset_dict["validation"],
                                                n_samples=config.n_samples_per_wandb_logging_step,
                                                log_raw_str=config.log_raw_str))
     
@@ -239,16 +258,18 @@ def main(config_filepath: str,
     # Create the trainer:
     trainer_args = dict(
         args=training_args,
-        model=model,  # type: ignore
-        train_dataset=dataset_dict["train"],  # type: ignore
-        eval_dataset=dataset_dict["validation"],  # type: ignore
+        model=model,
+        train_dataset=dataset_dict["train"],
+        eval_dataset=dataset_dict["validation"],
         data_collator=data_collator,
-        compute_metrics=compute_metrics,  # type: ignore
-        tokenizer=processor,  # use processor for saving  # type: ignore
+        compute_metrics=compute_metrics,
+        tokenizer=processor,  # use processor for saving the feature extractor
         callbacks=callbacks
     )
     
-    if tac:
+    if ewc:
+        trainer = EWCFinetuningTrainer(**trainer_args)
+    elif tac:
         trainer = TACFinetuningTrainer(processor=processor, **trainer_args)
     else:
         trainer = Seq2SeqTrainer(**trainer_args)
