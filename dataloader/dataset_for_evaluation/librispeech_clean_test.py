@@ -16,7 +16,7 @@ class LibriSpeechCleanTestSet(BaseDatasetGroup):
         
         # Set the abstract class attributes:
         self.available_datasets = [
-            "librispeech_clean_test"
+            "librispeech_clean"
         ]
         self.is_multilingual = False
         self.language = "english"
@@ -26,11 +26,11 @@ class LibriSpeechCleanTestSet(BaseDatasetGroup):
     
     def _prepare_str2dataset(self) -> None:
         self.str2dataset = {
-            "librispeech_clean_test": load_dataset(path="librispeech_asr",
-                                                   name="clean",
-                                                   split="test",
-                                                   streaming=self.streaming,
-                                                   cache_dir=self.cache_dir_librispeech)
+            "librispeech_clean": load_dataset(path="librispeech_asr",
+                                              name="clean",
+                                              split="test",
+                                              streaming=self.streaming,
+                                              cache_dir=self.cache_dir_librispeech)
         }
 
 

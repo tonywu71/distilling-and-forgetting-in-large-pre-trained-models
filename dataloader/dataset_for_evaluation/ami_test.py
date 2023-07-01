@@ -23,7 +23,7 @@ class AMITestSet(BaseDatasetGroup):
         
         # Set the abstract class attributes:
         self.available_datasets = [
-            "ami_test"
+            "ami"
         ]
         self.is_multilingual = False
         self.language = "english"
@@ -33,14 +33,14 @@ class AMITestSet(BaseDatasetGroup):
     
     def _prepare_str2dataset(self) -> None:
         self.str2dataset = {
-            "ami_test": load_dataset("edinburghcstr/ami",
-                                     name="ihm",
-                                     split="test" if not self.is_ami_10h else "test[:10%]",
-                                     cache_dir=self.cache_dir_ami,
-                                     streaming=self.streaming)
+            "ami": load_dataset("edinburghcstr/ami",
+                                 name="ihm",
+                                 split="test" if not self.is_ami_10h else "test[:10%]",
+                                 cache_dir=self.cache_dir_ami,
+                                 streaming=self.streaming)
         }
         
-        self.str2dataset["ami_test"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami_test"])
+        self.str2dataset["ami"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami"])
 
 
     def _load_cache_dir_from_env_var(self) -> None:
