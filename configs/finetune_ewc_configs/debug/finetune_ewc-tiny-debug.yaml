@@ -29,7 +29,7 @@ early_stopping_patience: -1
 save_final_model: False
 
 dirpath_ewc: checkpoints/whisper-tiny/french/transcribe/mls_french/validation
-lambda_ewc: 0.5
+lambda_ewc: 0.1
 
 smart_load: True
 force_reprocess_dataset: False
