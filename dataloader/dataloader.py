@@ -25,9 +25,6 @@ def load_dataset_dict(dataset_name: str, **kwargs) -> DatasetDict:
     else:
         raise ValueError(f"Dataset {dataset_name} not supported")
     
-    for split in ["train", "validation", "test"]:
-        assert split in dataset_dict, f"Split {split} not found in dataset {dataset_name}"
-    
     return dataset_dict
 
 
