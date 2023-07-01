@@ -1,6 +1,5 @@
 # Total training steps:
-# - 5088 for batch_size = 64 and num_train_epochs = 3
-# - 6782 for batch_size = 32 and num_train_epochs = 2
+# - 3391 for batch_size = 32 and num_train_epochs = 1
 
 experiment_name: finetune-whisper_tiny-ami_100h
 lang_name: english
@@ -12,19 +11,19 @@ freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
 gradient_accumulation_steps: 1
-gradient_checkpointing: True
+gradient_checkpointing: False
 dataset_name: ami_100h
 optim: adamw_torch
 learning_rate: 1e-5
-warmup_steps: 600
-eval_steps: 1200
+warmup_steps: 300
+eval_steps: 600
 generation_num_beams: 1
-logging_steps: 600
-save_steps: 1200
-num_train_epochs: 2
+logging_steps: 300
+save_steps: 600
+num_train_epochs: 1
 
 zero_shot_eval: False
-eval_batch_size: 512
+eval_batch_size: 256
 eval_accumulation_steps:
 save_total_limit:
 early_stopping_patience:
