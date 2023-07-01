@@ -64,10 +64,13 @@ def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
                                language: str,
                                task: str,
                                dataset_name: str,
-                               batch_size: int) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
+                               split: str = "train",
+                               batch_size: int = 32) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
     """
     Returns the EWC parameters for a pretrained Whisper model.
     """
+    
+    assert split in ["train", "validation"], f"Invalid `split` value: {split}"
     
     # Get the device:
     if torch.cuda.is_available():
@@ -86,7 +89,7 @@ def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
     feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
     
     # Load and prepare the dataset:
-    ds = load_dataset_dict(dataset_name)["train"]
+    ds = load_dataset_dict(dataset_name)[split]
     prepare_dataset = partial(prepare_dataset_fct,
                               tokenizer=tokenizer,
                               feature_extractor=feature_extractor)

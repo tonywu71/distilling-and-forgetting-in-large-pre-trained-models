@@ -19,7 +19,8 @@ from utils.constants import CHECKPOINTS_DIR
 def get_dirpath_ewc_params(pretrained_model_name_or_path: str,
                            language: str,
                            task: str,
-                           dataset_name: str) -> str:
+                           dataset_name: str,
+                           split: str) -> str:
     """
     Get the directory path to save the EWC params.
     Handles the edge case where the pretrained model is a path to a HuggingFace Hub model.
@@ -31,7 +32,7 @@ def get_dirpath_ewc_params(pretrained_model_name_or_path: str,
         prefix = Path(pretrained_model_name_or_path)
         assert prefix.is_dir(), f"Invalid `pretrained_model_name_or_path`: {pretrained_model_name_or_path}"
     
-    dirpath = os.path.join(prefix, language, task, dataset_name)
+    dirpath = os.path.join(prefix, language, task, dataset_name, split)
     return dirpath
 
 
@@ -39,6 +40,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
          language: str = typer.Option(..., help="The language of the pretrained model."),
          task: str = typer.Option("transcribe", help="The task of the pretrained model."),
          dataset_name: str = typer.Option(..., help="The name of the dataset."),
+         split: str = typer.Option("train", help="The split of the dataset."),
          batch_size: int = typer.Option(32, help="The batch size for the dataloader.")):
     
     # Create config for wandb:
@@ -47,6 +49,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
         "language": language,
         "task": task,
         "dataset_name": dataset_name,
+        "split": split,
         "batch_size": batch_size
     }
     
@@ -63,13 +66,15 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
                                                             language=language,
                                                             task=task,
                                                             dataset_name=dataset_name,
+                                                            split=split,
                                                             batch_size=batch_size)
     
     # Save the EWC params:
     dirpath = get_dirpath_ewc_params(pretrained_model_name_or_path,
                                      language=language,
                                      task=task,
-                                     dataset_name=dataset_name)
+                                     dataset_name=dataset_name,
+                                     split=split)
     Path(dirpath).mkdir(parents=True, exist_ok=True)
     
     mean_params_savepath = os.path.join(dirpath, "ewc_mean_params.safetensors")
