@@ -11,7 +11,7 @@ def remove_unnecessary_cols_for_mls(dataset: Dataset | DatasetDict) -> Dataset |
     return dataset.remove_columns(column_names=["file", "speaker_id", "chapter_id", "id"])
 
 
-def load_mls_subset_train(language: str) -> DatasetDict:
+def load_mls(language: str) -> DatasetDict:
     """Load the train/eval/test splits of the AMI dataset."""
     
     cache_dir_mls = os.environ.get("CACHE_DIR_MLS", None)
@@ -37,6 +37,10 @@ def load_mls_subset_train(language: str) -> DatasetDict:
                                          name=language,
                                          split="train",
                                          cache_dir=cache_dir_mls)
+    dataset_dict["validation"] = load_dataset(path="facebook/multilingual_librispeech",
+                                              name=language,
+                                              split="validation",
+                                              cache_dir=cache_dir_mls)
     dataset_dict = DatasetDict(dataset_dict)
     
     # Remove unnecessary columns from the dataset:
