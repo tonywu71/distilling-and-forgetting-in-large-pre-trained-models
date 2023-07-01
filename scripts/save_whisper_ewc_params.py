@@ -72,11 +72,11 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="The name
                                      dataset_name=dataset_name)
     Path(dirpath).mkdir(parents=True, exist_ok=True)
     
-    mean_params_savepath = os.path.join(dirpath, "mean_params.safetensors")
+    mean_params_savepath = os.path.join(dirpath, "ewc_mean_params.safetensors")
     save_file(mean_params, mean_params_savepath)
     print(f"Saved the EWC mean parameters to `{mean_params_savepath}`.")
     
-    fisher_params_savepath = os.path.join(dirpath, "fisher_params.safetensors")
+    fisher_params_savepath = os.path.join(dirpath, "ewc_fisher_params.safetensors")
     save_file(fisher_params, fisher_params_savepath)
     print(f"Saved the EWC Fisher parameters to `{fisher_params_savepath}`.")
     
