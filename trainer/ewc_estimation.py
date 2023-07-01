@@ -125,6 +125,7 @@ def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
                                           tokenizer=tokenizer,
                                           feature_extractor=feature_extractor,
                                           lowercase=lowercase)
+            Path(cache_dir).mkdir(parents=True, exist_ok=True)
             ds.save_to_disk(cache_dir)
             print(f"Dataset pre-processed and cached at `{cache_dir}`.")
     else:

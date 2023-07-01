@@ -55,8 +55,6 @@ def smart_load_dataset_dict(config: FinetuneConfig | DistilConfig,
                                           feature_extractor=processor.feature_extractor,
                                           augment=config.data_augmentation)
         
-        # NOTE: The pytorch tensor conversation will be done in the DataCollator.
-        
         Path(dataset_dir).mkdir(parents=True, exist_ok=True)
         dataset_dict.save_to_disk(dataset_dir)
         print(f"Preprocessed dataset saved to `{dataset_dir}`. It will be loaded from disk next time.")
