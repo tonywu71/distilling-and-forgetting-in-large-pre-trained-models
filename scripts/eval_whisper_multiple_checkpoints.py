@@ -128,6 +128,8 @@ def main(checkpoints: List[str] = typer.Argument(..., help="List of paths to the
         
         # Save the WER metrics:
         log_wer_to_wandb(wer_metrics=df_edit_metrics["WER (%)"])
+        
+        wandb.finish()
     
     return
 
