@@ -60,7 +60,7 @@ def main(filepath_1: str=typer.Argument(..., help="Path to first CSV file for th
     df.index = df.index.str.replace("_", " ")
     
     # Generate the LaTeX table:
-    output = df.to_latex(column_format="l|cc|c", float_format="%.2f")
+    output = df.to_latex(column_format="l|cc|c", float_format="%.2f", escape=True)
     
     print("```latex")
     print(output + "```")
