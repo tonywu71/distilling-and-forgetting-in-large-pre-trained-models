@@ -51,8 +51,8 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name ami --batch-size 256 >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-base --dataset-name ami --batch-size 128 >> $LOG 2> $ERR
+python scripts/eval_whisper.py openai/whisper-tiny --dataset-name ami --batch-size 512 >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-base --dataset-name ami --batch-size 256 >> $LOG 2> $ERR
 # python scripts/eval_whisper.py openai/whisper-small --dataset-name ami --batch-size 64 >> $LOG 2> $ERR
 # python scripts/eval_whisper.py openai/whisper-medium --dataset-name ami --batch-size 32 >> $LOG 2> $ERR
 
