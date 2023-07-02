@@ -4,6 +4,8 @@ from toolz import dicttoolz
 from datasets import load_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from dataloader.dataset_for_training.dataset_loader_librispeech import remove_unnecessary_cols_for_librispeech
+from dataloader.dataset_for_training.dataset_loader_ami import remove_unnecessary_cols_for_ami
+
 
 
 class FABDataset(BaseDatasetGroup):
@@ -19,7 +21,6 @@ class FABDataset(BaseDatasetGroup):
         # Set the abstract class attributes:
         self.available_datasets = [
             "librispeech_en_clean",
-            "librispeech_en_other",
             "ami",
             "tedlium",
             "librispeech_fr",
@@ -28,7 +29,6 @@ class FABDataset(BaseDatasetGroup):
         self.is_multilingual = True
         self.ds_name_to_lang = {
             "librispeech_en_clean": "en",
-            "librispeech_en_other": "en",
             "ami": "en",
             "tedlium": "en",
             "librispeech_fr": "fr",
@@ -39,7 +39,6 @@ class FABDataset(BaseDatasetGroup):
         
         self.dataset_name_to_cache_dir = {
             "librispeech_en_clean": self.cache_dir_librispeech,
-            "librispeech_en_other": self.cache_dir_librispeech,
             "ami": self.cache_dir_ami,
             "tedlium": self.cache_dir_esb,
             "librispeech_fr": self.cache_dir_mls,
@@ -57,17 +56,11 @@ class FABDataset(BaseDatasetGroup):
                                                  cache_dir=self.dataset_name_to_cache_dir["librispeech_en_clean"],
                                                  streaming=self.streaming,
                                                  use_auth_token=True),
-            "librispeech_en_other": load_dataset(path="librispeech_asr",
-                                                 name="other",
-                                                 split="test",
-                                                 cache_dir=self.dataset_name_to_cache_dir["librispeech_en_other"],
-                                                 streaming=self.streaming,
-                                                 use_auth_token=True),
             "ami": load_dataset("edinburghcstr/ami",
-                                     name="ihm",
-                                     split="test",
-                                     cache_dir=self.cache_dir_ami,
-                                     streaming=self.streaming),
+                                 name="ihm",
+                                 split="test",
+                                 cache_dir=self.cache_dir_ami,
+                                 streaming=self.streaming),
             "tedlium": load_dataset(path="esb/diagnostic-dataset",
                                     name="tedlium",
                                     split="clean",
@@ -91,9 +84,10 @@ class FABDataset(BaseDatasetGroup):
         self.str2dataset = dicttoolz.keyfilter(lambda k: k in self.subset, self.str2dataset)
         
         # Remove unnecessary columns from the datasets:
-        for ds_name in ["librispeech_en_clean", "librispeech_en_other"]:
-            if ds_name in self.str2dataset:
-                self.str2dataset[ds_name] = remove_unnecessary_cols_for_librispeech(self.str2dataset[ds_name])
+        if "librispeech_en_clean" in self.str2dataset:
+            self.str2dataset["librispeech_en_clean"] = remove_unnecessary_cols_for_librispeech(self.str2dataset["librispeech_en_clean"])
+        if "ami" in self.str2dataset:
+            self.str2dataset["ami"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami"])
         
         return
 
