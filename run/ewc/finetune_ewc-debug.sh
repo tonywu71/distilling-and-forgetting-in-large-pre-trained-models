@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_ewc-experiment
+#SBATCH -J finetune_ewc_debug
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?

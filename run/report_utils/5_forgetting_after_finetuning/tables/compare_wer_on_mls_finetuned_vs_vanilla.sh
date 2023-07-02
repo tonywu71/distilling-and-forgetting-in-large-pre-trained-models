@@ -5,5 +5,5 @@ python scripts/report_utils/compare_wer/compare_wer-2_models/compare_wer-2_model
 
 python scripts/report_utils/compare_wer/compare_wer-2_models/compare_wer-2_models_to_latex.py \
     outputs/vanilla/tiny/whisper-tiny-mls.csv \
-    TOFILL \
+    outputs/finetuning/whisper_tiny/ami_100h/finetuned_on_ami-mls.csv \
     --dataset-group mls

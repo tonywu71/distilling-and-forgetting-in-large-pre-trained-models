@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_fab-vanilla
+#SBATCH -J finetune_ewc_hpt
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -41,7 +41,7 @@ LOG=$DIRPATH_EXP/$SLURM_JOB_ID.log
 ERR=$DIRPATH_EXP/$SLURM_JOB_ID.err
 
 
-echo -e "JobID: $JOBID\n======" > $LOG
+echo -e "JobID: $SLURM_JOB_ID\n======" > $LOG
 echo "Time: `date`" >> $LOG
 echo "Running on master node: `hostname`" >> $LOG
 echo "python `which python`": >> $LOG
@@ -50,12 +50,10 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 #! ####                    MAIN                    ###########
 #! ###########################################################
-
-python scripts/eval_whisper.py \
-    openai/whisper-tiny \
-    --dataset-name fab \
-    --subset ami --subset tedlium --subset librispeech_fr \
-    --batch-size 1024 >> $LOG 2> $ERR
+sbat
+python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e-1.yaml --ewc >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e-2.yaml --ewc >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e-3.yaml --ewc >> $LOG 2> $ERR
 
 #! #############################################
 
