@@ -88,25 +88,25 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
         plt.axhline(y=wer_expected, color="black", linestyle="dashed")
     
     
-    if "distilled" in df["Model"].unique():
-        # Draw arrow from "tiny" to "distilled":
-        tiny = df[df["Model"] == "tiny"]
-        distilled = df[df["Model"] == "distilled"]
-        plt.annotate("", xy=(distilled["Size (M parameters)"], distilled["WER on LibriSpeech clean (%)"]),
-                     xytext=(tiny["Size (M parameters)"], tiny["WER on LibriSpeech clean (%)"]),
-                     arrowprops=dict(arrowstyle="->", color="black", lw=3))
-        # Add text to the right of the center of the arrow:
-        # plt.text(x=distilled["Size (M parameters)"] + 2., y=distilled["WER on LibriSpeech clean (%)"] + 0.5, s="Distillation", fontsize=14)
+    # if "distilled" in df["Model"].unique():
+    #     # Draw arrow from "tiny" to "distilled":
+    #     tiny = df[df["Model"] == "tiny"]
+    #     distilled = df[df["Model"] == "distilled"]
+    #     plt.annotate("", xy=(distilled["Size (M parameters)"], distilled["WER on LibriSpeech clean (%)"]),
+    #                  xytext=(tiny["Size (M parameters)"], tiny["WER on LibriSpeech clean (%)"]),
+    #                  arrowprops=dict(arrowstyle="->", color="black", lw=3))
+    #     Add text to the right of the center of the arrow:
+    #     plt.text(x=distilled["Size (M parameters)"] + 2., y=distilled["WER on LibriSpeech clean (%)"] + 0.5, s="Distillation", fontsize=14)
         
-        plt.text(x=tiny["Size (M parameters)"] + 4.,
-                 y=(tiny["WER on LibriSpeech clean (%)"].values + distilled["WER on LibriSpeech clean (%)"].values) / 2,
-                 s="Distillation",
-                 fontsize=12)
+    #     plt.text(x=tiny["Size (M parameters)"] + 4.,
+    #              y=(tiny["WER on LibriSpeech clean (%)"].values + distilled["WER on LibriSpeech clean (%)"].values) / 2,
+    #              s="Distillation",
+    #              fontsize=12)
     
     # Save figure:
     if savename is None:
         savename = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-    savepath = (DEFAULT_OUTPUT_DIR / "report" / "wer_wrt_model_size" / savename).with_suffix(".png")
+    savepath = (DEFAULT_OUTPUT_DIR / savename).with_suffix(".png")
     savepath.parent.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     plt.savefig(savepath)
