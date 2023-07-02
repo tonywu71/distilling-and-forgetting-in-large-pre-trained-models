@@ -50,8 +50,8 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 #! ####                    MAIN                    ###########
 #! ###########################################################
-sbat
-python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e-1.yaml --ewc >> $LOG 2> $ERR
+
+# python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e-1.yaml --ewc >> $LOG 2> $ERR
 # python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e-2.yaml --ewc >> $LOG 2> $ERR
 # python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e-3.yaml --ewc >> $LOG 2> $ERR
 
