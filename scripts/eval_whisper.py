@@ -98,9 +98,9 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     
     # Save and log the edit metrics:
     save_edit_metrics_to_csv(df_edit_metrics=df_edit_metrics,
-                                pretrained_model_name_or_path=pretrained_model_name_or_path,
-                                dataset_name=dataset_name,
-                                savepath=savepath)
+                             pretrained_model_name_or_path=pretrained_model_name_or_path,
+                             dataset_name=dataset_name,
+                             savepath=savepath)
     log_edit_metrics_to_wandb(df_edit_metrics=df_edit_metrics)
     
     # Save the WER metrics:
