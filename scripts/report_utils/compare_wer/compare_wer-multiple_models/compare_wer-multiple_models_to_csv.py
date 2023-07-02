@@ -28,8 +28,8 @@ def main(filepaths: List[str]):
     
     # Save concatenated CSV table:
     timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-    savepath = (DEFAULT_OUTPUT_DIR / "compare_multiple_models" / timestamp).with_suffix(".csv")
-    savepath.parent.mkdir(parents=True, exist_ok=True)
+    savepath = (DEFAULT_OUTPUT_DIR / f"compare_multiple_models_-{timestamp}").with_suffix(".csv")
+    savepath.mkdir(parents=True, exist_ok=True)
     df.round(2).to_csv(savepath)
     print(f"Saved concatenated CSV table to `{savepath}`.")
     

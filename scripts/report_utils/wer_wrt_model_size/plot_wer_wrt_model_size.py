@@ -3,8 +3,6 @@ import typer
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
-from datetime import datetime
-
 import numpy as np
 import pandas as pd
 
@@ -31,8 +29,7 @@ sns.set_theme(context="paper", style="ticks")
 def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WERs."),
          regression: bool=typer.Option(False, "--regression", "-r", help="Whether to plot a regression line."),
          log: bool=typer.Option(False, "--log", "-l", help="Whether to plot the x-axis on a log scale."),
-         plot_expected: bool=typer.Option(False, "--plot-expected", "-i", help="Whether to plot the expected distilled model."),
-         savename: str=typer.Option(None, "--savename", "-f", help="Filename of the saved plot (without the suffix).")):
+         plot_expected: bool=typer.Option(False, "--plot-expected", "-i", help="Whether to plot the expected distilled model.")):
     """
     `datapath` must be the filepath of a manually created CSV file containing the WER and the model size for each model.
     If there is a "distilled" model, an arrow from the smallest model to "distilled" will be drawn.
@@ -104,9 +101,7 @@ def main(datapath: str=typer.Argument(..., help="Path to CSV file containing WER
     #              fontsize=12)
     
     # Save figure:
-    if savename is None:
-        savename = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-    savepath = (DEFAULT_OUTPUT_DIR / savename).with_suffix(".png")
+    savepath = (DEFAULT_OUTPUT_DIR / "plot_wer_wrt_model_size").with_suffix(".png")
     savepath.parent.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     plt.savefig(savepath)

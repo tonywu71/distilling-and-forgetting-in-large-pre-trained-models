@@ -18,7 +18,7 @@ def main(wer_filepath: str, ppl_filepath: str, model_name: str):
     df = df[~df["Dataset"].str.contains("Average")]
     
     # Save concatenated CSV table:
-    savepath = (DEFAULT_OUTPUT_DIR / "report" / "plot_wer_wrt_perplexity" / f"wer_and_ppl-{model_name}").with_suffix(".csv")
+    savepath = (DEFAULT_OUTPUT_DIR /"plot_wer_wrt_perplexity").with_suffix(".csv")
     savepath.parent.mkdir(parents=True, exist_ok=True)
     df.round(2).to_csv(savepath)
     print(f"Saved concatenated CSV table to `{savepath}`.")

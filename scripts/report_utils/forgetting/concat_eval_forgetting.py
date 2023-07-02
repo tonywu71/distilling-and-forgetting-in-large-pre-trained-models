@@ -81,8 +81,8 @@ def main(dirpath_checkpoints: Path = typer.Argument(..., exists=True, dir_okay=T
     print(df_all)
     
     # Save the DataFrame to CSV:
-    savepath = DEFAULT_OUTPUT_DIR / "report" / "forgetting_wrt_training_steps" / f"{dirpath_checkpoints.name}-eval_forgetting.csv"
-    savepath.parent.mkdir(parents=True, exist_ok=True)
+    savepath = DEFAULT_OUTPUT_DIR / "{dirpath_checkpoints.name}-eval_forgetting.csv"
+    savepath.mkdir(parents=True, exist_ok=True)
     df_all.to_csv(savepath, index=False)
     
     print(f"Saved to `{savepath}`.")

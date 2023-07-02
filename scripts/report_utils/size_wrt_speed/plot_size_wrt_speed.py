@@ -3,8 +3,6 @@ import typer
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
-from datetime import datetime
-
 from scipy.stats import pearsonr
 import pandas as pd
 
@@ -18,8 +16,7 @@ sns.set_theme(context="paper", style="ticks")
 
 
 def main(filepath: str = typer.Argument(..., help="Path to the CSV file."),
-         r2_loc: str = typer.Option("upper left", "--r2-loc", "-r2", help="Location of the R2 score annotation."),
-         filename: str = typer.Option(None, "--filename", "-f", help="Filename of the plot (without the suffix).")):
+         r2_loc: str = typer.Option("upper left", "--r2-loc", "-r2", help="Location of the R2 score annotation.")):
     
     # Load data:
     df = pd.read_csv(filepath)
@@ -44,11 +41,8 @@ def main(filepath: str = typer.Argument(..., help="Path to the CSV file."),
     else:
         pass
     
-    # Save figure:
-    if filename is None:
-        filename = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-    
-    savepath = (DEFAULT_OUTPUT_DIR / "report" / "plot_size_wrt_speed" / filename).with_suffix(".png")
+    # Save figure:    
+    savepath = (DEFAULT_OUTPUT_DIR / "plot_size_wrt_speed").with_suffix(".png")
     savepath.parent.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     plt.savefig(savepath)

@@ -37,9 +37,8 @@ def main(k: int = typer.Argument(..., help="Maximum value of k."),
         plt.suptitle(r"Distribution of $w_k$ for $\beta \in \{0.1, 1, 2, 5\}$")
     
     # Save figure:
-    filename = f"weight_seq_level_ranked_k_{k}"    
-    savepath = (DEFAULT_OUTPUT_DIR / "report" / "weight_seq_level_ranked" / filename).with_suffix(".png")
-    savepath.parent.mkdir(parents=True, exist_ok=True)
+    savepath = (DEFAULT_OUTPUT_DIR / f"weight_seq_level_ranked_k_{k}").with_suffix(".png")
+    savepath.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     plt.savefig(savepath)
     print(f"Saved plot to `{savepath}`.")

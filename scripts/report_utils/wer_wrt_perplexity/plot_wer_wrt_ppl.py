@@ -24,13 +24,11 @@ def main(filepaths: List[str],
          logx: bool=typer.Option(False, "--logx", help="Whether to use a log scale for the x-axis."),
          logy: bool=typer.Option(False, "--logy", help="Whether to use a log scale for the y-axis."),
          xlim: List[float]=typer.Option(None, "--xlim", "-x", help="Limits of the x-axis."),
-         ylim: List[float]=typer.Option(None, "--ylim", "-y", help="Limits of the y-axis."),
-         filename: str=typer.Option(None, "--filename", "-f", help="Filename of the plot (without the suffix).")):
+         ylim: List[float]=typer.Option(None, "--ylim", "-y", help="Limits of the y-axis.")):
     """
     Script that takes a list of CSV outputs from `merge_wer_and_ppl_to_csv.py` and saves
     a scatterplot of word error rate (WER) with respect to perplexity (PPL).
     """
-    
     
     # Load data:
     list_df = [pd.read_csv(filepath, index_col=0) for filepath in filepaths]
@@ -61,11 +59,7 @@ def main(filepaths: List[str],
         plt.ylim(ylim)
     
     # Save figure:
-    if filename is None:
-        filename = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-    if kind is not None:
-        filename += f"-{kind}"
-    savepath = (DEFAULT_OUTPUT_DIR / "report" / "plot_wer_wrt_perplexity" / filename).with_suffix(".png")
+    savepath = (DEFAULT_OUTPUT_DIR / "plot_wer_wrt_perplexity").with_suffix(".png")
     savepath.parent.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     plt.savefig(savepath)

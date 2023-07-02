@@ -43,10 +43,10 @@ def main(filepath: str, is_relative: bool=False):
     plt.ylabel("WER (%)") if not is_relative else plt.ylabel("Relative WER difference (%)")
     
     # Save figure:
+    filename_stem = "compare_wer_multiple_models"
     if is_relative:
-        savepath = (DEFAULT_OUTPUT_DIR / "report" / "compare_wer_multiple_models" / (Path(filepath).stem + "-relative")).with_suffix(".png")
-    else:
-        savepath = (DEFAULT_OUTPUT_DIR / "report" / "compare_wer_multiple_models" / Path(filepath).stem).with_suffix(".png")
+        filename_stem += "_relative"
+    savepath = (DEFAULT_OUTPUT_DIR / filename_stem).with_suffix(".png")
     savepath.parent.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     plt.savefig(savepath)
