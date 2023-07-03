@@ -2,12 +2,12 @@
 # - 3391 for batch_size = 32 and num_train_epochs = 1
 # - 340 for batch_size = 32 and num_train_epochs = 0.1
 
-experiment_name: finetune_ewc-tiny-hpt_lambda_1e-3
+experiment_name: finetune_ewc-limit_behavior-lambda_1e+6
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/finetune_ewc/whisper_tiny/hpt/lambda_1e-3
+model_dir: ./checkpoints/finetune_ewc/whisper_tiny/limit_behavior_1e+6
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -31,7 +31,7 @@ early_stopping_patience:
 save_final_model: True  # save the model only at the end of training
 
 dirpath_ewc: checkpoints/whisper-tiny/french/transcribe/mls_french_diagnostic/train
-lambda_ewc: 0.001
+lambda_ewc: 1000000  # 1e+6
 
 smart_load: True
 force_reprocess_dataset: False

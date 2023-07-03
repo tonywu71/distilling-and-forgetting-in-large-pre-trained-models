@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=00:20:00
+#SBATCH --time=00:10:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,7 +51,8 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/finetune_whisper.py configs/finetune_ewc_configs/debug/finetune_ewc-tiny-debug.yaml --ewc >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/finetune_ewc_configs/debug/finetune_ewc-tiny-debug.yaml --ewc >> $LOG 2> $ERR
+python scripts/finetune_whisper.py configs/finetune_ewc_configs/debug/finetune_ewc-tiny-debug_limit_behavior.yaml --ewc >> $LOG 2> $ERR
 
 #! #############################################
 
