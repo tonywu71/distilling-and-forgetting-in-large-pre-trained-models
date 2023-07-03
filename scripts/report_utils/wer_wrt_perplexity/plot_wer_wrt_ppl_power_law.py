@@ -1,11 +1,9 @@
-from torch import le
 import typer
 
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 from typing import List
-from datetime import datetime
 
 from scipy.stats import pearsonr
 import numpy as np
