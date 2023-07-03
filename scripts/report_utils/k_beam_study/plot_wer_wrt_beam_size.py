@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 from utils.constants import DEFAULT_OUTPUT_DIR
 
 sns.set_theme(context="paper", style="ticks")
@@ -18,6 +19,7 @@ def main(dirpath: Path = typer.Argument(..., file_okay=False, dir_okay=True),
          figsize: Tuple[float, float] = typer.Option((6, 3), "--figsize", "-f", help="Figure size."),):
     """
     """
+    assert dirpath.is_dir(), f"{dirpath} is not a directory"
     
     # Print the number of files found:
     list_filepaths = sorted(list(dirpath.glob("*")))
