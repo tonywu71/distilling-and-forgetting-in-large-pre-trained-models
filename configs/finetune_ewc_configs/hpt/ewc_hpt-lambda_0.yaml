@@ -3,12 +3,12 @@
 # - 850 for batch_size = 32 and num_train_epochs = 0.25
 # - 340 for batch_size = 32 and num_train_epochs = 0.1
 
-experiment_name: finetune_ewc-tiny-hpt_lambda_1e+0
+experiment_name: finetune_ewc-tiny-hpt_lambda_0
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/finetune_ewc/whisper_tiny/hpt/lambda_1e+0
+model_dir: ./checkpoints/finetune_ewc/whisper_tiny/hpt/lambda_0
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32

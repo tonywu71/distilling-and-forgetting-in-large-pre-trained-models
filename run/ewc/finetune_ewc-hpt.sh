@@ -51,6 +51,9 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
+# python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_0.yaml --ewc >> $LOG 2> $ERR
+
+# python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e-1.yaml --ewc >> $LOG 2> $ERR
 # python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e+0.yaml --ewc >> $LOG 2> $ERR
 # python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e+1.yaml --ewc >> $LOG 2> $ERR
 # python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e+2.yaml --ewc >> $LOG 2> $ERR
