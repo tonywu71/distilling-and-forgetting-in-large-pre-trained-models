@@ -22,19 +22,19 @@ class EWCFinetuningTrainingArguments(Seq2SeqTrainingArguments):
         self.dirpath_ewc = dirpath_ewc
         self.lambda_ewc = lambda_ewc
         
-        self.dirpath_ewc_mean = Path(self.dirpath_ewc) / "ewc_mean_params.safetensors"
-        assert self.dirpath_ewc_mean.exists(), f"`dirpath_ewc_mean` does not exist: {self.dirpath_ewc_mean}"
+        self.filepath_ewc_mean = Path(self.dirpath_ewc) / "ewc_mean_params.safetensors"
+        assert self.filepath_ewc_mean.exists(), f"`filepath_ewc_mean` does not exist: {self.filepath_ewc_mean}"
         
-        self.dirpath_ewc_fisher = Path(self.dirpath_ewc) / "ewc_fisher_params.safetensors"
-        assert self.dirpath_ewc_fisher.exists(), f"`dirpath_ewc_fisher` does not exist: {self.dirpath_ewc_fisher}"
+        self.filepath_ewc_fisher = Path(self.dirpath_ewc) / "ewc_fisher_params.safetensors"
+        assert self.filepath_ewc_fisher.exists(), f"`filepath_ewc_fisher` does not exist: {self.filepath_ewc_fisher}"
         
         self.ewc_mean_params = {}
-        with safe_open(self.dirpath_ewc_mean, framework="pt", device=0) as f:
+        with safe_open(self.filepath_ewc_mean, framework="pt", device=0) as f:
             for k in f.keys():
                 self.ewc_mean_params[k] = f.get_tensor(k)
         
         self.ewc_fisher_params = {}
-        with safe_open(self.dirpath_ewc_fisher, framework="pt", device=0) as f:
+        with safe_open(self.filepath_ewc_fisher, framework="pt", device=0) as f:
             for k in f.keys():
                 self.ewc_fisher_params[k] = f.get_tensor(k)
         
