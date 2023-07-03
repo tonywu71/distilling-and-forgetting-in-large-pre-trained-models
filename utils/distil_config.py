@@ -75,7 +75,6 @@ class DistilConfig:
     
     
     # ======== Other ========
-    is_hpt: bool = False
     smart_load: bool = True
     force_reprocess_dataset: bool = False
     force_reprocess_k_best: bool = False

@@ -72,8 +72,6 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Prepare tags for W&B:
     list_tags = [config.dataset_name,
                  config.method_distil]
-    if config.is_hpt:
-        list_tags.append("hpt")
     if tac:
         list_tags.append("tac")
     
