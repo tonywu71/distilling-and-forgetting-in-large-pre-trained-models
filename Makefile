@@ -2,6 +2,9 @@
 clear-logs:
 	rm -rf logs/*
 
+clear-slurm-logs:
+	find . -maxdepth 1 -type f -name "slurm-*.out" -delete
+
 clear-wandb-cache:
 	rm -rf wandb/*
 
