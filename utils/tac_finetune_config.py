@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 import yaml
 
 from utils.finetune_config import FinetuneConfig
@@ -8,7 +8,7 @@ from utils.finetune_config import FinetuneConfig
 
 @dataclass
 class TACFinetuneConfig(FinetuneConfig):
-    gamma_tac: float = 0.5
+    gamma_tac: float = 0.1
     languages_to_preserve: List[str] = field(default_factory=list)
 
 
@@ -16,6 +16,7 @@ class TACFinetuneConfig(FinetuneConfig):
         """Set default values and run sanity checks after initialization."""
         super().__post_init__()
         assert self.languages_to_preserve, "The `languages_to_preserve` must not be empty."
+    
     
     @staticmethod
     def from_yaml(config_file: str) -> "TACFinetuneConfig":

@@ -34,7 +34,6 @@ class FinetuneConfig:
     learning_rate: float
     warmup_steps: int
     eval_steps: int
-    generation_num_beams: int
     save_steps: int
     logging_steps: int
     num_train_epochs: int
@@ -44,7 +43,9 @@ class FinetuneConfig:
     lowercase: bool = True  # set to False if and only if the text is not fully uppercased
     
     # ======== Optional (training) ========
+    lr_scheduler_type: str = "constant_with_warmup"  # see possible values at https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/optimizer_schedules#transformers.SchedulerType
     zero_shot_eval: bool = False
+    generation_num_beams: int = 1  # greedy search by default
     eval_batch_size: Optional[int] = None
     eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     save_total_limit: Optional[int] = None

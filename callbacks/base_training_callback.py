@@ -3,11 +3,10 @@ from typing import Dict, Optional
 
 from collections import defaultdict
 
-import torch
 from torch import Tensor
 
+from transformers.models.whisper import WhisperProcessor
 from transformers import (PreTrainedModel,
-                          WhisperProcessor,
                           TrainingArguments,
                           TrainerState,
                           TrainerControl)
@@ -20,9 +19,6 @@ import wandb
 from utils.finetune_config import FinetuneConfig
 from utils.distil_config import DistilConfig
 from utils.constants import DEFAULT_LABEL_STR_COL
-
-
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class BaseWandbTrainingCallback(WandbCallback, ABC):

@@ -5,20 +5,22 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from collections import defaultdict
 
 import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
 
 import pandas as pd
 from tqdm.auto import tqdm
 
-from transformers import (pipeline,
-                          WhisperProcessor,
-                          WhisperForConditionalGeneration)
+from transformers.models.whisper import (WhisperTokenizer,
+                                         WhisperTokenizerFast,
+                                         WhisperFeatureExtractor,
+                                         WhisperForConditionalGeneration)
+from transformers.pipelines import pipeline
+from optimum.bettertransformer import BetterTransformer
 
-from dataloader.dataloader import gen_from_dataset
+from dataloader.dataset_loader import gen_from_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from evaluation.string_edit_metrics import get_string_edit_metrics
 from normalization.whisper_normalization import get_whisper_normalizer
-from utils.constants import DEFAULT_LABEL_STR_COL
+from utils.constants import DEFAULT_EVAL_BATCH_SIZE, DEFAULT_LABEL_STR_COL, GEN_MAX_LENGTH
 
 
 def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
@@ -26,15 +28,30 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   task: str = "transcribe",
                                   zero_shot: bool = False,
                                   num_beams: int = 1,
-                                  batch_size: int = 64) -> pd.DataFrame:
-    
-    assert ds_group.is_preprocessed, "The dataset group must be preprocessed."
+                                  batch_size: int = DEFAULT_EVAL_BATCH_SIZE,
+                                  fast_tokenizer: bool = True) -> pd.DataFrame:
+    """
+    Evaluate a Whisper model on a dataset group and return a DataFrame with the results.
+    """
     
     if ds_group.is_multilingual:
         assert ds_group.language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."
+
+    if torch.cuda.is_available():
+        device = "cuda:0"
+        torch_dtype = torch.float16  # see https://huggingface.co/learn/audio-course/chapter5/evaluation?fw=pt
+    elif torch.backends.mps.is_available():  # for Apple Silicon
+        device = torch.device('mps')
+        torch_dtype = torch.float32  # float16 not supported by MPS
+    else:
+        device = "cpu"
+        torch_dtype = torch.float32
     
     # Load model:
-    model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path)
+    model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path, torch_dtype=torch_dtype).to(device)
+    
+    if device == "cuda:0":
+        model = BetterTransformer.transform(model)
     
     # Loop over the datasets:
     dict_string_edit_metrics = defaultdict(list)
@@ -49,44 +66,47 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         else:
             language = ds_group.ds_name_to_lang[dataset_name]
         
-        # Handle the special case of the English dataset with the basic normalizer:
-        if language == "english-basic_normalizer":
-            whisper_norm = get_whisper_normalizer(language=None)
-            language = "english"
+        # Get normalizer (depends on the language of the current dataset):
+        whisper_norm = get_whisper_normalizer(language=language)
+        
+        if fast_tokenizer:
+            tokenizer = WhisperTokenizerFast.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
         else:
-            whisper_norm = get_whisper_normalizer(language=language)
+            tokenizer = WhisperTokenizer.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
         
-        processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path,
-                                                     language=language,
-                                                     task=task)
+        feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
         
-        # Set config parameters for generation:
-        if zero_shot:
-            model.config.forced_decoder_ids = []
-        else:
-            model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=language, task=task)  # type: ignore
-        # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
-        #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
-        #       this also affects evaluation.
-        
+        # Create pipeline:        
         whisper_asr = pipeline(task="automatic-speech-recognition",
                                model=model,
-                               tokenizer=processor.tokenizer,  # type: ignore
-                               feature_extractor=processor.feature_extractor,  # type: ignore
-                               device=0  # use 1st GPU for Whisper
-        )
+                               tokenizer=tokenizer,
+                               feature_extractor=feature_extractor,
+                               torch_dtype=torch_dtype,
+                               device=device)
     
         # Create placeholders for the predictions and references:
         predictions = []
         references = []
         
-        for out in whisper_asr(gen_from_dataset(dataset),
-                               batch_size=batch_size,
-                               generate_kwargs={"num_beams": num_beams}):  # type: ignore
-            if not out["reference"][0].strip():  # type: ignore
+        # Prepare the generation kwargs:
+        generate_kwargs = {"max_length": GEN_MAX_LENGTH, "num_beams": num_beams}
+        if not zero_shot:
+            generate_kwargs.update({"language": language, "task": task})
+        
+        num_rows = dataset.num_rows if hasattr(dataset, "num_rows") else None
+        
+        for out in tqdm(whisper_asr(gen_from_dataset(dataset),
+                                    batch_size=batch_size,
+                                    generate_kwargs=generate_kwargs),
+                        total=num_rows):
+            ref = whisper_norm(out["reference"][0])
+            pred = whisper_norm(out[DEFAULT_LABEL_STR_COL])
+            
+            if not ref.strip():
                 continue  # skip empty references to avoid error in WER computation
-            predictions.append(whisper_norm(out[DEFAULT_LABEL_STR_COL]))
-            references.append(out["reference"][0]) # the labels have already been normalized
+            
+            references.append(ref)
+            predictions.append(pred)
         
         # Compute the WER in percent:
         string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=references, predictions=predictions))

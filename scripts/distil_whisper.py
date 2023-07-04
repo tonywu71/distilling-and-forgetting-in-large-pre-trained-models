@@ -3,35 +3,32 @@ import typer
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from typing import List
-
-import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
-device = torch.device("cuda:0")
-
 from utils.initialize import initialize_env, print_envs
 initialize_env()
 
+from typing import List
 from dataclasses import asdict
 from functools import partial
 from pathlib import Path
 from pprint import pprint
 
-from transformers import (WhisperForConditionalGeneration,
-                          WhisperProcessor,
-                          EarlyStoppingCallback,
-                          TrainerCallback)
+import torch
+from transformers.models.whisper import (WhisperForConditionalGeneration,
+                                         WhisperTokenizerFast,
+                                         WhisperFeatureExtractor,
+                                         WhisperProcessor)
+from transformers.trainer_callback import TrainerCallback, EarlyStoppingCallback
 
 import wandb
 
 from callbacks.distillation_callback import WandbDistillationCallback
 from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from dataloader.dataloader import load_dataset_dict
+from dataloader.dataset_loader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
-from evaluation.wer_metric import compute_wer_fct
+from evaluation.wer_metric import compute_string_edit_metrics_fct
 from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
 from trainer.tac_distillation import TACDistillationTrainer, TACDistillationTrainingArguments
 from utils.constants import GEN_MAX_LENGTH
@@ -49,6 +46,8 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     Distil Whisper based on the provided config file.
     """
     
+    device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+    
     # --------------------   Load config   --------------------
     if tac:
         config = TACDistilConfig.from_yaml(config_filepath)
@@ -58,11 +57,11 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Sanity check:
     assert_if_distillation_tokenizers_match(config)
     
-    is_seq_level = config.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+    is_seq_level = config.method_distil in ["seq_level_uniform", "seq_level_ranked"]
     
     if is_seq_level:
         print(f"Sequence-level distillation will be performed. Although the batch size is set to {config.batch_size}, " + \
-              f", because {config.distillation_num_beams} beams will be used for distillation, " + \
+              f"because {config.distillation_num_beams} beams will be used for distillation, " + \
               f"the actual batch size will {config.batch_size * config.distillation_num_beams}.")
     
     # If a previous run has its checkpoints saved in the same directory,
@@ -73,8 +72,6 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Prepare tags for W&B:
     list_tags = [config.dataset_name,
                  config.method_distil]
-    if config.is_hpt:
-        list_tags.append("hpt")
     if tac:
         list_tags.append("tac")
     
@@ -103,24 +100,40 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     # ----------------------   Main   ----------------------
     
-    # Load student processor (contains both tokenizer and feature extractor):
+    # Load student tokenizer and feature extractor:
+    student_tokenizer = WhisperTokenizerFast.from_pretrained(
+        config.student_model_name_or_path,
+        language=config.lang_name,
+        task=config.task
+    )
+    
+    # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
+    #       special tokens to the decoded sentence.
+    
+    student_feature_extractor = WhisperFeatureExtractor.from_pretrained(
+        config.student_model_name_or_path,
+        language=config.lang_name,
+        task=config.task
+    )
+    
+    # Load student processor (to wrap the whole pipeline for saving):
     student_processor = WhisperProcessor.from_pretrained(
         config.student_model_name_or_path,
         language=config.lang_name,
         task=config.task
     )
-    # Note: Because `language` and `task` have been set, the processor will append the associated
-    #       special tokens to the decoded sentence.
     
     
     # Create the data collator that will be used to prepare the data for training:
     if not is_seq_level:  # If word-level...
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=student_tokenizer,
+                                                             feature_extractor=student_feature_extractor,
                                                              return_attention_mask=True,
                                                              replace_padded_with_loss_mask_for_labels=True,
                                                              discard_first_bos_token=True)
     else:
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=student_processor,
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=student_tokenizer,
+                                                             feature_extractor=student_feature_extractor,
                                                              return_attention_mask=True,
                                                              replace_padded_with_loss_mask_for_labels=True,
                                                              discard_first_bos_token=True,
@@ -144,12 +157,14 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     if is_seq_level:
         # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
         dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
-                                                             dataset_dict=dataset_dict)
-    
-        # Note: Technically, the K-beam search features are not needed for the word-level distillation. However,
-        #       we still load them for simplicity and because they are needed for `WandbDistillationCallback`.
-    
+                                                             dataset_dict=dataset_dict)    
         print("\n-----------------------\n")
+    
+    
+    if config.dataset_name == "ami_100h":
+        print("Subsampling the 100h AMI validation split to 10% of its original size for faster evaluation...")
+        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 10))
+    
     
     # Initialize the models from pretrained checkpoints:
     if not is_seq_level:  # If word-level...
@@ -182,29 +197,22 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         decoder._requires_grad = False  # type: ignore
     
     
-    # Set config parameters for generation:
-    if config.zero_shot_eval:
-        student_model.config.forced_decoder_ids = None
-    else:
-        student_model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
-    # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
-    #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
-    #       this also affects evaluation.
-    student_model.config.suppress_tokens = []  # type: ignore
-    # Note: There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
-    #       set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
-    
-
-    if teacher_model is not None:  # ignore teacher model if not used
-        if config.zero_shot_eval:
-            teacher_model.config.forced_decoder_ids = None
-        else:
-            teacher_model.config.forced_decoder_ids = student_processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
-        teacher_model.config.suppress_tokens = []
-    
-    # Since only the student model is trained, we can keep caching for the teacher model:
+    # Set config parameters for training:
     if config.gradient_checkpointing:
-        student_model.config.use_cache = False
+        student_model.config.use_cache = False  # type: ignore
+    
+    
+    # Set language and task for generation if not zero-shot. Also re-enable caching to speed-up evaluation:
+    if config.zero_shot_eval:
+        student_model.generate = partial(student_model.generate, language=None, task=None, use_cache=True)
+    else:
+        student_model.generate = partial(student_model.generate, language=config.lang_name, task=config.task, use_cache=True)
+    
+    
+    # Same for the teacher model.
+    if teacher_model is not None:  # ignore teacher model if not used
+        teacher_model.generate = partial(teacher_model.generate, language=config.lang_name, task=config.task, use_cache=True)
+        # NOTE: The teacher model geneartion is NOT zero-shot.
     
     
     # Prepare training:
@@ -223,7 +231,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         eval_accumulation_steps=config.eval_accumulation_steps,
         gradient_checkpointing=config.gradient_checkpointing,
         fp16=True,
+        fp16_full_eval=True,
         learning_rate=config.learning_rate,
+        lr_scheduler_type=config.lr_scheduler_type,
         warmup_steps=config.warmup_steps,
         optim=config.optim,
         num_train_epochs=config.num_train_epochs,
@@ -254,10 +264,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         training_args = DistillationTrainingArguments(**training_arguments_dict)  # type: ignore
     
     # Define the compute_metrics function:
-    compute_wer = partial(compute_wer_fct,
-                          processor=student_processor,
-                          normalize=True,
-                          log_string_edit_metrics_on_wandb=True)
+    compute_metrics = partial(compute_string_edit_metrics_fct,
+                              processor=student_processor,
+                              normalize=True)
     
     
     # Define callbacks:
@@ -287,7 +296,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
-        compute_metrics=compute_wer,  # type: ignore
+        compute_metrics=compute_metrics,  # type: ignore
         tokenizer=student_processor,  # use processor for saving  # type: ignore
         callbacks=callbacks
     )

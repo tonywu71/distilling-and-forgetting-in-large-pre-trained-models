@@ -3,52 +3,59 @@ import typer
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from typing import List
-
-import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
-
 from utils.initialize import initialize_env, print_envs
 initialize_env()
 
+from typing import List
 from dataclasses import asdict
 from functools import partial
 from pathlib import Path
 from pprint import pprint
 
-from transformers import (WhisperForConditionalGeneration,
-                          WhisperProcessor,
-                          Seq2SeqTrainingArguments,
-                          Seq2SeqTrainer,
-                          EarlyStoppingCallback,
-                          TrainerCallback)
+from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
+from transformers.models.whisper import (WhisperForConditionalGeneration,
+                                         WhisperTokenizerFast,
+                                         WhisperFeatureExtractor,
+                                         WhisperProcessor)
+from transformers.trainer_callback import TrainerCallback, EarlyStoppingCallback
 
 import wandb
 
 from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from callbacks.finetune_callback import WandbFinetuneCallback
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from dataloader.dataloader import load_dataset_dict
+from dataloader.dataset_loader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from evaluation.wer_metric import compute_wer_fct
+from evaluation.wer_metric import compute_string_edit_metrics_fct
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
+from trainer.ewc_finetuning import EWCFinetuningTrainer, EWCFinetuningTrainingArguments
 from trainer.tac_finetuning import TACFinetuningTrainer, TACFinetuningTrainingArguments
-from utils.constants import GEN_MAX_LENGTH
 from utils.file_io import fix_model_dir_conflicts
 from utils.finetune_config import FinetuneConfig
+from utils.ewc_finetune_config import EWCFinetuneConfig
 from utils.tac_finetune_config import TACFinetuneConfig
+from utils.constants import GEN_MAX_LENGTH
+
 
 
 def main(config_filepath: str,
+         ewc: bool = typer.Option(False, help="Whether to use Elastic Weight Consolidation or not." + \
+                                              "Config file should be formatted for EWC fine-tuning."),
          tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
-                                              "Flag should be used if only if the config file is for TAC distillation. " + \
-                                              "TAC is not compatible with zero-shot.")):
+                                              "Config file should be formatted for TAC fine-tuning.")):
+
     """
     Fine-tune the Whisper model on the LibriSpeech dataset.
     """
+    
+    assert not (ewc and tac), "EWC and TAC cannot be used at the same time."
+    
+    
     # --------------------   Load config   --------------------
-    if tac:
+    if ewc:
+        config = EWCFinetuneConfig.from_yaml(config_filepath)
+    elif tac:
         config = TACFinetuneConfig.from_yaml(config_filepath)
     else:
         config = FinetuneConfig.from_yaml(config_filepath)
@@ -60,8 +67,11 @@ def main(config_filepath: str,
     
     # Prepare tags for W&B:
     list_tags = [config.dataset_name]
-    if tac:
+    if ewc:
+        list_tags.append("ewc")
+    elif tac:
         list_tags.append("tac")
+    
     
     # -----------------------   W&B   -----------------------
     wandb.login()
@@ -88,21 +98,36 @@ def main(config_filepath: str,
     
     # ----------------------   Main   ----------------------
 
-    # Load processor (contains both tokenizer and feature extractor):
+    # Load student tokenizer and feature extractor:
+    tokenizer = WhisperTokenizerFast.from_pretrained(
+        config.pretrained_model_name_or_path,
+        language=config.lang_name,
+        task=config.task
+    )
+    
+    # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
+    #       special tokens to the decoded sentence.
+    
+    feature_extractor = WhisperFeatureExtractor.from_pretrained(
+        config.pretrained_model_name_or_path,
+        language=config.lang_name,
+        task=config.task
+    )
+    
+    # Load student processor (to wrap the whole pipeline for saving):
     processor = WhisperProcessor.from_pretrained(
         config.pretrained_model_name_or_path,
         language=config.lang_name,
         task=config.task
     )
-    # Note: Because `language` and `task` have been set, the processor will append the associated
-    #       special tokens to the decoded sentence.
 
     
     # Create the data collator that will be used to prepare the data for training:
-    data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor,
+    data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=tokenizer,
+                                                         feature_extractor=feature_extractor,
                                                          replace_padded_with_loss_mask_for_labels=True,
                                                          discard_first_bos_token=True)
-
+    
     
     # Load the dataset and preprocess it:
     if config.smart_load:
@@ -117,6 +142,10 @@ def main(config_filepath: str,
                                           feature_extractor=processor.feature_extractor,  # type: ignore
                                           lowercase=config.lowercase,
                                           augment=config.data_augmentation)
+    
+    if config.dataset_name == "ami_100h":
+        print("Subsampling the 100h AMI validation split to 10% of its original size for faster evaluation...")
+        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 10))
     
     print("\n-----------------------\n")
     
@@ -136,30 +165,25 @@ def main(config_filepath: str,
         
     if config.freeze_encoder:
         print("Freezing encoder...")
-        model.freeze_encoder()  # type: ignore
+        model.freeze_encoder()
     if config.freeze_decoder:
         print("Freezing decoder...")
-        decoder = model.get_decoder()  # type: ignore
+        decoder = model.get_decoder()
         for param in decoder.parameters():
             param.requires_grad = False
-        decoder._requires_grad = False  # type: ignore
+        decoder._requires_grad = False
+    
     
     # Set config parameters for training:
     if config.gradient_checkpointing:
-        model.config.use_cache = False  # type: ignore
+        model.config.use_cache = False
     
-    # Set config parameters for generation:
+    
+    # Set language and task for generation if not zero-shot. Also re-enable caching to speed-up evaluation:
     if config.zero_shot_eval:
-        model.config.forced_decoder_ids = None
+        model.generate = partial(model.generate, language=None, task=None, use_cache=True)
     else:
-        model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=config.lang_name, task=config.task)  # type: ignore
-    # Note: The Whisper model has token ids that are forced as model outputs before autoregressive generation is started (forced_decoder_ids).
-    #       These token ids control the transcription language and task for zero-shot ASR. This only affects calls to `generate`, hence
-    #       this also affects evaluation.
-    model.config.suppress_tokens = []  # type: ignore
-    # Note: There are also tokens that are completely suppressed during generation (suppress_tokens). These tokens have their log probabilities
-    #       set to -inf, such that they are never sampled. We'll override these tokens to an empty list, meaning no tokens are suppressed.
-    
+        model.generate = partial(model.generate, language=config.lang_name, task=config.task, use_cache=True)
     
     
     # Prepare training:
@@ -173,7 +197,9 @@ def main(config_filepath: str,
         eval_accumulation_steps=config.eval_accumulation_steps,
         gradient_checkpointing=config.gradient_checkpointing,
         fp16=True,
+        fp16_full_eval=True,
         learning_rate=config.learning_rate,
+        lr_scheduler_type=config.lr_scheduler_type,
         warmup_steps=config.warmup_steps,
         optim=config.optim,
         num_train_epochs=config.num_train_epochs,
@@ -194,18 +220,22 @@ def main(config_filepath: str,
         report_to="wandb"  # type: ignore
     )
     
-    if isinstance(config, TACFinetuneConfig):  # equivalent to `if tac`
+    if isinstance(config, EWCFinetuneConfig):
+        training_args = EWCFinetuningTrainingArguments(dirpath_ewc=config.dirpath_ewc,
+                                                       lambda_ewc=config.lambda_ewc,
+                                                       **training_arguments_dict)
+    elif isinstance(config, TACFinetuneConfig):
         training_args = TACFinetuningTrainingArguments(languages_to_preserve=config.languages_to_preserve,
                                                        gamma_tac=config.gamma_tac,
                                                        **training_arguments_dict)
     else:
-        training_args = Seq2SeqTrainingArguments(**training_arguments_dict)  # type: ignore
+        training_args = Seq2SeqTrainingArguments(**training_arguments_dict)
+    
     
     # Define the compute_metrics function:
-    compute_wer = partial(compute_wer_fct,
-                          processor=processor,
-                          normalize=True,
-                          log_string_edit_metrics_on_wandb=True)
+    compute_metrics = partial(compute_string_edit_metrics_fct,
+                              processor=processor,
+                              normalize=True)
     
     
     # Define callbacks:
@@ -215,12 +245,12 @@ def main(config_filepath: str,
         callbacks.append(EvalFirstStepCallback())
     
     if config.early_stopping_patience != -1:
-        callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))  # type: ignore
+        callbacks.append(EarlyStoppingCallback(early_stopping_patience=config.early_stopping_patience))
     
     if config.log_preds_to_wandb:
         callbacks.append(WandbFinetuneCallback(config=config,
                                                processor=processor,
-                                               eval_dataset=dataset_dict["validation"],  # type: ignore
+                                               eval_dataset=dataset_dict["validation"],
                                                n_samples=config.n_samples_per_wandb_logging_step,
                                                log_raw_str=config.log_raw_str))
     
@@ -228,16 +258,18 @@ def main(config_filepath: str,
     # Create the trainer:
     trainer_args = dict(
         args=training_args,
-        model=model,  # type: ignore
-        train_dataset=dataset_dict["train"],  # type: ignore
-        eval_dataset=dataset_dict["validation"],  # type: ignore
+        model=model,
+        train_dataset=dataset_dict["train"],
+        eval_dataset=dataset_dict["validation"],
         data_collator=data_collator,
-        compute_metrics=compute_wer,  # type: ignore
-        tokenizer=processor,  # use processor for saving  # type: ignore
+        compute_metrics=compute_metrics,
+        tokenizer=processor,  # use processor for saving the feature extractor
         callbacks=callbacks
     )
     
-    if tac:
+    if ewc:
+        trainer = EWCFinetuningTrainer(**trainer_args)
+    elif tac:
         trainer = TACFinetuningTrainer(processor=processor, **trainer_args)
     else:
         trainer = Seq2SeqTrainer(**trainer_args)

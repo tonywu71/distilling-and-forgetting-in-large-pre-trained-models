@@ -31,6 +31,7 @@ def initialize_env():
     # WandB:
     os.environ["WANDB_PROJECT_TRAINING"] = env_config.WANDB_PROJECT_TRAINING
     os.environ["WANDB_PROJECT_EVALUATION"] = env_config.WANDB_PROJECT_EVALUATION
+    os.environ["WANDB_PROJECT_OTHERS"] = env_config.WANDB_PROJECT_OTHERS
     os.environ["WANDB_CACHE_DIR"] = env_config.WANDB_CACHE_DIR
     
     # Other:

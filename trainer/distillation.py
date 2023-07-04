@@ -12,6 +12,7 @@ from transformers.modeling_outputs import Seq2SeqLMOutput
 from transformers.models.whisper.modeling_whisper import shift_tokens_right
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from dataloader.utils import get_fast_tokenizer_from_tokenizer
 from trainer.trainer_utils import get_language_token
 
 
@@ -24,7 +25,7 @@ class DistillationTrainingArguments(Seq2SeqTrainingArguments):
     Only supports distillation for non-sequential tasks.
     """
     def __init__(self,
-                 method_distil: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"],
+                 method_distil: Literal["word_level", "seq_level_uniform", "seq_level_ranked"],
                  alpha_ce: float,
                  temperature: Optional[float] = None,
                  distillation_num_beams: Optional[int] = None,
@@ -50,7 +51,7 @@ class DistillationTrainer(Seq2SeqTrainer):
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.student_processor = student_processor
-        self.student_tokenizer: WhisperTokenizer = self.student_processor.tokenizer
+        self.student_tokenizer = get_fast_tokenizer_from_tokenizer(self.student_processor.tokenizer)
         self.teacher_model = teacher_model
         
         # Sanity checks:
@@ -61,8 +62,8 @@ class DistillationTrainer(Seq2SeqTrainer):
         
         self.METHOD_DISTIL_TO_LOSS_FCT = {
             "word_level": self._compute_loss_word_level,
-            "seq_level_k_best_uniform": self._compute_loss_seq_level_k_best_uniform,
-            "seq_level_k_best_ranked": self._compute_loss_seq_level_k_best_ranked
+            "seq_level_uniform": self._compute_loss_seq_level_uniform,
+            "seq_level_ranked": self._compute_loss_seq_level_ranked
         }
     
     
@@ -73,7 +74,8 @@ class DistillationTrainer(Seq2SeqTrainer):
         if eval_dataset is None and self.eval_dataset is None:
             raise ValueError("Trainer: evaluation requires an eval_dataset.")
         eval_dataset = eval_dataset if eval_dataset is not None else self.eval_dataset
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=self.student_processor,
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=self.student_tokenizer,
+                                                             feature_extractor=self.student_processor.feature_extractor,
                                                              return_attention_mask=False)
         
         return DataLoader(
@@ -146,7 +148,7 @@ class DistillationTrainer(Seq2SeqTrainer):
         # - `KLDivLoss` expects log-probabilities for `input` to avoid underflow issues
         
         # Soften probabilities and compute distillation loss:
-        # Note: `input` should be log-probabilities according to the documentation of `KLDivLoss`.
+        # NOTE: `input` should be log-probabilities according to the documentation of `KLDivLoss`.
         loss_kd = self.args.temperature ** 2 * kl_div_loss(
             input=F.log_softmax(logits_student / self.args.temperature, dim=-1),
             target=F.softmax(logits_teacher / self.args.temperature, dim=-1))  # (1,)
@@ -187,16 +189,6 @@ class DistillationTrainer(Seq2SeqTrainer):
         distillation_num_beams = self.args.distillation_num_beams
         n_tokens_teacher_seq = teacher_sequences.shape[-1]
         
-        # Sanity check:
-        assert distillation_num_beams <= teacher_sequences.shape[1], \
-            f"The number of beams for distillation must be <= the number of beams used for generation. " \
-            f"Got {distillation_num_beams} beams for distillation and {teacher_sequences.shape[1]} beams for generation."
-        
-        # Retrieve only the beams of interest:
-        teacher_sequences = teacher_sequences[:, :distillation_num_beams, :]  # (batch_size, distillation_num_beams, n_tokens_teacher_seq)
-        attention_mask_teacher_sequences = attention_mask_teacher_sequences[:, :distillation_num_beams, :]  # (batch_size, distillation_num_beams, n_tokens_teacher_seq)
-        teacher_sequences_scores = teacher_sequences_scores[:, :distillation_num_beams]  # (batch_size, distillation_num_beams)
-        
         # Re-normalize scores using only the K-best sequences by applying a softmax over the beam dimension:
         teacher_sequences_prob = torch.nn.functional.softmax(teacher_sequences_scores, dim=-1)  # (batch_size, distillation_num_beams)
         
@@ -214,7 +206,7 @@ class DistillationTrainer(Seq2SeqTrainer):
                                                                            decoder_attention_mask=attention_mask_labels,
                                                                            labels=labels)
         
-        # Note: `shift_tokens_right` already added the BOS token and replaced the loss mask token with the pad token, so we can safely use the sequence as decoder input.
+        # NOTE: `shift_tokens_right` already added the BOS token and replaced the loss mask token with the pad token, so we can safely use the sequence as decoder input.
         
         # Compute the cross-entropy loss:
         loss_ce = student_output_wrt_labels.loss  # (1,)
@@ -240,14 +232,14 @@ class DistillationTrainer(Seq2SeqTrainer):
         # Reshape back to original shape:
         student_log_prob_all = student_log_prob_all.reshape(batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
         
-        # Note: The first `K = distillation_num_beams` rows of output_log_prob_all_masked correspond to the same example but with different beams.
+        # NOTE: The first `K = distillation_num_beams` rows of output_log_prob_all_masked correspond to the same example but with different beams.
         
         # Set the values associated to the pad tokens to 0:
-        # Note: Because we will sum the log-probabilities to make use of the product rule in the log space,
+        # NOTE: Because we will sum the log-probabilities to make use of the product rule in the log space,
         #       a sufficient method to ignore the padded values is to set them to 0.
         
         # Repeat attention_mask for the n_vocab dimension:
-        student_log_prob_all_mask = attention_mask_teacher_sequences.expand(-1, -1, vocab_size)  # right-shifted -> (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
+        student_log_prob_all_mask = attention_mask_teacher_sequences[:, :, None].expand(-1, -1, vocab_size)  # right-shifted -> (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
         output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
         
         # Get log-probabilities for each generation step:
@@ -282,7 +274,7 @@ class DistillationTrainer(Seq2SeqTrainer):
         return loss, student_output_wrt_teacher
     
     
-    def _compute_loss_seq_level_k_best_uniform(self,
+    def _compute_loss_seq_level_uniform(self,
                                                student_model: PreTrainedModel,
                                                inputs,
                                                teacher_model: PreTrainedModel = None,
@@ -295,7 +287,7 @@ class DistillationTrainer(Seq2SeqTrainer):
         return self._compute_loss_seq_level_k_best(student_model, inputs, language=language, rank_weighting=False)
     
     
-    def _compute_loss_seq_level_k_best_ranked(self,
+    def _compute_loss_seq_level_ranked(self,
                                               student_model: PreTrainedModel,
                                               inputs,
                                               teacher_model: PreTrainedModel = None,

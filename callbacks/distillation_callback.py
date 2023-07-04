@@ -3,7 +3,6 @@ from typing import Dict, Optional, Tuple
 import pandas as pd
 
 import torch
-from torch.utils.data import DataLoader
 
 from transformers import (PreTrainedModel,
                           WhisperProcessor,
@@ -45,18 +44,16 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         assert isinstance(self.config, DistilConfig), "config must be `DistilConfig`"
         
         self.table_name = "sample_predictions-distill"
-        self.data_collator_no_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
+        self.data_collator_no_k_beam = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=self.processor.tokenizer,
+                                                                            feature_extractor=self.processor.feature_extractor,
                                                                             add_k_beam_features=False)
         
-        self.is_seq_level = (self.config.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"])
+        self.is_seq_level = (self.config.method_distil in ["seq_level_uniform", "seq_level_ranked"])
         
         if self.is_seq_level:  # If sequence-level distillation...
-            self.data_collator_with_k_beam = DataCollatorSpeechSeq2SeqWithPadding(processor=self.processor,
+            self.data_collator_with_k_beam = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=self.processor.tokenizer,
+                                                                                  feature_extractor=self.processor.feature_extractor,
                                                                                   add_k_beam_features=True)
-            self.eval_dataloader = DataLoader(self.eval_dataset,
-                                              batch_size=self.config.eval_batch_size,
-                                              shuffle=False,
-                                              collate_fn=self.data_collator_no_k_beam)
         else:  # If word-level distillation...
             assert teacher_model is not None, "`teacher_model` must be provided for word-level distillation"
             self.teacher_model = teacher_model
@@ -82,7 +79,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
                model: PreTrainedModel,
                logs: Optional[Dict[str, float]]=None,
                **kwargs):
-        # Note: `model` corresponds to the student model in this method.
+        # NOTE: `model` corresponds to the student model in this method.
         
         # Call `BaseWandbTrainingCallback`'s parent (`WandbCallback`) method `on_log` for basic logging:
         super(BaseWandbTrainingCallback, self).on_log(args, state, control, model, logs, **kwargs)  # type: ignore
@@ -168,7 +165,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         
         else:  # If word-level distillation...
             # Collate the data into batches of size 1:
-            # Note: `data_collator_no_k_beam` because we haven't loaded the dataset with k-beam
+            # NOTE: `data_collator_no_k_beam` because we haven't loaded the dataset with k-beam
             data = self.data_collator_no_k_beam([data])  # type: ignore
             
             # Note that we need to move the data to the device manually (which is not the case with Trainer):

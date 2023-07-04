@@ -4,12 +4,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import torch
-assert torch.cuda.is_available(), "This script requires a GPU."
 
 import pandas as pd
 from tqdm.auto import tqdm
 
-from transformers import WhisperProcessor
+from transformers.models.whisper import WhisperProcessor
 
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
@@ -24,8 +23,6 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
                                         ds_group: BaseDatasetGroup,
                                         task: str="transcribe") -> pd.Series:
-    
-    assert ds_group.is_preprocessed, "The dataset group must be preprocessed."
     
     if ds_group.is_multilingual:
         assert ds_group.language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."
@@ -47,7 +44,7 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
         
         
         # Handle the special case of the English dataset with the basic normalizer.
-        # Note: `whisper_norm` is actually unused for perplexity computation but we
+        # NOTE: `whisper_norm` is actually unused for perplexity computation but we
         # keep it for consistency with `eval_whisper_on_dataset`.
         if language == "english-basic_normalizer":
             whisper_norm = get_whisper_normalizer(language=None)
@@ -60,7 +57,8 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
                                                      task=task)
         
         # Load data collator:
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor,
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=processor.tokenizer,
+                                                             feature_extractor=processor.feature_extractor,
                                                              replace_padded_with_loss_mask_for_labels=True)
         
         # Set the forced decoder ids:

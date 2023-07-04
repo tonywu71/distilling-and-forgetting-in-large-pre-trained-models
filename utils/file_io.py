@@ -4,8 +4,7 @@ from datetime import datetime
 
 from utils.finetune_config import FinetuneConfig
 from utils.distil_config import DistilConfig
-from utils.constants import DEFAULT_OUTPUT_DIR, CHECKPOINTS_DIRNAME
-
+from utils.constants import DEFAULT_OUTPUT_DIR, CHECKPOINTS_DIR
 
 
 def fix_model_dir_conflicts(config: FinetuneConfig | DistilConfig) -> None:
@@ -38,8 +37,8 @@ def extract_exp_name_from_model_path(model_filepath: str) -> str:
     """
     path = Path(model_filepath)
     
-    if CHECKPOINTS_DIRNAME in path.parts:  # if the path is a checkpoint...
-        experiment_name = path.relative_to(CHECKPOINTS_DIRNAME).as_posix()
+    if CHECKPOINTS_DIR.name in path.parts:  # if the path is a checkpoint...
+        experiment_name = path.relative_to(CHECKPOINTS_DIR).as_posix()
     else:  # if the path is a model name from the HuggingFace Hub...
         experiment_name = path.name.replace(".", "-")
     
@@ -51,13 +50,13 @@ def extract_output_savepath_from_model_path(model_filepath: str) -> str:
     Extract the model savepath from a model path.
     
     Examples:
-    - "tw581/checkpoints/whisper_small/librispeech_clean_100h/checkpoint-200" -> "outputs/whisper_small/librispeech_clean_100h/checkpoint-200"
+    - "./checkpoints/whisper_small/librispeech_clean_100h/checkpoint-200" -> "outputs/whisper_small/librispeech_clean_100h/checkpoint-200"
     - "openai/whisper-tiny.en" -> "outputs/whisper-tiny-en"
     """
     path = Path(model_filepath)
     
-    if CHECKPOINTS_DIRNAME in path.parts:  # if the path is a checkpoint...
-        savepath = (DEFAULT_OUTPUT_DIR / path.relative_to(CHECKPOINTS_DIRNAME)).as_posix()
+    if CHECKPOINTS_DIR.name in path.parts:  # if the path is a checkpoint...
+        savepath = (DEFAULT_OUTPUT_DIR / path.relative_to(CHECKPOINTS_DIR)).as_posix()
     else:  # if the path is a model name from the HuggingFace Hub...
         savepath = (DEFAULT_OUTPUT_DIR / path.name.replace(".", "-")).as_posix()
     

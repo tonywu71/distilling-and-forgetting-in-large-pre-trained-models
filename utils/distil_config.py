@@ -4,7 +4,7 @@ from typing import Literal, Optional
 import yaml
 
 
-AVAILABLE_KD_METHODS = ["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+AVAILABLE_KD_METHODS = ["word_level", "seq_level_uniform", "seq_level_ranked"]
 
 
 @dataclass
@@ -24,7 +24,7 @@ class DistilConfig:
     experiment_name: str
     lang_name: str
     task: str
-    method_distil: Literal["word_level", "seq_level_k_best_uniform", "seq_level_k_best_ranked"]
+    method_distil: Literal["word_level", "seq_level_uniform", "seq_level_ranked"]
     teacher_model_name_or_path: str
     student_model_name_or_path: str
     is_tokenizer_multilingual: bool
@@ -39,7 +39,6 @@ class DistilConfig:
     learning_rate: float
     warmup_steps: int
     eval_steps: int
-    generation_num_beams: int
     save_steps: int
     logging_steps: int
     num_train_epochs: int
@@ -51,7 +50,9 @@ class DistilConfig:
     
     
     # ======== Optional (training) ========
+    lr_scheduler_type: str = "constant_with_warmup"  # see possible values at https://huggingface.co/docs/transformers/v4.30.0/en/main_classes/optimizer_schedules#transformers.SchedulerType
     zero_shot_eval: bool = False
+    generation_num_beams: int = 1  # greedy search by default
     eval_batch_size: Optional[int] = None
     eval_accumulation_steps: Optional[int] = None  # https://huggingface.co/docs/transformers/main_classes/trainer#transformers.TrainingArguments.eval_accumulation_steps
     save_total_limit: Optional[int] = None
@@ -66,15 +67,14 @@ class DistilConfig:
     # `word_level`:
     temperature: float = 2
     
-    # Sequence-level (`seq_level_k_best_uniform`, `seq_level_k_best_ranked`)
+    # Sequence-level (`seq_level_uniform`, `seq_level_ranked`)
     distillation_num_beams: Optional[int] = None
     
-    # `seq_level_k_best_ranked`:
+    # `seq_level_ranked`:
     beta_decay: Optional[float] = 2.
     
     
     # ======== Other ========
-    is_hpt: bool = False
     smart_load: bool = True
     force_reprocess_dataset: bool = False
     force_reprocess_k_best: bool = False
@@ -109,17 +109,17 @@ class DistilConfig:
         if self.method_distil == "word_level":
             assert self.temperature is not None, \
                 "The `temperature` must be set for `word_level` distillation."
-        if self.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
+        if self.method_distil in ["seq_level_uniform", "seq_level_ranked"]:
             assert self.distillation_num_beams is not None, \
                 "The `distillation_num_beams` must be set for sequence-level distillation."
-        if self.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"]:
+        if self.method_distil in ["seq_level_uniform", "seq_level_ranked"]:
             assert self.distillation_num_beams is not None and self.distillation_num_beams > 0, \
                 "The `distillation_num_beams` must be greater than 0 for sequence-level distillation."
-        if self.method_distil == "seq_level_k_best_ranked":
+        if self.method_distil == "seq_level_ranked":
             assert self.beta_decay is not None, \
-                "The `beta_decay` must be set for `seq_level_k_best_ranked` distillation."
+                "The `beta_decay` must be set for `seq_level_ranked` distillation."
             assert self.beta_decay > 0, \
-                "The `beta_decay` must be greater than 0 for `seq_level_k_best_ranked` distillation."
+                "The `beta_decay` must be greater than 0 for `seq_level_ranked` distillation."
     
     
     @staticmethod

@@ -1,12 +1,12 @@
 from functools import partial
 
 import os
-import re
 from pathlib import Path
 
 import torch
 
-from transformers import WhisperForConditionalGeneration
+from transformers.models.whisper import WhisperForConditionalGeneration
+from optimum.bettertransformer import BetterTransformer
 from datasets import load_from_disk, DatasetDict, Dataset
 
 from k_beam_search.prepare_k_beam_features import prepare_k_beam_features_fct
@@ -14,13 +14,11 @@ from utils.distil_config import DistilConfig
 from utils.file_io import extract_exp_name_from_model_path
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 def get_k_beam_cache_dir(config: DistilConfig, parent_cache_dir: Path) -> str | None:
     """
-    Returns the path to a suitable cached K-Beam search dataset. Returns `None` if no suitable cache is found.
-    `cache_dir` is the path to the directory containing the cached K-Beam search datasets.
+    Returns the path to the cached K-Beam search dataset if exists. Otherwise, returns `None`.
+    Note: `parent_cache_dir` is the path to the directory containing the cached K-Beam search datasets.
     
     Example of generated outputs: 
     - `"preprocessed_datasets/k_beam_search/ami_10h/openai/whisper-medium/k_5/"`
@@ -31,30 +29,16 @@ def get_k_beam_cache_dir(config: DistilConfig, parent_cache_dir: Path) -> str | 
     assert config.distillation_num_beams is not None, \
         "The `distillation_num_beams` must be set for sequence-level distillation."
     
-    list_suitable_cached_k = []
-    
-    # Get list of all the Pickle files in `dataset_dir_all`:
     for x in parent_cache_dir.iterdir():
-        if x.is_dir():
-            # Use Regex to retrieve the number of beams from the file name:
-            # Example: "preprocessed_datasets/k_beam_search/ami_10h/openai/whisper-medium/k_5.pkl" -> "5"
-            reg_pattern = r'^k_(\d+)$'
-            if re.match(reg_pattern, x.stem):
-                cached_k = int(re.findall(reg_pattern, x.stem)[0])
-                if cached_k >= config.distillation_num_beams:
-                    list_suitable_cached_k.append(cached_k)
+        if x.is_dir() and x.stem == f"k_{config.distillation_num_beams}":
+            return str(x)
     
-    # Use the cached K-Beam search results with the smallest K that is >= `config.distillation_num_beams` for efficiency:
-    if list_suitable_cached_k:
-        cache_filepath = str(parent_cache_dir / f"k_{min(list_suitable_cached_k)}")
-    else:
-        cache_filepath = None
-    
-    return cache_filepath
+    return None
 
 
 def smart_load_dataset_with_k_beam_search(config: DistilConfig,
-                                          dataset_dict: DatasetDict | Dataset) -> DatasetDict | Dataset:
+                                          dataset_dict: DatasetDict | Dataset,
+                                          zero_shot: bool = False) -> DatasetDict | Dataset:
     """
     Return a dataset with K-Beam search results. If a suitable cached dataset is found, it is loaded from disk.
     Otherwise, the dataset is preprocessed from scratch.
@@ -65,8 +49,8 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
     """
     
     # Sanity checks:
-    assert config.method_distil in ["seq_level_k_best_uniform", "seq_level_k_best_ranked"], \
-        f'Invalid method `{config.method_distil}`. Must be one of `["seq_level_k_best_uniform", "seq_level_k_best_ranked"]`.'
+    assert config.method_distil in ["seq_level_uniform", "seq_level_ranked"], \
+        f'Invalid method `{config.method_distil}`. Must be one of `["seq_level_uniform", "seq_level_ranked"]`.'
     assert config.distillation_num_beams is not None, \
         "The `distillation_num_beams` must be set for sequence-level distillation."
     
@@ -104,23 +88,27 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         else:
             print(f"Previously saved and suitable K-Beam search results could not be found in `{parent_cache_dir}`.")
         
-        # If we need to cache the K-Beam search results from scratch, K must be >= 2.
-        # This is not a problem as we will simply use K=1 (≤ 2) for the distillation.
         if config.distillation_num_beams == 1:
-            print("K has been temporarily set to 2 for the K-beam caching for compatibility reasons " + \
-                  "but K=1 will still be used for the distillation.")
-            num_beams = 2
-        else:
-            num_beams = config.distillation_num_beams
+            raise NotImplementedError("K-Beam search with K=1 is not supported.")
+        
+        # Get the device:
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
         
         # Initialize the model from pretrained checkpoint:
         print(f"Loading teacher model for K-Beam search from `{config.teacher_model_name_or_path}`...")
-        model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
+        model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)
+        
+        if device == "cuda:0":
+            model = BetterTransformer.transform(model)
+        
+        model.generate = partial(model.generate, language=config.lang_name, task=config.task, use_cache=True)
+        
         
         # Get the mapping function:
         prepare_k_beam_features = partial(prepare_k_beam_features_fct,
                                           model=model,
-                                          num_beams=num_beams)
+                                          num_beams=config.distillation_num_beams,
+                                          device=device)
         
         # Map the dataset:
         print("\nGenerating K-Beam search output...")
@@ -129,7 +117,7 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
                                                           batch_size=config.batch_size)
         
         # Set the path to save the K-Beam search results:
-        cache_filepath = str(parent_cache_dir / f"k_{num_beams}")
+        cache_filepath = str(parent_cache_dir / f"k_{config.distillation_num_beams}")
         
         Path(cache_filepath).parent.mkdir(parents=True, exist_ok=True)
         dataset_dict.save_to_disk(cache_filepath)

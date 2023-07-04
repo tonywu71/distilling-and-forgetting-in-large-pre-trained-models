@@ -1,7 +1,7 @@
 from functools import partial
 from typing import Any, Dict
 
-from transformers import WhisperFeatureExtractor, WhisperTokenizer
+from transformers.models.whisper import WhisperFeatureExtractor, WhisperTokenizer, WhisperTokenizerFast
 from datasets import Audio, DatasetDict
 from dataloader.filtering import filter_audio_length, filter_labels
 
@@ -9,12 +9,12 @@ from dataloader.preprocessing_train.augmentation import augment_audio_fct
 from utils.constants import DEFAULT_LABEL_STR_COL, DEFAULT_LABEL_TOKENIZED_COL, DEFAULT_NUM_PROC
 
 
-def lowercase_fct(example: Dict[str, str]) -> Dict[str, str]:
+def lowercase_fct(example: Dict[str, Any]) -> Dict[str, Any]:
     return {DEFAULT_LABEL_STR_COL: example[DEFAULT_LABEL_STR_COL].lower()}
 
 
 def prepare_dataset_fct(batch: Dict[str, Any],
-                        tokenizer: WhisperTokenizer,
+                        tokenizer: WhisperTokenizer | WhisperTokenizerFast,
                         feature_extractor: WhisperFeatureExtractor) -> Dict[str, Any]:
     """
     Utility to create features for a dataset.
@@ -22,7 +22,7 @@ def prepare_dataset_fct(batch: Dict[str, Any],
     audio = batch["audio"]
     
     # Extract features from audio (including log-Mel input features):
-    # Note: the sampling rate arg is redundant but required to dismiss warnings.
+    # NOTE: the sampling rate arg is redundant but required to dismiss warnings.
     batch["input_features"] = feature_extractor(audio["array"],
                                                 sampling_rate=feature_extractor.sampling_rate).input_features[0]  # drop batch dimension
     
@@ -33,7 +33,7 @@ def prepare_dataset_fct(batch: Dict[str, Any],
 
 
 def preprocess_dataset(dataset_dict: DatasetDict,
-                       tokenizer: WhisperTokenizer,
+                       tokenizer: WhisperTokenizer | WhisperTokenizerFast,
                        feature_extractor: WhisperFeatureExtractor,
                        lowercase: bool = True,
                        augment: bool = False) -> DatasetDict:

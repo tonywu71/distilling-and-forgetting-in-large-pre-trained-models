@@ -2,18 +2,19 @@ import os
 import shutil
 from pathlib import Path
 
-from transformers import WhisperProcessor
+from transformers.models.whisper import WhisperProcessor
 from datasets import load_from_disk, DatasetDict, Dataset
 
-from dataloader.dataloader import load_dataset_dict
+from dataloader.dataset_loader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
+from dataloader.utils import get_fast_tokenizer_from_tokenizer
 from utils.finetune_config import FinetuneConfig
 from utils.distil_config import DistilConfig
 
 
 def smart_load_dataset_dict(config: FinetuneConfig | DistilConfig,
-                            processor: WhisperProcessor) -> DatasetDict | Dataset:
-    
+                            processor: WhisperProcessor,
+                            fast_tokenizer: bool = True) -> DatasetDict | Dataset:
     # Sanity check:
     processed_datasets_dir = Path(os.environ["PREPROCESSED_DATASETS_DIR"])
     if not processed_datasets_dir.exists():
@@ -48,12 +49,11 @@ def smart_load_dataset_dict(config: FinetuneConfig | DistilConfig,
         dataset_dict = load_dataset_dict(dataset_name=config.dataset_name)
         
         print(f"Preprocessing dataset `{config.dataset_name}`...")
-        dataset_dict = preprocess_dataset(dataset_dict,  # type: ignore
-                                          tokenizer=processor.tokenizer,  # type: ignore
-                                          feature_extractor=processor.feature_extractor,  # type: ignore
+        tokenizer = get_fast_tokenizer_from_tokenizer(processor.tokenizer) if fast_tokenizer else processor.tokenizer
+        dataset_dict = preprocess_dataset(dataset_dict,
+                                          tokenizer=tokenizer,
+                                          feature_extractor=processor.feature_extractor,
                                           augment=config.data_augmentation)
-        
-        # Note: The pytorch tensor conversation will be done in the DataCollator.
         
         Path(dataset_dir).mkdir(parents=True, exist_ok=True)
         dataset_dict.save_to_disk(dataset_dir)

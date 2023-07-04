@@ -1,0 +1,38 @@
+# Total training steps:
+# - 30 for batch_size = 32 and num_train_epochs = 10
+experiment_name: distil_whisper_base_to_tiny-seq_level_ranked-k_3-debug
+lang_name: english
+task: transcribe
+method_distil: seq_level_ranked
+teacher_model_name_or_path: openai/whisper-base
+student_model_name_or_path: openai/whisper-tiny
+is_tokenizer_multilingual: True
+model_dir: ./checkpoints/distillation/whisper_base_to_tiny/librispeech_debug/seq_level_ranked/k_3
+freeze_encoder: True
+freeze_decoder: False
+batch_size: 32
+gradient_accumulation_steps: 1
+eval_accumulation_steps:
+gradient_checkpointing: False
+data_augmentation: False
+dataset_name: librispeech_dummy
+force_reprocess_dataset: False
+optim: adamw_torch
+learning_rate: 1e-5
+warmup_steps: 5
+eval_steps: 10
+generation_num_beams: 1
+logging_steps: 10
+save_steps: 10000  # do not save checkpoints
+save_total_limit:
+num_train_epochs: 10
+early_stopping_patience: -1
+
+alpha_ce: 0.5
+distillation_num_beams: 3
+beta_decay: 2.0
+
+smart_load: True
+log_preds_to_wandb: True
+log_raw_str: True
+n_samples_per_wandb_logging_step: 8

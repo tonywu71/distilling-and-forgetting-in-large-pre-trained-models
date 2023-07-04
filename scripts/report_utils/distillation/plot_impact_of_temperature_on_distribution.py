@@ -51,7 +51,7 @@ def plot_impact_of_temperature_on_distribution(n_classes: int = typer.Option(4, 
     
     # Save figure:
     filename = "temperature_impact_on_teacher_distribution"
-    savepath = (DEFAULT_OUTPUT_DIR / "report" / "temperature_impact_on_distribution" / filename).with_suffix(".png")
+    savepath = (DEFAULT_OUTPUT_DIR / "temperature_impact_on_distribution").with_suffix(".png")
     savepath.parent.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     plt.savefig(savepath)

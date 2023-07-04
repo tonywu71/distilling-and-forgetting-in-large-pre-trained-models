@@ -4,7 +4,6 @@ import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 from typing import Tuple
-from pathlib import Path
 
 import pandas as pd
 
@@ -41,10 +40,10 @@ def main(filepath: str = typer.Argument(..., help="Path to CSV file that contain
         plt.ylabel(col_language) if not is_relative else plt.ylabel(f"Relative Δ{col_language}")
     
         # Save figure:
+        filename_stem = "plot_tac_forgetting"
         if is_relative:
-            savepath = (DEFAULT_OUTPUT_DIR / "report" / "forgetting_wrt_training_steps" / (Path(filepath).stem + f"-{col_language.replace(' (%)', '').replace(' ', '_')}-relative")).with_suffix(".png")
-        else:
-            savepath = (DEFAULT_OUTPUT_DIR / "report" / "forgetting_wrt_training_steps" / (Path(filepath).stem + f"-{col_language.replace(' (%)', '').replace(' ', '_')}")).with_suffix(".png")
+            filename_stem += "_relative"
+        savepath = (DEFAULT_OUTPUT_DIR / filename_stem).with_suffix(".png")
         savepath.parent.mkdir(parents=True, exist_ok=True)
         plt.tight_layout()
         plt.savefig(savepath)
