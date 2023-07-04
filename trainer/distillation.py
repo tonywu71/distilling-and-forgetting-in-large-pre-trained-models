@@ -7,7 +7,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
-from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer, PreTrainedModel, WhisperProcessor, WhisperTokenizer
+from transformers.modeling_utils import PreTrainedModel
+from transformers.trainer_seq2seq import Seq2SeqTrainer
+from transformers.training_args_seq2seq import Seq2SeqTrainingArguments
+from transformers.models.whisper import WhisperProcessor
 from transformers.modeling_outputs import Seq2SeqLMOutput
 from transformers.models.whisper.modeling_whisper import shift_tokens_right
 
@@ -275,10 +278,10 @@ class DistillationTrainer(Seq2SeqTrainer):
     
     
     def _compute_loss_seq_level_uniform(self,
-                                               student_model: PreTrainedModel,
-                                               inputs,
-                                               teacher_model: PreTrainedModel = None,
-                                               language: str = "english") -> tuple[torch.Tensor, Seq2SeqLMOutput]:
+                                        student_model: PreTrainedModel,
+                                        inputs,
+                                        teacher_model: PreTrainedModel = None,
+                                        language: str = "english") -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for k-best uniform sequence-level distillation where `k = self.args.distillation_num_beams`.
         
@@ -288,10 +291,10 @@ class DistillationTrainer(Seq2SeqTrainer):
     
     
     def _compute_loss_seq_level_ranked(self,
-                                              student_model: PreTrainedModel,
-                                              inputs,
-                                              teacher_model: PreTrainedModel = None,
-                                              language: str = "english") -> tuple[torch.Tensor, Seq2SeqLMOutput]:
+                                       student_model: PreTrainedModel,
+                                       inputs,
+                                       teacher_model: PreTrainedModel = None,
+                                       language: str = "english") -> tuple[torch.Tensor, Seq2SeqLMOutput]:
         """
         Compute the loss for k-best ranked sequence-level distillation where `k = self.args.distillation_num_beams`.
         

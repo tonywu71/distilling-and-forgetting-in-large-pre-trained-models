@@ -59,7 +59,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     is_seq_level = config.method_distil in ["seq_level_uniform", "seq_level_ranked"]
     
-    if is_seq_level:
+    if is_seq_level and config.distillation_num_beams > 1:
         print(f"Sequence-level distillation will be performed. Although the batch size is set to {config.batch_size}, " + \
               f"because {config.distillation_num_beams} beams will be used for distillation, " + \
               f"the actual batch size will {config.batch_size * config.distillation_num_beams}.")
@@ -100,7 +100,14 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     # ----------------------   Main   ----------------------
     
-    # Load student tokenizer and feature extractor:
+    # Load the feature extractor:
+    student_feature_extractor = WhisperFeatureExtractor.from_pretrained(
+        config.student_model_name_or_path,
+        language=config.lang_name,
+        task=config.task
+    )
+    
+    # Load the student tokenizer:
     student_tokenizer = WhisperTokenizerFast.from_pretrained(
         config.student_model_name_or_path,
         language=config.lang_name,
@@ -109,12 +116,6 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
     #       special tokens to the decoded sentence.
-    
-    student_feature_extractor = WhisperFeatureExtractor.from_pretrained(
-        config.student_model_name_or_path,
-        language=config.lang_name,
-        task=config.task
-    )
     
     # Load student processor (to wrap the whole pipeline for saving):
     student_processor = WhisperProcessor.from_pretrained(
@@ -147,9 +148,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         dataset_dict = load_dataset_dict(dataset_name=config.dataset_name)
         
         print(f"Preprocessing dataset `{config.dataset_name}`...")
-        dataset_dict = preprocess_dataset(dataset_dict,  # type: ignore
-                                          tokenizer=student_processor.tokenizer,  # type: ignore
-                                          feature_extractor=student_processor.feature_extractor,  # type: ignore
+        dataset_dict = preprocess_dataset(dataset_dict,
+                                          tokenizer=student_tokenizer,
+                                          feature_extractor=student_feature_extractor,
                                           augment=config.data_augmentation)
     
     print("\n-----------------------\n")
@@ -188,18 +189,18 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         
     if config.freeze_encoder:
         print("Freezing the student's encoder...")
-        student_model.freeze_encoder()  # type: ignore
+        student_model.freeze_encoder()
     if config.freeze_decoder:
         print("Freezing the student's decoder...")
-        decoder = student_model.get_decoder()  # type: ignore
+        decoder = student_model.get_decoder()
         for param in decoder.parameters():
             param.requires_grad = False
-        decoder._requires_grad = False  # type: ignore
+        decoder._requires_grad = False
     
     
     # Set config parameters for training:
     if config.gradient_checkpointing:
-        student_model.config.use_cache = False  # type: ignore
+        student_model.config.use_cache = False 
     
     
     # Set language and task for generation if not zero-shot. Also re-enable caching to speed-up evaluation:
@@ -252,16 +253,16 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         load_best_model_at_end=True,
         metric_for_best_model="wer",
         greater_is_better=False,  # the lower the WER, the better
-        report_to="wandb"  # type: ignore
+        report_to="wandb"
     )
     
-    if isinstance(config, TACDistilConfig):  # equivalent to `if tac`
+    if isinstance(config, TACDistilConfig):
         training_args = TACDistillationTrainingArguments(languages_to_preserve=config.languages_to_preserve,
                                                          method_tac=config.method_tac,
                                                          gamma_tac=config.gamma_tac,
                                                          **training_arguments_dict)
     else:
-        training_args = DistillationTrainingArguments(**training_arguments_dict)  # type: ignore
+        training_args = DistillationTrainingArguments(**training_arguments_dict)
     
     # Define the compute_metrics function:
     compute_metrics = partial(compute_string_edit_metrics_fct,
