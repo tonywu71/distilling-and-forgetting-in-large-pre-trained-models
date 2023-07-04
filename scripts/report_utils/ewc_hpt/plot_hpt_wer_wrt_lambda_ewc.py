@@ -3,6 +3,7 @@ import typer
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
+from typing import Tuple
 from pathlib import Path
 import pandas as pd
 
@@ -14,7 +15,8 @@ from utils.constants import DEFAULT_OUTPUT_DIR
 sns.set_theme(context="paper", style="ticks")
 
 
-def main(dirpath: Path = typer.Argument(..., file_okay=False, dir_okay=True)):
+def main(dirpath: Path = typer.Argument(..., file_okay=False, dir_okay=True),
+         figsize: Tuple[float, float] = typer.Option((12, 3), help="Figure size (width, height).")):
     assert dirpath.is_dir(), f"{dirpath} is not a directory"
     
     # Print the number of files found:
@@ -30,15 +32,15 @@ def main(dirpath: Path = typer.Argument(..., file_okay=False, dir_okay=True)):
     
     # Plot:
     n_cols = df["Dataset"].nunique()
-    fig, axis = plt.subplots(1, n_cols, figsize=(4*n_cols, 4))
+    fig, axis = plt.subplots(1, n_cols, figsize=figsize)
 
     for dataset_name, ax in zip(df["Dataset"].unique(), axis.ravel()):
         df_curr = df.loc[df["Dataset"]==dataset_name]
-        sns.barplot(data=df_curr, x="lambda_ewc", y="WER (%)", ax=ax)
+        sns.barplot(data=df_curr, y="lambda_ewc", x="WER (%)", orient="h", ax=ax)
         if float("inf") in df_curr["lambda_ewc"].unique():
-            y_vanilla = df_curr.loc[df_curr["lambda_ewc"] == float("inf"), "WER (%)"].item()
-            ax.axhline(y=y_vanilla, label=f"Original model (WER = {y_vanilla}%)", c="black", ls="--")
-            ax.legend(loc="lower right")
+            x_vanilla = df_curr.loc[df_curr["lambda_ewc"] == float("inf"), "WER (%)"].item()
+            ax.axvline(x=x_vanilla, label=f"Original model (WER = {x_vanilla}%)", c="black", ls="--")
+            ax.legend(loc="lower left")
         ax.set_title(dataset_name)
     
     # Save the DataFrame to CSV:

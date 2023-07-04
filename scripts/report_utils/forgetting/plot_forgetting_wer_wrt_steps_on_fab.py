@@ -18,7 +18,7 @@ sns.set_theme(context="paper", style="ticks")
 
 
 def main(filepath: Path = typer.Argument(..., exists=True, dir_okay=False, file_okay=True, resolve_path=True),
-         is_relative: bool = False,
+         is_relative: bool = typer.Option(False, help="Whether to plot relative WER difference instead of absolute WER."),
          figsize: Tuple[float, float] = typer.Option((6, 4), help="Figure size (width, height).")):
     """
     Script that takes a CSV output from `compare_multiple_models_to_csv.py` and saves
