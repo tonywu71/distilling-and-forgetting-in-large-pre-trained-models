@@ -10,7 +10,7 @@ is_tokenizer_multilingual: True
 model_dir: ./checkpoints/distillation/whisper_base_to_tiny/librispeech_debug/seq_level_uniform/k_3
 freeze_encoder: True
 freeze_decoder: False
-batch_size: 32
+batch_size: 16
 gradient_accumulation_steps: 1
 eval_accumulation_steps:
 gradient_checkpointing: False
