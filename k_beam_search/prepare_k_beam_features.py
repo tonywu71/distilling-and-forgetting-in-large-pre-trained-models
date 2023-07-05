@@ -9,6 +9,7 @@ def prepare_k_beam_features_fct(batch: Dict[str, Any],
                                 num_beams: int) -> Dict[str, Any]:
     """
     Utility to create K-Beam features for a dataset. Should be used with `Dataset.map()`.
+    Note: `num_beams` must be > 1.
     
     Important: The dataset must be converted to PyTorch format first.
     
@@ -17,16 +18,18 @@ def prepare_k_beam_features_fct(batch: Dict[str, Any],
     - `sequences_scores` -> (num_beams,)
     """
     
+    assert num_beams > 1, f"Invalid `num_beams` value: {num_beams}. Must be > 1."
+    
     device = model.device
     input_features = batch["input_features"].to(device)
     
     # Generate teacher predictions using K-beam search:
     outputs = model.generate(input_features,
-                             max_length=GEN_MAX_LENGTH,
-                             num_beams=num_beams,
-                             num_return_sequences=num_beams,
-                             output_scores=True,
-                             return_dict_in_generate=True)
+                                max_length=GEN_MAX_LENGTH,
+                                num_beams=num_beams,
+                                num_return_sequences=num_beams,
+                                output_scores=True,
+                                return_dict_in_generate=True)
     # NOTE:
     # - outputs.sequences -> (batch_size * num_beams, n_tokens)
     # - outputs.sequences_scores -> (batch_size * num_beams,)
