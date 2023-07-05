@@ -51,7 +51,8 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/finetune_whisper.py configs/finetune_configs/multilingual/ami_100h/finetune_tiny-ami_100h.yaml >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/finetune_configs/multilingual/ami_100h/finetune_tiny-ami_100h.yaml >> $LOG 2> $ERR
+python scripts/finetune_whisper.py configs/finetune_configs/multilingual_model/ami_100h/ami_100h_partial-hpt_reference.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

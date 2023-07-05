@@ -25,7 +25,7 @@ save_steps: 1200
 num_train_epochs: 2
 
 zero_shot_eval: False
-eval_batch_size: 512
+eval_batch_size: 256
 eval_accumulation_steps: 5
 save_total_limit:
 early_stopping_patience:

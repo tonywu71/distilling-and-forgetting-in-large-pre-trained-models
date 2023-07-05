@@ -22,7 +22,7 @@ logging_steps: 10
 save_steps: 10000  # do not save checkpoints
 num_train_epochs: 10
 
-eval_batch_size: 512
+eval_batch_size: 256
 eval_accumulation_steps:
 save_total_limit: 2
 early_stopping_patience: -1

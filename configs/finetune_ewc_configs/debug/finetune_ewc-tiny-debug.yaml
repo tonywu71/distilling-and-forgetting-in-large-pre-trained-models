@@ -22,13 +22,13 @@ logging_steps: 10
 save_steps: 10000  # do not save checkpoints
 num_train_epochs: 10
 
-eval_batch_size: 512
+eval_batch_size: 256
 eval_accumulation_steps:
 save_total_limit:
 early_stopping_patience: -1
 save_final_model: False
 
-dirpath_ewc: checkpoints/whisper-tiny/french/transcribe/mls_french_diagnostic/train
+dirpath_ewc: checkpoints/whisper-tiny/english/transcribe/ami_100h/train
 lambda_ewc: 0.1
 
 smart_load: True

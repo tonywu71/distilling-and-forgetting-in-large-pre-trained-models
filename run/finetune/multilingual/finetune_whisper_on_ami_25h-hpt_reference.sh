@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J finetune_ewc_hpt
+#SBATCH -J finetune_whisper_on_ami_100h
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=01:30:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,13 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_0.yaml --ewc >> $LOG 2> $ERR
-
-# python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e-2.yaml --ewc >> $LOG 2> $ERR
-# python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e-1.yaml --ewc >> $LOG 2> $ERR
-# python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e+0.yaml --ewc >> $LOG 2> $ERR
-# python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e+1.yaml --ewc >> $LOG 2> $ERR
-# python scripts/finetune_whisper.py configs/finetune_ewc_configs/hpt/ewc_hpt-lambda_1e+2.yaml --ewc >> $LOG 2> $ERR
+python scripts/finetune_whisper.py configs/finetune_configs/multilingual_model/ami_25h-hpt_reference/finetune_ami_25h-hpt_reference.yaml >> $LOG 2> $ERR
 
 #! #############################################
 
