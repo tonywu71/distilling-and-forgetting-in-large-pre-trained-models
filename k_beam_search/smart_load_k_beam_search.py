@@ -37,8 +37,7 @@ def get_k_beam_cache_dir(config: DistilConfig, parent_cache_dir: Path) -> str | 
 
 
 def smart_load_dataset_with_k_beam_search(config: DistilConfig,
-                                          dataset_dict: DatasetDict | Dataset,
-                                          zero_shot: bool = False) -> DatasetDict | Dataset:
+                                          dataset_dict: DatasetDict | Dataset) -> DatasetDict | Dataset:
     """
     Return a dataset with K-Beam search results. If a suitable cached dataset is found, it is loaded from disk.
     Otherwise, the dataset is preprocessed from scratch.
@@ -107,8 +106,7 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         # Get the mapping function:
         prepare_k_beam_features = partial(prepare_k_beam_features_fct,
                                           model=model,
-                                          num_beams=config.distillation_num_beams,
-                                          device=device)
+                                          num_beams=config.distillation_num_beams)
         
         # Map the dataset:
         print("\nGenerating K-Beam search output...")

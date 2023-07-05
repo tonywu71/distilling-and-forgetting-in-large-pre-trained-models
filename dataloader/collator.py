@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple, Union
 
 import torch
-from transformers import WhisperTokenizer, WhisperTokenizerFast, WhisperFeatureExtractor
+from transformers.models.whisper import WhisperTokenizer, WhisperTokenizerFast, WhisperFeatureExtractor
 
 from utils.constants import DEFAULT_LABEL_TOKENIZED_COL, LOSS_MASK_IDX
 
@@ -67,7 +67,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         
         # Add K-beam features if distillation:
         if self.add_k_beam_features:
-            # --- Teacher sequences ---
+            # ==================== Teacher sequences ====================
             # NOTE: `tokenizer.pad` only accepts 1D-tensors which is not the case here as here they have shape (num_beams, n_tokens).
             #       However, we can take advantage of the fact that batch and beam dimensions are indifferent. Hence, we can simply
             #       iterate over the batch dimension and pad each tensor individually.
@@ -90,7 +90,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             batch["teacher_sequences"] = teacher_sequences.reshape(batch_size, -1, teacher_sequences.shape[-1])  # (batch_size, num_beams, n_tokens)
             batch["attention_mask_teacher_sequences"] = attention_mask_teacher_sequences.reshape(batch_size, -1, teacher_sequences.shape[-1])  # (batch_size, num_beams, n_tokens)
             
-            # --- Teacher sequences scores ---
+            # ==================== Teacher sequences scores ====================
             # No need to pad the scores as they are already of the same shape:
             batch["teacher_sequences_scores"] = torch.stack([feature["teacher_sequences_scores"] for feature in features], dim=0)  # (batch_size, num_beams)
         

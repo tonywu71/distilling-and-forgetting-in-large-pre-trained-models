@@ -6,8 +6,7 @@ from utils.constants import GEN_MAX_LENGTH
 
 def prepare_k_beam_features_fct(batch: Dict[str, Any],
                                 model: WhisperForConditionalGeneration,
-                                num_beams: int,
-                                device: str | torch.DeviceObjType) -> Dict[str, Any]:
+                                num_beams: int) -> Dict[str, Any]:
     """
     Utility to create K-Beam features for a dataset. Should be used with `Dataset.map()`.
     
@@ -18,6 +17,7 @@ def prepare_k_beam_features_fct(batch: Dict[str, Any],
     - `sequences_scores` -> (num_beams,)
     """
     
+    device = model.device
     input_features = batch["input_features"].to(device)
     
     # Generate teacher predictions using K-beam search:
