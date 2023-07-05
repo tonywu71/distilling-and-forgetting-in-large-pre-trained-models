@@ -51,8 +51,9 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/finetune_whisper.py configs/finetune_tac_configs/hpt/finetune_tac_hpt-gamma_1e-2.yaml --tac >> $LOG 2> $ERR
+# python scripts/finetune_whisper.py configs/finetune_tac_configs/hpt/finetune_tac_hpt-gamma_1e-2.yaml --tac >> $LOG 2> $ERR
 # python scripts/finetune_whisper.py configs/finetune_tac_configs/hpt/finetune_tac_hpt-gamma_1e-1.yaml --tac >> $LOG 2> $ERR
+python scripts/finetune_whisper.py configs/finetune_tac_configs/hpt/finetune_tac_hpt-gamma_1e+0.yaml --tac >> $LOG 2> $ERR
 
 #! #############################################
 
