@@ -37,7 +37,8 @@ def get_k_beam_cache_dir(config: DistilConfig, parent_cache_dir: Path) -> str | 
 
 
 def smart_load_dataset_with_k_beam_search(config: DistilConfig,
-                                          dataset_dict: DatasetDict | Dataset) -> DatasetDict | Dataset:
+                                          dataset_dict: DatasetDict | Dataset,
+                                          teacher_caching_batch_size: int = 32) -> DatasetDict | Dataset:
     """
     Return a dataset with K-Beam search results. If a suitable cached dataset is found, it is loaded from disk.
     Otherwise, the dataset is preprocessed from scratch.
@@ -97,9 +98,9 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         print(f"Loading teacher model for K-Beam search from `{config.teacher_model_name_or_path}`...")
         model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)
         
+        # Speed up inference if possible:
         if device == "cuda:0":
             model = BetterTransformer.transform(model)
-        
         model.generate = partial(model.generate, language=config.lang_name, task=config.task, use_cache=True)
         
         
@@ -112,7 +113,7 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         print("\nGenerating K-Beam search output...")
         dataset_dict = dataset_dict.with_format("pt").map(prepare_k_beam_features,
                                                           batched=True,
-                                                          batch_size=config.batch_size)
+                                                          batch_size=teacher_caching_batch_size)
         
         # Set the path to save the K-Beam search results:
         cache_filepath = str(parent_cache_dir / f"k_{config.distillation_num_beams}")

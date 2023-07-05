@@ -12,7 +12,8 @@ from functools import partial
 from pathlib import Path
 from pprint import pprint
 
-from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
+from transformers.trainer_seq2seq import Seq2SeqTrainer
+from transformers.training_args_seq2seq import Seq2SeqTrainingArguments
 from transformers.models.whisper import (WhisperForConditionalGeneration,
                                          WhisperTokenizerFast,
                                          WhisperFeatureExtractor,

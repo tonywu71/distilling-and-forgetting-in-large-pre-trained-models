@@ -40,7 +40,8 @@ from utils.constants import GEN_MAX_LENGTH
 
 
 
-def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file.")):
+def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file."),
+         teacher_caching_batch_size: int = typer.Option(32, help="Batch size for caching teacher outputs."),):
     """
     Distil Whisper based on the provided config file.
     """
@@ -152,7 +153,8 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     if is_seq_level:
         # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
         dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
-                                                             dataset_dict=dataset_dict)    
+                                                             dataset_dict=dataset_dict,
+                                                             teacher_caching_batch_size=teacher_caching_batch_size)    
         print("\n-----------------------\n")
     
     
