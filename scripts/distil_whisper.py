@@ -13,6 +13,7 @@ from pathlib import Path
 from pprint import pprint
 
 import torch
+
 from transformers.models.whisper import (WhisperForConditionalGeneration,
                                          WhisperTokenizerFast,
                                          WhisperFeatureExtractor,
@@ -27,21 +28,19 @@ from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.dataset_loader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
 from evaluation.wer_metric import compute_string_edit_metrics_fct
-from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
-from trainer.tac_distillation import TACDistillationTrainer, TACDistillationTrainingArguments
-from utils.constants import GEN_MAX_LENGTH
+from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
+from trainer.distillation_word_level import DistillationWordLevelTrainingArguments, DistillationWordLevelTrainer
+from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments, DistillationSeqLevelTrainer
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
-from utils.tac_distil_config import TACDistilConfig
+
+from utils.constants import GEN_MAX_LENGTH
 
 
 
-def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file."),
-         tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
-                                              "Flag should be used if only if the config file is for TAC distillation.")):
+def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file.")):
     """
     Distil Whisper based on the provided config file.
     """
@@ -49,10 +48,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
     
     # --------------------   Load config   --------------------
-    if tac:
-        config = TACDistilConfig.from_yaml(config_filepath)
-    else:
-        config = DistilConfig.from_yaml(config_filepath)
+    config = DistilConfig.from_yaml(config_filepath)
     
     # Sanity check:
     assert_if_distillation_tokenizers_match(config)
@@ -72,13 +68,11 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Prepare tags for W&B:
     list_tags = [config.dataset_name,
                  config.method_distil]
-    if tac:
-        list_tags.append("tac")
     
     # -----------------------   W&B   -----------------------
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT_TRAINING"],
-               job_type="distillation_with_tac" if tac else "distillation",
+               job_type="distillation",
                tags=list_tags,
                name=config.experiment_name,
                config=asdict(config))
@@ -256,13 +250,13 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         report_to="wandb"
     )
     
-    if isinstance(config, TACDistilConfig):
-        training_args = TACDistillationTrainingArguments(languages_to_preserve=config.languages_to_preserve,
-                                                         method_tac=config.method_tac,
-                                                         gamma_tac=config.gamma_tac,
-                                                         **training_arguments_dict)
+    if config.method_distil == "word_level":
+        training_args = DistillationWordLevelTrainingArguments(**training_arguments_dict)
+    elif config.method_distil in ["seq_level_uniform", "seq_level_ranked"]:
+        training_args = DistillationSeqLevelTrainingArguments(**training_arguments_dict)
     else:
-        training_args = DistillationTrainingArguments(**training_arguments_dict)
+        raise ValueError(f"Invalid distillation method `{config.method_distil}`.")
+        
     
     # Define the compute_metrics function:
     compute_metrics = partial(compute_string_edit_metrics_fct,
@@ -293,7 +287,6 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         args=training_args,
         model=student_model,  # type: ignore
         student_processor=student_processor,
-        teacher_model=teacher_model,
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
@@ -302,10 +295,12 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         callbacks=callbacks
     )
     
-    if tac:
-        distillation_trainer = TACDistillationTrainer(**trainer_args)
+    if isinstance(training_args, DistillationWordLevelTrainingArguments):
+        distillation_trainer = DistillationWordLevelTrainer(teacher_model=teacher_model, **trainer_args)
+    elif isinstance(training_args, DistillationSeqLevelTrainingArguments):
+        distillation_trainer = DistillationSeqLevelTrainer(**trainer_args)
     else:
-        distillation_trainer = DistillationTrainer(**trainer_args)
+        raise ValueError(f"Invalid training arguments type `{type(training_args)}`.")
     
     
     print("\n-----------------------\n")
