@@ -3,7 +3,7 @@
 # - 850 for batch_size = 32 and num_train_epochs = 0.25
 # - 340 for batch_size = 32 and num_train_epochs = 0.1
 
-experiment_name: distil_word_level-tiny-hpt_alpha_5e-1_temp_5
+experiment_name: distil_word_level-medium_to_tiny-hpt_alpha_5e-1_temp_5
 lang_name: english
 task: transcribe
 method_distil: word_level
@@ -27,7 +27,7 @@ save_steps: 2800  # do not save the model during training
 num_train_epochs: 0.25
 
 zero_shot_eval: False
-eval_batch_size: 256
+eval_batch_size: 512
 eval_accumulation_steps:
 save_total_limit:
 early_stopping_patience:

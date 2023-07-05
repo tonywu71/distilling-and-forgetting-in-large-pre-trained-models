@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J finetune_tac_hpt
+#SBATCH -J 1_best_seq_level_hpt
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=02:00:00
+#SBATCH --time=08:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,8 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/finetune_whisper.py configs/finetune_tac_configs/hpt/finetune_tac_hpt-gamma_1e-2.yaml --tac >> $LOG 2> $ERR
-# python scripts/finetune_whisper.py configs/finetune_tac_configs/hpt/finetune_tac_hpt-gamma_1e-1.yaml --tac >> $LOG 2> $ERR
+python scripts/distil_whisper.py configs/distil_configs/1_best/hpt/distil_1_best-hpt-alpha_5e-1_temp_5.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

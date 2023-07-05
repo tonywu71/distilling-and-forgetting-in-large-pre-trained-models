@@ -24,7 +24,7 @@ save_steps: 800  # do not save the model during training
 num_train_epochs: 0.1
 
 zero_shot_eval: False
-eval_batch_size: 256
+eval_batch_size: 512
 eval_accumulation_steps:
 save_total_limit:
 early_stopping_patience:
