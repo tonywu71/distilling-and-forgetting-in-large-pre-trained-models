@@ -28,6 +28,8 @@ save_total_limit:
 num_train_epochs: 10
 early_stopping_patience: -1
 
+save_final_model: False
+
 alpha_ce: 0.5
 distillation_num_beams: 1
 
