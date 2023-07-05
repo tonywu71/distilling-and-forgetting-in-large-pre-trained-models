@@ -1,7 +1,9 @@
 from typing import Optional, List
 
 import torch
-from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
+
+from transformers.trainer_seq2seq import Seq2SeqTrainer
+from transformers.training_args_seq2seq import Seq2SeqTrainingArguments
 from transformers.modeling_utils import PreTrainedModel
 from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor
 from transformers.feature_extraction_utils import BatchFeature

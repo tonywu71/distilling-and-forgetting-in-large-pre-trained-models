@@ -1,10 +1,9 @@
 from typing import Any, Optional, Literal, Dict
-from abc import ABC, abstractmethod
+from abc import ABC
 
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from transformers.modeling_utils import PreTrainedModel
 from transformers.trainer_seq2seq import Seq2SeqTrainer
 from transformers.training_args_seq2seq import Seq2SeqTrainingArguments
 from transformers.models.whisper import WhisperProcessor
