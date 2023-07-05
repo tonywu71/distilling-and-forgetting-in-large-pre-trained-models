@@ -4,6 +4,8 @@ import torch
 from transformers.models.whisper import WhisperTokenizer, WhisperTokenizerFast, WhisperFeatureExtractor
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from trainer.trainer_utils import get_padded_mask_from_tensor
+
 from utils.constants import LOSS_MASK_IDX
 
 
@@ -65,11 +67,17 @@ class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWi
             # Important: We should not use the loss mask here as `teacher_sequences_features` will only be used as the reference sequence and
             #            thus cannot contain the special token `LOSS_MASK_IDX`.
             teacher_sequences, attention_mask_teacher_sequences = self.preprocess_tokenized_labels(teacher_sequences_features,
-                                                                                                    replace_padded_with_loss_mask=self.replace_padded_with_loss_mask_for_labels,
-                                                                                                    discard_first_bos_token=self.discard_first_bos_token)  # (batch_size * num_beams, n_tokens)
+                                                                                                   replace_padded_with_loss_mask=self.replace_padded_with_loss_mask_for_labels,
+                                                                                                   discard_first_bos_token=self.discard_first_bos_token)  # (batch_size * num_beams, n_tokens)
+            
+            # NOTE: Right now, `attention_mask_teacher_sequences` is not correct because it doesn't take into account the padding performed by the generate method during
+            #       caching. Therefore, we will have to recompute the attention mask here.
+            attention_mask_teacher_sequences = get_padded_mask_from_tensor(teacher_sequences)
+            teacher_sequences = teacher_sequences.masked_fill(attention_mask_teacher_sequences.eq(1), LOSS_MASK_IDX)
             
             batch["teacher_sequences"] = teacher_sequences.reshape(batch_size, -1, teacher_sequences.shape[-1])  # (batch_size, num_beams, n_tokens)
             batch["attention_mask_teacher_sequences"] = attention_mask_teacher_sequences.reshape(batch_size, -1, teacher_sequences.shape[-1])  # (batch_size, num_beams, n_tokens)
+            
             
             # ==================== Teacher sequences scores ====================
             # No need to pad the scores as they are already of the same shape:
