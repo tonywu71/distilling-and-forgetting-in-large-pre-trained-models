@@ -4,14 +4,14 @@ import pandas as pd
 
 import torch
 
-from transformers import (PreTrainedModel,
-                          WhisperProcessor,
-                          TrainingArguments,
-                          TrainerState,
-                          TrainerControl)
+from transformers.modeling_utils import PreTrainedModel
+from transformers.models.whisper import WhisperProcessor
+from transformers.training_args import TrainingArguments
+from transformers.trainer_callback import TrainerState, TrainerControl
 from datasets import Dataset
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from dataloader.collator_distil import DataCollatorWithPaddingForSeqLevelDistillation
 from evaluation.string_edit_metrics import get_string_edit_metrics
 from callbacks.base_training_callback import BaseWandbTrainingCallback
 from utils.distil_config import DistilConfig
@@ -51,10 +51,10 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
         self.is_seq_level = (self.config.method_distil in ["seq_level_uniform", "seq_level_ranked"])
         
         if self.is_seq_level:  # If sequence-level distillation...
-            self.data_collator_with_k_beam = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=self.processor.tokenizer,
-                                                                                  feature_extractor=self.processor.feature_extractor,
-                                                                                  add_k_beam_features=True)
-        else:  # If word-level distillation...
+            self.data_collator_with_k_beam = DataCollatorWithPaddingForSeqLevelDistillation(tokenizer=self.processor.tokenizer,
+                                                                                            feature_extractor=self.processor.feature_extractor,
+                                                                                            distillation_k_beam=config.distillation_num_beams)
+        elif self.config.method_distil == "word_level":  # If word-level distillation...
             assert teacher_model is not None, "`teacher_model` must be provided for word-level distillation"
             self.teacher_model = teacher_model
     
@@ -158,7 +158,10 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             label_ids[label_ids==LOSS_MASK_IDX] = self.processor.tokenizer.pad_token_id  # type: ignore
             
             # Generate the predictions:
-            pred_ids_teacher = data["teacher_sequences"][0:1, 0, :]  # get 1st element of the size-1 batch and 1st beam
+            if self.config.distillation_num_beams == 1:
+                pred_ids_teacher = data["teacher_sequences"][0:1, :]
+            else:
+                pred_ids_teacher = data["teacher_sequences"][0:1, 0, :]  # get 1st element of the size-1 batch and 1st beam
             pred_ids_student = student_model.generate(input_features,
                                                       max_length=GEN_MAX_LENGTH,
                                                       num_beams=self.config.generation_num_beams)  # type: ignore

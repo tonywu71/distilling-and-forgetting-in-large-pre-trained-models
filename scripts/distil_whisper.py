@@ -25,6 +25,7 @@ import wandb
 from callbacks.distillation_callback import WandbDistillationCallback
 from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from dataloader.collator_distil import DataCollatorWithPaddingForSeqLevelDistillation
 from dataloader.dataset_loader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
@@ -121,19 +122,18 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     
     # Create the data collator that will be used to prepare the data for training:
+    data_collator_args = dict(
+        tokenizer=student_tokenizer,
+        feature_extractor=student_feature_extractor,
+        return_attention_mask=True,
+        replace_padded_with_loss_mask_for_labels=True,
+        discard_first_bos_token=True
+    )
     if not is_seq_level:  # If word-level...
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=student_tokenizer,
-                                                             feature_extractor=student_feature_extractor,
-                                                             return_attention_mask=True,
-                                                             replace_padded_with_loss_mask_for_labels=True,
-                                                             discard_first_bos_token=True)
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(**data_collator_args)
     else:
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=student_tokenizer,
-                                                             feature_extractor=student_feature_extractor,
-                                                             return_attention_mask=True,
-                                                             replace_padded_with_loss_mask_for_labels=True,
-                                                             discard_first_bos_token=True,
-                                                             add_k_beam_features=True)
+        data_collator = DataCollatorWithPaddingForSeqLevelDistillation(**data_collator_args,
+                                                                       distillation_k_beam=config.distillation_num_beams)
     
     # Load the dataset and preprocess it:
     if config.smart_load:
@@ -282,7 +282,6 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
                                                    n_samples=config.n_samples_per_wandb_logging_step,
                                                    teacher_model=teacher_model,  # should be None if word-level distillation
                                                    log_raw_str=config.log_raw_str))
-    
     
     # Create the trainer:
     trainer_args = dict(

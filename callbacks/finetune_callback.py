@@ -4,11 +4,10 @@ import pandas as pd
 
 import torch
 
-from transformers import (PreTrainedModel,
-                          WhisperProcessor,
-                          TrainingArguments,
-                          TrainerState,
-                          TrainerControl)
+from transformers.modeling_utils import PreTrainedModel
+from transformers.models.whisper import WhisperProcessor
+from transformers.training_args import TrainingArguments
+from transformers.trainer_callback import TrainerState, TrainerControl
 from datasets import Dataset
 
 from callbacks.base_training_callback import BaseWandbTrainingCallback

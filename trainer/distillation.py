@@ -59,15 +59,7 @@ class DistillationTrainerBase(ABC, Seq2SeqTrainer):
         self.student_tokenizer = get_fast_tokenizer_from_tokenizer(self.student_processor.tokenizer)
         
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    
-    
-    @abstractmethod
-    def compute_loss(self,
-                     model: PreTrainedModel,
-                     inputs,
-                     return_outputs: bool = False):
-        pass
-    
+        
     
     def get_eval_dataloader(self, eval_dataset: Optional[Dataset] = None):
         """

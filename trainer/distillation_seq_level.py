@@ -56,7 +56,45 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
                      inputs,
                      return_outputs: bool = False):
         """
+        Compute the loss for sequence-level distillation. Override the `compute_loss` method of `Seq2SeqTrainer`.
+        """
+        if self.args.distillation_num_beams == 1:
+            loss_fn = self.compute_loss_1_best
+        else:
+            loss_fn = self.compute_loss_k_best
+        return loss_fn(model, inputs, return_outputs)
+    
+    
+    def compute_loss_1_best(self,
+                            model: WhisperForConditionalGeneration,
+                            inputs,
+                            return_outputs: bool = False):
+        """
+        Compute the loss for 1-best sequence-level distillation where `k = self.args.distillation_num_beams`.
+        """
+        inputs_ce = inputs.copy()
+        inputs_ce.pop("teacher_sequences")
+        inputs_ce.pop("attention_mask_teacher_sequences")
+        loss_ce, output_student_wrt_labels = super().compute_loss(model, inputs_ce, return_outputs=True)
+        
+        inputs_kd = inputs.copy()
+        inputs_kd["labels"] = inputs["teacher_sequences"]
+        inputs_kd["attention_mask"] = inputs["attention_mask_teacher_sequences"]
+        inputs_kd.pop("teacher_sequences")
+        inputs_kd.pop("attention_mask_teacher_sequences")
+        loss_kd = super().compute_loss(model, inputs_kd, return_outputs=False)
+        
+        loss = self.args.alpha_ce * loss_ce + (1 - self.args.alpha_ce) * loss_kd
+        return (loss, output_student_wrt_labels) if return_outputs else loss
+    
+    
+    def compute_loss_k_best(self,
+                            model: WhisperForConditionalGeneration,
+                            inputs,
+                            return_outputs: bool = False):
+        """
         Compute the loss for k-best sequence-level distillation where `k = self.args.distillation_num_beams`.
+        If k = 1, use `compute_loss_1_best` instead.
         """
         
         language = self.student_tokenizer.language

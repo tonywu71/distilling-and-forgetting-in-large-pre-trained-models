@@ -87,7 +87,7 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
                 print(f"Deleting previously saved K-Beam search results at `{k_beam_cache_dir}`...")
                 os.remove(k_beam_cache_dir)
         else:
-            print(f"Previously saved and suitable K-Beam search results could not be found in `{parent_cache_dir}`.")
+            print(f"No previously cached K-Beam search results could be found in `{k_beam_cache_dir}`.")
         
         # Get the device:
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -103,14 +103,14 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         
         if config.distillation_num_beams == 1:
             dataset_dict = dataset_dict.with_format("pt")
-            dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequence": model.generate(batch["input_features"].to(device), max_length=255)},
+            dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": model.generate(batch["input_features"].to(device), max_length=255)},
                                             batched=True, batch_size=teacher_caching_batch_size)
             tokenizer = WhisperTokenizerFast.from_pretrained(config.teacher_model_name_or_path, 
                                                              language=config.lang_name,
                                                              task=config.task)
-            dataset_dict = dataset_dict.map(lambda batch: {"teacher_labels": tokenizer.batch_decode(batch["teacher_sequence"], skip_special_tokens=True)},
+            dataset_dict = dataset_dict.map(lambda batch: {"teacher_text": tokenizer.batch_decode(batch["teacher_sequences"], skip_special_tokens=True)},
                                             batched=True,  # use default batch size for decoding
-                                            remove_columns=["teacher_sequence"])
+                                            remove_columns=["teacher_sequences"])
         else:
             prepare_k_beam_features = partial(prepare_k_beam_features_fct,
                                               model=model,
@@ -119,6 +119,9 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
             dataset_dict = dataset_dict.with_format("pt").map(prepare_k_beam_features,
                                                               batched=True,
                                                               batch_size=teacher_caching_batch_size)
+        
+        if device == "cuda:0":
+            model = BetterTransformer.reverse(model)
         
         # Set the path to save the K-Beam search results:
         cache_filepath = str(parent_cache_dir / f"k_{config.distillation_num_beams}")
