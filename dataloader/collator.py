@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple, Union
 
 import torch
-from transformers.models.whisper import WhisperTokenizer, WhisperTokenizerFast, WhisperFeatureExtractor
+from transformers.models.whisper import WhisperTokenizer, WhisperFeatureExtractor
 
 from utils.constants import DEFAULT_LABEL_TOKENIZED_COL, LOSS_MASK_IDX
 
@@ -12,7 +12,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     """
     
     def __init__(self,
-                 tokenizer: WhisperTokenizer | WhisperTokenizerFast,
+                 tokenizer: WhisperTokenizer,
                  feature_extractor: WhisperFeatureExtractor,
                  return_attention_mask: bool = False,
                  replace_padded_with_loss_mask_for_labels: bool = False,

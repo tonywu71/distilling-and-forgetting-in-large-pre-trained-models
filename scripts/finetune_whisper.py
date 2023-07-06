@@ -15,8 +15,6 @@ from pprint import pprint
 from transformers.trainer_seq2seq import Seq2SeqTrainer
 from transformers.training_args_seq2seq import Seq2SeqTrainingArguments
 from transformers.models.whisper import (WhisperForConditionalGeneration,
-                                         WhisperTokenizerFast,
-                                         WhisperFeatureExtractor,
                                          WhisperProcessor)
 from transformers.trainer_callback import TrainerCallback, EarlyStoppingCallback
 
@@ -98,22 +96,6 @@ def main(config_filepath: str,
     
     
     # ----------------------   Main   ----------------------
-
-    # Load student tokenizer and feature extractor:
-    tokenizer = WhisperTokenizerFast.from_pretrained(
-        config.pretrained_model_name_or_path,
-        language=config.lang_name,
-        task=config.task
-    )
-    
-    # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
-    #       special tokens to the decoded sentence.
-    
-    feature_extractor = WhisperFeatureExtractor.from_pretrained(
-        config.pretrained_model_name_or_path,
-        language=config.lang_name,
-        task=config.task
-    )
     
     # Load student processor (to wrap the whole pipeline for saving):
     processor = WhisperProcessor.from_pretrained(
@@ -122,10 +104,12 @@ def main(config_filepath: str,
         task=config.task
     )
 
+    # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
+    #       special tokens to the decoded sentence.
     
     # Create the data collator that will be used to prepare the data for training:
-    data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=tokenizer,
-                                                         feature_extractor=feature_extractor,
+    data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=processor.tokenizer,
+                                                         feature_extractor=processor.feature_extractor,
                                                          replace_padded_with_loss_mask_for_labels=True,
                                                          discard_first_bos_token=True)
     

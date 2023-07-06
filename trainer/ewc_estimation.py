@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from transformers.modeling_utils import PreTrainedModel
-from transformers.models.whisper import (WhisperTokenizerFast,
+from transformers.models.whisper import (WhisperTokenizer,
                                          WhisperFeatureExtractor,
                                          WhisperForConditionalGeneration)
 from transformers.models.whisper import WhisperForConditionalGeneration
@@ -65,7 +65,7 @@ def get_ewc_params(model: PreTrainedModel,
 
 def load_and_prepare_dataset(dataset_name: str,
                              split: str,
-                             tokenizer: WhisperTokenizerFast,
+                             tokenizer: WhisperTokenizer,
                              feature_extractor: WhisperFeatureExtractor,
                              lowercase: bool = True) -> Dataset:
     """
@@ -108,7 +108,7 @@ def get_ewc_params_for_whisper(pretrained_model_name_or_path: str,
     model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path).to(device)
     
     # Initialize the tokenizer and feature extractor:
-    tokenizer = WhisperTokenizerFast.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
+    tokenizer = WhisperTokenizer.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
     feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
     
     # Load and prepare the dataset:

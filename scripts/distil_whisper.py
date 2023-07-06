@@ -14,10 +14,7 @@ from pprint import pprint
 
 import torch
 
-from transformers.models.whisper import (WhisperForConditionalGeneration,
-                                         WhisperTokenizerFast,
-                                         WhisperFeatureExtractor,
-                                         WhisperProcessor)
+from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor
 from transformers.trainer_callback import TrainerCallback, EarlyStoppingCallback
 
 import wandb
@@ -95,36 +92,21 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     
     # ----------------------   Main   ----------------------
-    
-    # Load the feature extractor:
-    student_feature_extractor = WhisperFeatureExtractor.from_pretrained(
-        config.student_model_name_or_path,
-        language=config.lang_name,
-        task=config.task
-    )
-    
-    # Load the student tokenizer:
-    student_tokenizer = WhisperTokenizerFast.from_pretrained(
-        config.student_model_name_or_path,
-        language=config.lang_name,
-        task=config.task
-    )
-    
-    # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
-    #       special tokens to the decoded sentence.
-    
+
     # Load student processor (to wrap the whole pipeline for saving):
     student_processor = WhisperProcessor.from_pretrained(
         config.student_model_name_or_path,
         language=config.lang_name,
         task=config.task
     )
+    # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
+    #       special tokens to the decoded sentence.
     
     
     # Create the data collator that will be used to prepare the data for training:
     data_collator_args = dict(
-        tokenizer=student_tokenizer,
-        feature_extractor=student_feature_extractor,
+        tokenizer=student_processor.tokenizer,
+        feature_extractor=student_processor.feature_extractor,
         return_attention_mask=True,
         replace_padded_with_loss_mask_for_labels=True,
         discard_first_bos_token=True
@@ -144,8 +126,8 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         
         print(f"Preprocessing dataset `{config.dataset_name}`...")
         dataset_dict = preprocess_dataset(dataset_dict,
-                                          tokenizer=student_tokenizer,
-                                          feature_extractor=student_feature_extractor,
+                                          tokenizer=student_processor.tokenizer,
+                                          feature_extractor=student_processor.feature_extractor,
                                           augment=config.data_augmentation)
     
     print("\n-----------------------\n")

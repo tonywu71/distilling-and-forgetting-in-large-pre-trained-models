@@ -1,10 +1,11 @@
 from typing import List, Dict, Tuple, Union
 
 import torch
-from transformers.models.whisper import WhisperTokenizer, WhisperTokenizerFast, WhisperFeatureExtractor
+from transformers.models.whisper import WhisperTokenizer, WhisperFeatureExtractor
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from trainer.trainer_utils import get_padded_mask_from_tensor
+from dataloader.utils import get_fast_tokenizer
+from trainer.trainer_utils import get_language_special_token, get_padded_mask_from_tensor, get_task_special_token
 
 from utils.constants import LOSS_MASK_IDX
 
@@ -15,7 +16,7 @@ class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWi
     """
     
     def __init__(self,
-                 tokenizer: WhisperTokenizer | WhisperTokenizerFast,
+                 tokenizer: WhisperTokenizer,
                  feature_extractor: WhisperFeatureExtractor,
                  return_attention_mask: bool = False,
                  replace_padded_with_loss_mask_for_labels: bool = False,
@@ -95,8 +96,23 @@ class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWi
         be a list of dicts with a key `input_ids` containing the raw string labels (UNTOKENIZED).
         """
         
+        # Get the fast tokenizer:
+        fast_tokenizer = get_fast_tokenizer(self.tokenizer)
+        
         # Pad the features:
-        labels_batch = self.tokenizer(features, padding=True, return_tensors="pt")
+        labels_batch = fast_tokenizer(features, padding=True, return_tensors="pt")
+        
+        # IMPORTANT: There is a bug in the current version of transformers (4.30.2) that makes
+        #            `WhisperTokenizerFast` not work properly. It would forget to output the special tokens
+        #            for `language` and `task`.
+        # HOTFIX: Concatenate the special tokens to the vocabulary of the fast tokenizer manually.
+        assert self.tokenizer.language is not None, "The tokenizer must have a language set."
+        language_token = get_language_special_token(self.tokenizer.language)
+        assert self.tokenizer.task is not None, "The tokenizer must have a task set."
+        task_token = get_task_special_token(self.tokenizer.task)
+        missing_special_tokens = torch.LongTensor([language_token, task_token]).expand(labels_batch["input_ids"].shape[0], -1)
+        labels_batch["input_ids"] = torch.cat([labels_batch["input_ids"][..., 0:1], missing_special_tokens, labels_batch["input_ids"][..., 1:]], axis=1)
+        labels_batch["attention_mask"] = torch.cat([labels_batch["attention_mask"][..., 0:1], torch.ones_like(missing_special_tokens), labels_batch["attention_mask"][..., 1:]], axis=1)
         
         # Get the labels and attention mask:
         tokenized_labels = labels_batch["input_ids"]

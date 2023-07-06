@@ -9,7 +9,7 @@ from transformers.training_args_seq2seq import Seq2SeqTrainingArguments
 from transformers.models.whisper import WhisperProcessor
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from dataloader.utils import get_fast_tokenizer_from_tokenizer
+from dataloader.utils import get_fast_tokenizer
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -55,7 +55,7 @@ class DistillationTrainerBase(ABC, Seq2SeqTrainer):
         super().__init__(args=args, **kwargs)
         self.args = args
         self.student_processor = student_processor
-        self.student_tokenizer = get_fast_tokenizer_from_tokenizer(self.student_processor.tokenizer)
+        self.student_tokenizer = get_fast_tokenizer(self.student_processor.tokenizer)
         
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         
