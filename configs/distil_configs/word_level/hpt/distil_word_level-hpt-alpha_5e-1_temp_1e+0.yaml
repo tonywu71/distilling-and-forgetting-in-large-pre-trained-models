@@ -3,14 +3,14 @@
 # - 850 for batch_size = 32 and num_train_epochs = 0.25
 # - 340 for batch_size = 32 and num_train_epochs = 0.1
 
-experiment_name: distil_word_level-medium_to_tiny-hpt_alpha_5e-1_temp_1
+experiment_name: distil_word_level-medium_to_tiny-hpt_alpha_5e-1_temp_1e+0
 lang_name: english
 task: transcribe
 method_distil: word_level
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_5e-1_temp_1
+model_dir: ./checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_5e-1_temp_1e+0
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32

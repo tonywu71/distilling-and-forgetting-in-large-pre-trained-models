@@ -71,16 +71,16 @@ echo "python `which python`": >> $LOG
 #     --batch-size 1024 >> $LOG 2> $ERR
 
 
+
+# =====================       1-best       =====================
+
+
+
+
 # =====================       EWC       =====================
 
 # python scripts/eval_whisper.py \
-#     checkpoints/finetune_ewc/whisper_tiny/hpt/lambda_0/final \
-#     --dataset-name fab \
-#     --subset ami --subset librispeech_fr \
-#     --batch-size 1024 >> $LOG 2> $ERR
-
-# python scripts/eval_whisper.py \
-#     checkpoints/finetune_ewc/whisper_tiny/hpt/lambda_1e-1/final \
+#     checkpoints/finetune_ewc/whisper_tiny/hpt/lambda_2e-1/final \
 #     --dataset-name fab \
 #     --subset ami --subset librispeech_fr \
 #     --batch-size 1024 >> $LOG 2> $ERR
@@ -91,11 +91,8 @@ echo "python `which python`": >> $LOG
 #     --subset ami --subset librispeech_fr \
 #     --batch-size 1024 >> $LOG 2> $ERR
 
-# python scripts/eval_whisper.py \
-#     checkpoints/finetune_ewc/whisper_tiny/hpt/lambda_1e+1/final \
-#     --dataset-name fab \
-#     --subset ami --subset librispeech_fr \
-#     --batch-size 1024 >> $LOG 2> $ERR
+
+# --- Full training ---
 
 # python scripts/eval_whisper.py \
 #     checkpoints/finetune_ewc/whisper_tiny/ami_100h-lambda_1e+0/final \
@@ -104,13 +101,25 @@ echo "python `which python`": >> $LOG
 #     --batch-size 1024 >> $LOG 2> $ERR
 
 # python scripts/eval_whisper.py \
-#     checkpoints/finetune_ewc/whisper_tiny/ami_100h-lambda_1e-2/final \
+#     checkpoints/finetune_ewc/whisper_tiny/ami_100h-lambda_2e-1/final \
 #     --dataset-name fab \
 #     --subset ami --subset librispeech_fr \
 #     --batch-size 1024 >> $LOG 2> $ERR
 
+python scripts/eval_whisper.py \
+    checkpoints/finetune_ewc/whisper_tiny/ami_100h-lambda_1e-3/final \
+    --dataset-name fab \
+    --subset ami --subset librispeech_fr \
+    --batch-size 1024 >> $LOG 2> $ERR
+
 
 # =====================       TAC       =====================
+
+# python scripts/eval_whisper.py \
+#     checkpoints/finetune_tac/whisper_tiny/hpt/gamma_1e-2/final \
+#     --dataset-name fab \
+#     --subset ami --subset librispeech_fr \
+#     --batch-size 1024 >> $LOG 2> $ERR
 
 # python scripts/eval_whisper.py \
 #     checkpoints/finetune_tac/whisper_tiny/hpt/gamma_1e-1/final \
@@ -119,7 +128,7 @@ echo "python `which python`": >> $LOG
 #     --batch-size 1024 >> $LOG 2> $ERR
 
 # python scripts/eval_whisper.py \
-#     checkpoints/finetune_tac/whisper_tiny/hpt/gamma_1e-2/final \
+#     checkpoints/finetune_tac/whisper_tiny/hpt/gamma_1e+0/final \
 #     --dataset-name fab \
 #     --subset ami --subset librispeech_fr \
 #     --batch-size 1024 >> $LOG 2> $ERR
