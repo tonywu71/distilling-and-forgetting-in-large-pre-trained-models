@@ -51,22 +51,6 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/save_whisper_ewc_params.py openai/whisper-tiny \
-#     --language french \
-#     --task transcribe \
-#     --dataset-name mls_french_diagnostic \
-#     --skip-lowercase \
-#     --split validation \
-#     --cache-dir /home/tw581/rds/hpc-work/ewc_dataset_cache/mls_french_diagnostic_validation >> $LOG 2> $ERR
-
-# python scripts/save_whisper_ewc_params.py openai/whisper-tiny \
-#     --language french \
-#     --task transcribe \
-#     --dataset-name mls_french_diagnostic \
-#     --skip-lowercase \
-#     --split train \
-#     --cache-dir /home/tw581/rds/hpc-work/ewc_dataset_cache/mls_french_diagnostic_train >> $LOG 2> $ERR
-
 python scripts/save_whisper_ewc_params.py openai/whisper-tiny \
     --language english \
     --task transcribe \
