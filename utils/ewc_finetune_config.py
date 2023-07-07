@@ -14,6 +14,7 @@ class EWCFinetuneConfig(FinetuneConfig):
     
     def __post_init__(self) -> None:
         super().__post_init__()
+        self.regularization_method = "ewc"
         assert self.dirpath_ewc is not None, "`dirpath_ewc` must be specified."
         assert Path(self.dirpath_ewc).exists(), f"`dirpath_ewc` does not exist: {self.dirpath_ewc}"
     
