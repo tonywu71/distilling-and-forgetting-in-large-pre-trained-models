@@ -78,7 +78,7 @@ echo "python `which python`": >> $LOG
 # =====================       Word-level       =====================
 
 python scripts/eval_whisper.py \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_5e-1_temp_1/final \
+    checkpoints/distil_word_level/whisper_finetuned_medium_to_pre_finetuned_tiny/hpt/alpha_5e-1_temp_1/final \
     --dataset-name fab \
     --subset ami --subset librispeech_fr \
     --batch-size 1024 >> $LOG 2> $ERR
