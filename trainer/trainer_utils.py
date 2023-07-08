@@ -2,9 +2,10 @@ import torch
 from transformers.models.whisper.tokenization_whisper import LANGUAGES, TO_LANGUAGE_CODE
 
 
-def get_language_token(language: str):
+def get_language_special_token(language: str) -> int:
     """
     Get the Whisper language token for a given (supported) language.
+    IMPORTANT: Only applies to the multilingual Whisper tokenizer.
     """
     idx_shift = 50258
     langs = tuple(LANGUAGES.keys())
@@ -22,6 +23,21 @@ def get_language_token(language: str):
         )
     
     return idx_shift + 1 + langs.index(language_id)
+
+
+def get_task_special_token(task: str) -> int:
+    """
+    Get the Whisper task token for a given task.
+    IMPORTANT: Only applies to the multilingual Whisper tokenizer.
+    """
+    TRANSLATE_TOKEN_ID = 50358
+    TRANSCRIBE_TOKEN_ID = 50359
+    if task == "translate":
+        return TRANSLATE_TOKEN_ID
+    elif task == "transcribe":
+        return TRANSCRIBE_TOKEN_ID
+    else:
+        raise ValueError(f"Unsupported task: {task}. Task should be one of: ['translate', 'transcribe'].")
 
 
 def get_padded_mask_from_tensor(tensor: torch.Tensor) -> torch.Tensor:

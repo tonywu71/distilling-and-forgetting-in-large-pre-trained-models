@@ -28,10 +28,12 @@ save_total_limit:
 num_train_epochs: 10
 early_stopping_patience: -1
 
+save_final_model: False
+
 alpha_ce: 0.5
 temperature: 2.0
 
 smart_load: True
 log_preds_to_wandb: True
 log_raw_str: True
-n_samples_per_wandb_logging_step: 8
+n_samples_per_wandb_logging_step: 16

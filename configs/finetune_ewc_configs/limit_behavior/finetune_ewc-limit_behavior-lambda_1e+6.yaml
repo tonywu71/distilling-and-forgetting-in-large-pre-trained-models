@@ -30,7 +30,7 @@ save_total_limit:
 early_stopping_patience:
 save_final_model: True  # save the model only at the end of training
 
-dirpath_ewc: checkpoints/whisper-tiny/french/transcribe/mls_french_diagnostic/train
+dirpath_ewc: checkpoints/whisper-tiny/english/transcribe/ami_100h/train
 lambda_ewc: 1000000  # 1e+6
 
 smart_load: True
@@ -38,4 +38,4 @@ force_reprocess_dataset: False
 eval_first_step: False
 log_preds_to_wandb: True
 log_raw_str: True
-n_samples_per_wandb_logging_step: 8
+n_samples_per_wandb_logging_step: 16

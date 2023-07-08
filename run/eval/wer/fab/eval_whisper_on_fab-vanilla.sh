@@ -59,8 +59,8 @@ echo "python `which python`": >> $LOG
 
 python scripts/eval_whisper.py \
     openai/whisper-tiny \
-    --dataset-name fab_diagnostic \
-    --subset ami --subset librispeech_fr --subset librispeech_pt \
+    --dataset-name fab \
+    --subset ami --subset tedlium --subset librispeech_fr \
     --batch-size 1024 >> $LOG 2> $ERR
 
 #! #############################################

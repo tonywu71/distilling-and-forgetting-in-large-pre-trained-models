@@ -52,25 +52,12 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/checkpoint-500 \
-    checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/checkpoint-1000 \
-    checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/checkpoint-1500 \
-    checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/checkpoint-2000 \
-    checkpoints/finetuning/whisper_tiny/librispeech_clean_100h-benchmark/checkpoint-2500 \
-    checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/checkpoint-500 \
-    checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/checkpoint-1000 \
-    checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/checkpoint-1500 \
-    checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/checkpoint-2000 \
-    checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_1e-2/checkpoint-2500 \
-    checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/checkpoint-500 \
-    checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/checkpoint-1000 \
-    checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/checkpoint-1500 \
-    checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/checkpoint-2000 \
-    checkpoints/finetune_tac/whisper_tiny/librispeech_clean_100h-gamma_2e-1/checkpoint-2500 \
-    --dataset-name fab \
-    --subset librispeech_en_clean --subset librispeech_fr --subset librispeech_pt \
-    --batch-size 256 \
-    >> $LOG 2> $ERR
+    checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_5e-1_temp_5e-1/final \
+    checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_5e-1_temp_5e+0/final \
+    --dataset-name ami \
+    --batch-size 1024 \
+    >> $LOG 2> $ER
+
 
 #! #############################################
 

@@ -7,14 +7,12 @@ from datasets import load_from_disk, DatasetDict, Dataset
 
 from dataloader.dataset_loader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
-from dataloader.utils import get_fast_tokenizer_from_tokenizer
 from utils.finetune_config import FinetuneConfig
 from utils.distil_config import DistilConfig
 
 
 def smart_load_dataset_dict(config: FinetuneConfig | DistilConfig,
-                            processor: WhisperProcessor,
-                            fast_tokenizer: bool = True) -> DatasetDict | Dataset:
+                            processor: WhisperProcessor) -> DatasetDict | Dataset:
     # Sanity check:
     processed_datasets_dir = Path(os.environ["PREPROCESSED_DATASETS_DIR"])
     if not processed_datasets_dir.exists():
@@ -49,9 +47,8 @@ def smart_load_dataset_dict(config: FinetuneConfig | DistilConfig,
         dataset_dict = load_dataset_dict(dataset_name=config.dataset_name)
         
         print(f"Preprocessing dataset `{config.dataset_name}`...")
-        tokenizer = get_fast_tokenizer_from_tokenizer(processor.tokenizer) if fast_tokenizer else processor.tokenizer
         dataset_dict = preprocess_dataset(dataset_dict,
-                                          tokenizer=tokenizer,
+                                          tokenizer=processor.tokenizer,
                                           feature_extractor=processor.feature_extractor,
                                           augment=config.data_augmentation)
         

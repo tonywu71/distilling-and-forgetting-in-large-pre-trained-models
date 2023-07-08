@@ -61,17 +61,17 @@ class DistilConfig:
     
     
     # ======== Knowledge distillation hyperparameters ========
-    # General:
-    alpha_ce: float = 0.5
+    # For all methods:
+    alpha_ce: Optional[float] = None
     
     # `word_level`:
-    temperature: float = 2
+    temperature: Optional[float] = None
     
     # Sequence-level (`seq_level_uniform`, `seq_level_ranked`)
     distillation_num_beams: Optional[int] = None
     
     # `seq_level_ranked`:
-    beta_decay: Optional[float] = 2.
+    beta_decay: Optional[float] = None
     
     
     # ======== Other ========

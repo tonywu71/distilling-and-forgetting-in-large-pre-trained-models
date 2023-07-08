@@ -15,6 +15,7 @@ class TACFinetuneConfig(FinetuneConfig):
     def __post_init__(self) -> None:
         """Set default values and run sanity checks after initialization."""
         super().__post_init__()
+        self.regularization_method = "tac"
         assert self.languages_to_preserve, "The `languages_to_preserve` must not be empty."
     
     

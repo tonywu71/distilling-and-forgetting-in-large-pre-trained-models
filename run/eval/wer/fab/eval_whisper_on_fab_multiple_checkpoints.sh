@@ -51,14 +51,23 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
+# python scripts/eval_whisper_multiple_checkpoints.py \
+#     checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-600 \
+#     checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-1200 \
+#     checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-1800 \
+#     checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-2400 \
+#     checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-3000 \
+#     --dataset-name fab \
+#     --subset ami --subset tedlium --subset librispeech_fr \
+#     --batch-size 1024 \
+#     >> $LOG 2> $ERR
+
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-600 \
-    checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-1200 \
-    checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-1800 \
-    checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-2400 \
-    checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-3000 \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/alpha_2e-1/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/alpha_5e-1/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/alpha_8e-1/final \
     --dataset-name fab \
-    --subset ami --subset tedlium --subset librispeech_fr \
+    --subset ami --subset librispeech_fr \
     --batch-size 1024 \
     >> $LOG 2> $ERR
 

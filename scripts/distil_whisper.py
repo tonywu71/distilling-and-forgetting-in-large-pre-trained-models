@@ -13,10 +13,8 @@ from pathlib import Path
 from pprint import pprint
 
 import torch
-from transformers.models.whisper import (WhisperForConditionalGeneration,
-                                         WhisperTokenizerFast,
-                                         WhisperFeatureExtractor,
-                                         WhisperProcessor)
+
+from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor
 from transformers.trainer_callback import TrainerCallback, EarlyStoppingCallback
 
 import wandb
@@ -24,24 +22,24 @@ import wandb
 from callbacks.distillation_callback import WandbDistillationCallback
 from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from dataloader.collator_distil import DataCollatorWithPaddingForSeqLevelDistillation
 from dataloader.dataset_loader import load_dataset_dict
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
 from evaluation.wer_metric import compute_string_edit_metrics_fct
-from trainer.distillation import DistillationTrainer, DistillationTrainingArguments
-from trainer.tac_distillation import TACDistillationTrainer, TACDistillationTrainingArguments
-from utils.constants import GEN_MAX_LENGTH
+from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
+from trainer.distillation_word_level import DistillationWordLevelTrainingArguments, DistillationWordLevelTrainer
+from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments, DistillationSeqLevelTrainer
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
-from utils.tac_distil_config import TACDistilConfig
+
+from utils.constants import GEN_MAX_LENGTH
 
 
 
 def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file."),
-         tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
-                                              "Flag should be used if only if the config file is for TAC distillation.")):
+         teacher_caching_batch_size: int = typer.Option(32, help="Batch size for caching teacher outputs."),):
     """
     Distil Whisper based on the provided config file.
     """
@@ -49,17 +47,14 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
     
     # --------------------   Load config   --------------------
-    if tac:
-        config = TACDistilConfig.from_yaml(config_filepath)
-    else:
-        config = DistilConfig.from_yaml(config_filepath)
+    config = DistilConfig.from_yaml(config_filepath)
     
     # Sanity check:
     assert_if_distillation_tokenizers_match(config)
     
     is_seq_level = config.method_distil in ["seq_level_uniform", "seq_level_ranked"]
     
-    if is_seq_level:
+    if is_seq_level and config.distillation_num_beams > 1:
         print(f"Sequence-level distillation will be performed. Although the batch size is set to {config.batch_size}, " + \
               f"because {config.distillation_num_beams} beams will be used for distillation, " + \
               f"the actual batch size will {config.batch_size * config.distillation_num_beams}.")
@@ -72,13 +67,11 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Prepare tags for W&B:
     list_tags = [config.dataset_name,
                  config.method_distil]
-    if tac:
-        list_tags.append("tac")
     
     # -----------------------   W&B   -----------------------
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT_TRAINING"],
-               job_type="distillation_with_tac" if tac else "distillation",
+               job_type="distillation",
                tags=list_tags,
                name=config.experiment_name,
                config=asdict(config))
@@ -99,45 +92,30 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     
     # ----------------------   Main   ----------------------
-    
-    # Load student tokenizer and feature extractor:
-    student_tokenizer = WhisperTokenizerFast.from_pretrained(
-        config.student_model_name_or_path,
-        language=config.lang_name,
-        task=config.task
-    )
-    
-    # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
-    #       special tokens to the decoded sentence.
-    
-    student_feature_extractor = WhisperFeatureExtractor.from_pretrained(
-        config.student_model_name_or_path,
-        language=config.lang_name,
-        task=config.task
-    )
-    
+
     # Load student processor (to wrap the whole pipeline for saving):
     student_processor = WhisperProcessor.from_pretrained(
         config.student_model_name_or_path,
         language=config.lang_name,
         task=config.task
     )
+    # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
+    #       special tokens to the decoded sentence.
     
     
     # Create the data collator that will be used to prepare the data for training:
+    data_collator_args = dict(
+        tokenizer=student_processor.tokenizer,
+        feature_extractor=student_processor.feature_extractor,
+        return_attention_mask=True,
+        replace_padded_with_loss_mask_for_labels=True,
+        discard_first_bos_token=True
+    )
     if not is_seq_level:  # If word-level...
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=student_tokenizer,
-                                                             feature_extractor=student_feature_extractor,
-                                                             return_attention_mask=True,
-                                                             replace_padded_with_loss_mask_for_labels=True,
-                                                             discard_first_bos_token=True)
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(**data_collator_args)
     else:
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=student_tokenizer,
-                                                             feature_extractor=student_feature_extractor,
-                                                             return_attention_mask=True,
-                                                             replace_padded_with_loss_mask_for_labels=True,
-                                                             discard_first_bos_token=True,
-                                                             add_k_beam_features=True)
+        data_collator = DataCollatorWithPaddingForSeqLevelDistillation(**data_collator_args,
+                                                                       distillation_k_beam=config.distillation_num_beams)
     
     # Load the dataset and preprocess it:
     if config.smart_load:
@@ -147,9 +125,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         dataset_dict = load_dataset_dict(dataset_name=config.dataset_name)
         
         print(f"Preprocessing dataset `{config.dataset_name}`...")
-        dataset_dict = preprocess_dataset(dataset_dict,  # type: ignore
-                                          tokenizer=student_processor.tokenizer,  # type: ignore
-                                          feature_extractor=student_processor.feature_extractor,  # type: ignore
+        dataset_dict = preprocess_dataset(dataset_dict,
+                                          tokenizer=student_processor.tokenizer,
+                                          feature_extractor=student_processor.feature_extractor,
                                           augment=config.data_augmentation)
     
     print("\n-----------------------\n")
@@ -157,7 +135,8 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     if is_seq_level:
         # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
         dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
-                                                             dataset_dict=dataset_dict)    
+                                                             dataset_dict=dataset_dict,
+                                                             teacher_caching_batch_size=teacher_caching_batch_size)    
         print("\n-----------------------\n")
     
     
@@ -188,18 +167,18 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         
     if config.freeze_encoder:
         print("Freezing the student's encoder...")
-        student_model.freeze_encoder()  # type: ignore
+        student_model.freeze_encoder()
     if config.freeze_decoder:
         print("Freezing the student's decoder...")
-        decoder = student_model.get_decoder()  # type: ignore
+        decoder = student_model.get_decoder()
         for param in decoder.parameters():
             param.requires_grad = False
-        decoder._requires_grad = False  # type: ignore
+        decoder._requires_grad = False
     
     
     # Set config parameters for training:
     if config.gradient_checkpointing:
-        student_model.config.use_cache = False  # type: ignore
+        student_model.config.use_cache = False 
     
     
     # Set language and task for generation if not zero-shot. Also re-enable caching to speed-up evaluation:
@@ -252,16 +231,16 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         load_best_model_at_end=True,
         metric_for_best_model="wer",
         greater_is_better=False,  # the lower the WER, the better
-        report_to="wandb"  # type: ignore
+        report_to="wandb"
     )
     
-    if isinstance(config, TACDistilConfig):  # equivalent to `if tac`
-        training_args = TACDistillationTrainingArguments(languages_to_preserve=config.languages_to_preserve,
-                                                         method_tac=config.method_tac,
-                                                         gamma_tac=config.gamma_tac,
-                                                         **training_arguments_dict)
+    if config.method_distil == "word_level":
+        training_args = DistillationWordLevelTrainingArguments(**training_arguments_dict)
+    elif config.method_distil in ["seq_level_uniform", "seq_level_ranked"]:
+        training_args = DistillationSeqLevelTrainingArguments(**training_arguments_dict)
     else:
-        training_args = DistillationTrainingArguments(**training_arguments_dict)  # type: ignore
+        raise ValueError(f"Invalid distillation method `{config.method_distil}`.")
+        
     
     # Define the compute_metrics function:
     compute_metrics = partial(compute_string_edit_metrics_fct,
@@ -286,13 +265,11 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
                                                    teacher_model=teacher_model,  # should be None if word-level distillation
                                                    log_raw_str=config.log_raw_str))
     
-    
     # Create the trainer:
     trainer_args = dict(
         args=training_args,
         model=student_model,  # type: ignore
         student_processor=student_processor,
-        teacher_model=teacher_model,
         train_dataset=dataset_dict["train"],  # type: ignore
         eval_dataset=dataset_dict["validation"],  # type: ignore
         data_collator=data_collator,
@@ -301,10 +278,12 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         callbacks=callbacks
     )
     
-    if tac:
-        distillation_trainer = TACDistillationTrainer(**trainer_args)
+    if isinstance(training_args, DistillationWordLevelTrainingArguments):
+        distillation_trainer = DistillationWordLevelTrainer(teacher_model=teacher_model, **trainer_args)
+    elif isinstance(training_args, DistillationSeqLevelTrainingArguments):
+        distillation_trainer = DistillationSeqLevelTrainer(**trainer_args)
     else:
-        distillation_trainer = DistillationTrainer(**trainer_args)
+        raise ValueError(f"Invalid training arguments type `{type(training_args)}`.")
     
     
     print("\n-----------------------\n")
