@@ -41,7 +41,10 @@ class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWi
         
         if self.distillation_k_beam == 1:
             # --- Teacher labels (NON-tokenized) ---
-            label_features = [feature["teacher_text"] for feature in features]  # get only the feature of interest
+            label_features = [feature["teacher_text"].lower() for feature in features]  # get only the feature of interest
+            
+            # NOTE: The text has not been lowercased yet. We have to do it here as Whisper has been trained on lowercased text.
+            
             labels, attention_mask = self.preprocess_untokenized_labels(label_features,
                                                                         replace_padded_with_loss_mask=self.replace_padded_with_loss_mask_for_labels,
                                                                         discard_first_bos_token=self.discard_first_bos_token)  # (batch_size, n_tokens)
