@@ -42,7 +42,8 @@ def main(config_filepath: str,
          ewc: bool = typer.Option(False, help="Whether to use Elastic Weight Consolidation or not." + \
                                               "Config file should be formatted for EWC fine-tuning."),
          tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
-                                              "Config file should be formatted for TAC fine-tuning.")):
+                                              "Config file should be formatted for TAC fine-tuning."),
+         debug: bool = typer.Option(False, help="Whether to run in debug mode or not.")):
 
     """
     Fine-tune the Whisper model on the LibriSpeech dataset.
@@ -78,7 +79,8 @@ def main(config_filepath: str,
                job_type="finetuning",
                tags=list_tags,
                name=config.experiment_name,
-               config=asdict(config))
+               config=asdict(config),
+               mode="disabled" if debug else None)
     
     
     # ----------------------   Setup   ----------------------    

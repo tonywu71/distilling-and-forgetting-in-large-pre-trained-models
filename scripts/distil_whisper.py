@@ -39,7 +39,8 @@ from utils.constants import GEN_MAX_LENGTH
 
 
 def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file."),
-         teacher_caching_batch_size: int = typer.Option(32, help="Batch size for caching teacher outputs."),):
+         teacher_caching_batch_size: int = typer.Option(32, help="Batch size for caching teacher outputs."),
+         debug: bool = typer.Option(False, help="Whether to run in debug mode or not.")):
     """
     Distil Whisper based on the provided config file.
     """
@@ -74,7 +75,8 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
                job_type="distillation",
                tags=list_tags,
                name=config.experiment_name,
-               config=asdict(config))
+               config=asdict(config),
+               mode="disabled" if debug else None)
     
     
     # ----------------------   Setup   ----------------------    
