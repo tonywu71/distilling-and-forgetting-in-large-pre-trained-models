@@ -59,11 +59,11 @@ echo "python `which python`": >> $LOG
 #     --subset ami --subset librispeech_fr \
 #     --batch-size 1024 >> $LOG 2> $ERR
 
-python scripts/eval_whisper.py \
-    checkpoints/finetuning/whisper_medium/ami_25h_hpt_reference_teacher/final \
-    --dataset-name fab \
-    --subset ami --subset librispeech_fr \
-    --batch-size 128 >> $LOG 2> $ERR
+# python scripts/eval_whisper.py \
+#     checkpoints/finetuning/whisper_medium/ami_25h_hpt_reference_teacher/final \
+#     --dataset-name fab \
+#     --subset ami --subset librispeech_fr \
+#     --batch-size 128 >> $LOG 2> $ERR
 
 
 # =====================       1-best       =====================
@@ -77,35 +77,16 @@ python scripts/eval_whisper.py \
 
 # =====================       Word-level       =====================
 
-# python scripts/eval_whisper.py \
-#     checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_5e-1_temp_5e-1/final \
-#     --dataset-name fab \
-#     --subset ami --subset librispeech_fr \
-#     --batch-size 1024 >> $LOG 2> $ERR
-
-# python scripts/eval_whisper.py \
-#     checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_5e-1_temp_5e+0/final \
-#     --dataset-name fab \
-#     --subset ami --subset librispeech_fr \
-#     --batch-size 1024 >> $LOG 2> $ERR
-
-# python scripts/eval_whisper.py \
-#     checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_8e-1_temp_5e-1/final \
-#     --dataset-name fab \
-#     --subset ami --subset librispeech_fr \
-#     --batch-size 1024 >> $LOG 2> $ERR
-
-# python scripts/eval_whisper.py \
-#     checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_8e-1_temp_1/final \
-#     --dataset-name fab \
-#     --subset ami --subset librispeech_fr \
-#     --batch-size 1024 >> $LOG 2> $ERR
-
+python scripts/eval_whisper.py \
+    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_5e-1_temp_1/final \
+    --dataset-name fab \
+    --subset ami --subset librispeech_fr \
+    --batch-size 1024 >> $LOG 2> $ERR
 
 # =====================       EWC       =====================
 
 # python scripts/eval_whisper.py \
-#     checkpoints/finetune_ewc/whisper_tiny/ami_100h-lambda_1e+0/final \
+#     checkpoints/finetune_ewc/whisper_tiny/ami_100h-lambda_1e-4/final \
 #     --dataset-name fab \
 #     --subset ami --subset librispeech_fr \
 #     --batch-size 1024 >> $LOG 2> $ERR

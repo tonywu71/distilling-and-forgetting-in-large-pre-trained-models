@@ -56,8 +56,12 @@ echo "python `which python`": >> $LOG
 # python scripts/distil_whisper.py configs/distil_configs/word_level/hpt/distil_word_level-hpt-alpha_8e-1_temp_5e-1.yaml >> $LOG 2> $ERR
 # python scripts/distil_whisper.py configs/distil_configs/word_level/hpt/distil_word_level-hpt-alpha_8e-1_temp_1e+0.yaml >> $LOG 2> $ERR
 
+# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/distil_word_level-hpt-alpha_2e-1_temp_5e+0.yaml >> $LOG 2> $ERR
+
 # python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/distil_word_level-hpt-alpha_5e-1_temp_1e+0.yaml >> $LOG 2> $ERR
-python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/distil_word_level-hpt-alpha_8e-1_temp_1e+0.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/distil_word_level-hpt-alpha_8e-1_temp_1e+0.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/distil_word_level-hpt-alpha_9e-1_temp_2e+0.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/distil_word_level-hpt-alpha_5e-1_temp_1.yaml >> $LOG 2> $ERR
 
 
 #! #############################################
