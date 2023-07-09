@@ -57,8 +57,8 @@ def log_edit_metrics_to_wandb(df_edit_metrics: pd.DataFrame,
     return
 
 
-def save_preds_to_json(predictions: List[str],
-                       references: List[str],
+def save_preds_to_json(references: List[str],
+                       predictions: List[str],
                        savepath: str) -> None:
     """
     Export `references` and `predictions` to a JSON file.
