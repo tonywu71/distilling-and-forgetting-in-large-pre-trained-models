@@ -77,7 +77,7 @@ class DistillationWordLevelTrainer(DistillationTrainerBase):
             logits_teacher = output_teacher.logits  # (batch_size, n_tokens_labels, vocab_size)
         
         # Initialize KL-divergence loss:
-        kl_div_loss = nn.KLDivLoss(reduction="mean")
+        kl_div_loss = nn.KLDivLoss(reduction="batchmean")
         
         # Important:
         # - `KLDivLoss` argument order is the opposite of the one for the KL(·||·) mathematical notation
