@@ -129,7 +129,7 @@ class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWi
             # If a BOS ("Beginning Of Sequence") token was appended in previous tokenization step (which is
             # the case with the default Whisper tokenizer), discard it as it will get appended later anyway
             # when computing loss (see the `shift_tokens_right` method).
-            if (tokenized_labels[:, 0] == self.tokenizer.bos_token_id).all().cpu().item():
+            if (tokenized_labels[:, 0] == self.sot_token).all().cpu().item():
                 tokenized_labels = tokenized_labels[:, 1:]
                 attention_mask = attention_mask[:, 1:]
         
