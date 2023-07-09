@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple, Union
+from typing import Dict, Tuple, Any
 
 import torch
 from transformers.models.whisper import WhisperTokenizer, WhisperFeatureExtractor
@@ -27,7 +27,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     
     
     def __call__(self,
-                 features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
+                 features: Dict[str, Any]) -> Dict[str, torch.Tensor]:
         """
         Split inputs and labels since they have to be of different lengths and need different padding methods.
         
@@ -68,7 +68,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     
     
     def preprocess_tokenized_labels(self,
-                                    features: List[Dict[str, Union[List[int], torch.Tensor]]],
+                                    features: Dict[str, Any],
                                     replace_padded_with_loss_mask: bool = True,
                                     discard_first_bos_token: bool = True) -> Tuple[torch.Tensor, torch.Tensor]:
         """
