@@ -3,12 +3,12 @@ import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from collections import defaultdict
-
-import torch
-
-import pandas as pd
+import json
 from tqdm.auto import tqdm
 
+import pandas as pd
+
+import torch
 from transformers.models.whisper import (WhisperTokenizer,
                                          WhisperTokenizerFast,
                                          WhisperFeatureExtractor,
@@ -20,6 +20,8 @@ from dataloader.dataset_loader import gen_from_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from evaluation.string_edit_metrics import get_string_edit_metrics
 from normalization.whisper_normalization import get_whisper_normalizer
+from utils.file_io import extract_output_savepath_from_model_path
+
 from utils.constants import DEFAULT_EVAL_BATCH_SIZE, DEFAULT_LABEL_STR_COL, GEN_MAX_LENGTH
 
 
@@ -29,7 +31,8 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   zero_shot: bool = False,
                                   num_beams: int = 1,
                                   batch_size: int = DEFAULT_EVAL_BATCH_SIZE,
-                                  fast_tokenizer: bool = True) -> pd.DataFrame:
+                                  fast_tokenizer: bool = True,
+                                  save_preds: bool = False) -> pd.DataFrame:
     """
     Evaluate a Whisper model on a dataset group and return a DataFrame with the results.
     """
@@ -107,6 +110,14 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
             
             references.append(ref)
             predictions.append(pred)
+        
+        if save_preds:
+            # Export `references` and `predictions` to a JSON file:
+            data = {'references': references, 'predictions': predictions}
+            savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-preds.json"
+            with open(savepath, 'w') as file:
+                json.dump(data, file)
+            print(f"Exported references and predictions to `{savepath}`.")
         
         # Compute the WER in percent:
         string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=references, predictions=predictions))
