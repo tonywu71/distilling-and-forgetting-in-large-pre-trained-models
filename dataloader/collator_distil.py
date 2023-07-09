@@ -7,7 +7,7 @@ from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.utils import get_fast_tokenizer
 from trainer.trainer_utils import get_language_special_token, get_padded_mask_from_tensor, get_task_special_token
 
-from utils.constants import LOSS_MASK_IDX
+from utils.constants import DEFAULT_TOKENIZER_MAX_LENGTH, LOSS_MASK_IDX
 
 
 class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWithPadding):
@@ -103,7 +103,7 @@ class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWi
         fast_tokenizer = get_fast_tokenizer(self.tokenizer)
         
         # Pad the features:
-        labels_batch = fast_tokenizer(features, padding=True, return_tensors="pt")
+        labels_batch = fast_tokenizer(features, padding=True, truncation=True, max_length=DEFAULT_TOKENIZER_MAX_LENGTH, return_tensors="pt")
         
         # IMPORTANT: There is a bug in the current version of transformers (4.30.2) that makes
         #            `WhisperTokenizerFast` not work properly. It would forget to output the special tokens

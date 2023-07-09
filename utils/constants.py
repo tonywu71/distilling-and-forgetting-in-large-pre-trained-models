@@ -33,6 +33,8 @@ DEFAULT_LABEL_TOKENIZED_COL = "labels"  # default column name used by the Huggin
 MIN_INPUT_LENGTH = 0.0
 MAX_INPUT_LENGTH = 30.0
 
+DEFAULT_TOKENIZER_MAX_LENGTH = 445 # although by default Whisper has a max length of 448, we truncate more tokens to leave room for the addiational special tokens
+
 DEFAULT_EVAL_BATCH_SIZE = 256  # works for Whisper tiny
 DEFAULT_EVAL_NUM_BEAMS = 1
 

@@ -76,6 +76,7 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
         inputs_ce = inputs.copy()
         inputs_ce.pop("teacher_sequences")
         inputs_ce.pop("attention_mask_teacher_sequences")
+        
         loss_ce, output_student_wrt_labels = super().compute_loss(model, inputs_ce, return_outputs=True)
         
         inputs_kd = inputs.copy()
@@ -84,16 +85,7 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
         inputs_kd.pop("teacher_sequences")
         inputs_kd.pop("attention_mask_teacher_sequences")
         
-        try:
-            loss_kd = super().compute_loss(model, inputs_kd, return_outputs=False)
-        except:
-            from safetensors.torch import save_file
-            data = {"inputs": inputs_kd["input_features"],
-                    "labels": inputs_kd["labels"],
-                    "attention_mask": inputs_kd["attention_mask"]}
-            save_file(data, f"inputs_kd-{self.counter}.safetensors")
-            self.counter += 1
-            loss_kd = torch.tensor(0.0)
+        loss_kd = super().compute_loss(model, inputs_kd, return_outputs=False)
         
         loss = self.args.alpha_ce * loss_ce + (1 - self.args.alpha_ce) * loss_kd
         return (loss, output_student_wrt_labels) if return_outputs else loss
