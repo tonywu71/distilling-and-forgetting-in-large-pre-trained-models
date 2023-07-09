@@ -28,6 +28,7 @@ from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_string_edit_metrics_fct
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
+from normalization.whisper_normalization import get_whisper_normalizer
 from trainer.ewc_finetuning import EWCFinetuningTrainer, EWCFinetuningTrainingArguments
 from trainer.tac_finetuning import TACFinetuningTrainer, TACFinetuningTrainingArguments
 from utils.file_io import fix_model_dir_conflicts
@@ -222,7 +223,7 @@ def main(config_filepath: str,
     # Define the compute_metrics function:
     compute_metrics = partial(compute_string_edit_metrics_fct,
                               processor=processor,
-                              normalize=True)
+                              whisper_norm=get_whisper_normalizer(language=config.lang_name))
     
     
     # Define callbacks:

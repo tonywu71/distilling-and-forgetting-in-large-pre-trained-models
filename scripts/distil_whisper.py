@@ -28,6 +28,7 @@ from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_string_edit_metrics_fct
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
+from normalization.whisper_normalization import get_whisper_normalizer
 from trainer.distillation_word_level import DistillationWordLevelTrainingArguments, DistillationWordLevelTrainer
 from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments, DistillationSeqLevelTrainer
 from utils.distil_config import DistilConfig
@@ -247,7 +248,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Define the compute_metrics function:
     compute_metrics = partial(compute_string_edit_metrics_fct,
                               processor=student_processor,
-                              normalize=True)
+                              whisper_norm=get_whisper_normalizer(language=config.lang_name))
     
     
     # Define callbacks:
