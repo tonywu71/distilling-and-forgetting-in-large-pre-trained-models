@@ -111,23 +111,36 @@ def main(checkpoints: List[str] = typer.Argument(..., help="List of paths to the
         # Round the results:
         df_edit_metrics = df_edit_metrics.round(2)
         
+        # Split the results into two dataframes:
+        df_edit_metrics_ortho = df_edit_metrics[["WER ortho (%)", "Sub ortho (%)", "Del ortho (%)", "Ins ortho (%)"]]
+        df_edit_metrics_norm = df_edit_metrics[["WER (%)", "Sub (%)", "Del (%)", "Ins (%)"]]
+        
+        
         print("\n-----------------------\n")
         
-        print("Results:")
-        print(df_edit_metrics)
+        print("Orthometric results:")
+        print(df_edit_metrics_ortho)
+        
+        print("\n-----------------------\n")
+        
+        print("Normalized results:")
+        print(df_edit_metrics_norm)
         
         print("\n-----------------------\n")
         
         
         # Save and log the edit metrics:
-        save_edit_metrics_to_csv(df_edit_metrics=df_edit_metrics,
-                                 pretrained_model_name_or_path=pretrained_model_name_or_path,
-                                 dataset_name=dataset_name,
-                                 savepath=savepath)
-        log_edit_metrics_to_wandb(df_edit_metrics=df_edit_metrics)
-        
-        # Save the WER metrics:
-        log_wer_to_wandb(wer_metrics=df_edit_metrics["WER (%)"])
+        for df, suffix in zip([df_edit_metrics_ortho, df_edit_metrics_norm], ["orthographic", "normalized"]):
+            save_edit_metrics_to_csv(df_edit_metrics=df,
+                                    pretrained_model_name_or_path=pretrained_model_name_or_path,
+                                    dataset_name=dataset_name,
+                                    savepath=savepath,
+                                    suffix=suffix)
+            log_edit_metrics_to_wandb(df_edit_metrics=df, suffix=suffix)
+            if suffix == "normalized":
+                log_wer_to_wandb(wer_metrics=df["WER (%)"], suffix=suffix)
+            else:
+                log_wer_to_wandb(wer_metrics=df["WER ortho (%)"], suffix=suffix)
         
         wandb.finish()
     

@@ -3,7 +3,6 @@ import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from collections import defaultdict
-import json
 from tqdm.auto import tqdm
 
 import pandas as pd
@@ -19,6 +18,7 @@ from optimum.bettertransformer import BetterTransformer
 from dataloader.dataset_loader import gen_from_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from evaluation.string_edit_metrics import get_string_edit_metrics
+from evaluation.eval_whisper_utils import save_preds_to_json
 from normalization.whisper_normalization import get_whisper_normalizer
 from utils.file_io import extract_output_savepath_from_model_path
 
@@ -102,26 +102,36 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                     batch_size=batch_size,
                                     generate_kwargs=generate_kwargs),
                         total=num_rows):
-            ref = whisper_norm(out["reference"][0])
-            pred = whisper_norm(out[DEFAULT_LABEL_STR_COL])
-            
-            if not ref.strip():
-                continue  # skip empty references to avoid error in WER computation
-            
+            ref = out["reference"][0]
+            pred = out[DEFAULT_LABEL_STR_COL].lower()
             references.append(ref)
             predictions.append(pred)
         
         if save_preds:
-            # Export `references` and `predictions` to a JSON file:
-            data = {'references': references, 'predictions': predictions}
-            savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-preds.json"
-            with open(savepath, 'w') as file:
-                json.dump(data, file)
-            print(f"Exported references and predictions to `{savepath}`.")
+            print()
+            savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-preds_orthographic.json"
+            save_preds_to_json(references, predictions, savepath)
+            print(f"Exported orthographic references and predictions to `{savepath}`.")
         
-        # Compute the WER in percent:
+        # Compute the orthographic WER in percent and save it in the dictionary:
         string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=references, predictions=predictions))
+        dict_string_edit_metrics["WER ortho (%)"].append(string_edit_metrics["wer"])
+        dict_string_edit_metrics["Sub ortho (%)"].append(string_edit_metrics["sub"])
+        dict_string_edit_metrics["Del ortho (%)"].append(string_edit_metrics["del"])
+        dict_string_edit_metrics["Ins ortho (%)"].append(string_edit_metrics["ins"])
         
+        # Get the normalized references and predictions (overwrites the previous lists to save memory):
+        predictions = list(map(whisper_norm, predictions))
+        references = list(map(whisper_norm, references))
+        
+        if save_preds:
+            savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-preds_normalized.json"
+            save_preds_to_json(references, predictions, savepath)
+            print(f"Exported orthographic references and predictions to `{savepath}`.")
+            print()
+        
+        # Compute the normalized WER in percent and save it in the dictionary:
+        string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=references, predictions=predictions))
         dict_string_edit_metrics["WER (%)"].append(string_edit_metrics["wer"])
         dict_string_edit_metrics["Sub (%)"].append(string_edit_metrics["sub"])
         dict_string_edit_metrics["Del (%)"].append(string_edit_metrics["del"])
