@@ -8,6 +8,10 @@ clear-slurm-logs:
 clear-wandb-cache:
 	rm -rf wandb/*
 
+clear-all:
+	make clear-logs
+	make clear-slurm-logs
+	make clear-wandb-cache
 
 # -------------------------------------   HPC-related   -------------------------------------
 request-cpu-node:
