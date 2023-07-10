@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_ami_test_multiple_checkpoints
+#SBATCH -J eval_whisper_on_ami_validation-finetuned
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=02:00:00
+#SBATCH --time=00:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,12 +51,10 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_5e-1_temp_5e-1/final \
-    checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_5e-1_temp_5e+0/final \
-    --dataset-name ami \
+python scripts/eval_whisper.py \
+    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_5e-1_temp_1/final \
+    --dataset-name ami_validation \
     --batch-size 1024 >> $LOG 2> $ERR
-
 
 #! #############################################
 

@@ -19,7 +19,7 @@ warmup_steps: 300
 eval_steps: 600
 generation_num_beams: 1
 logging_steps: 300
-save_steps: 600
+save_steps: 6000  # don't save
 num_train_epochs: 1
 
 zero_shot_eval: False
