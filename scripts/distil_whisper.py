@@ -160,7 +160,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
             def filter_longer_than(x: Dict[str, Any]) -> bool:
                 n_tokens_teacher = len(student_processor.tokenizer(x["teacher_text"]).input_ids)
                 n_tokens_labels = len(x["labels"])
-                return np.abs(n_tokens_teacher - n_tokens_labels) <= config.max_diff_tokens_filter
+                return n_tokens_teacher - n_tokens_labels <= config.max_diff_tokens_filter
             dataset_dict = dataset_dict.filter(filter_longer_than)
             n_rows_after = dataset_dict["train"].num_rows
             print(f"Train split after filtering: {n_rows_after} samples")
