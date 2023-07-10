@@ -21,6 +21,7 @@ class FABDataset(BaseDatasetGroup):
         # Set the abstract class attributes:
         self.available_datasets = [
             "librispeech_en_clean",
+            "ami_validation",
             "ami",
             "tedlium",
             "librispeech_fr",
@@ -29,6 +30,7 @@ class FABDataset(BaseDatasetGroup):
         self.is_multilingual = True
         self.ds_name_to_lang = {
             "librispeech_en_clean": "en",
+            "ami_validation": "en",
             "ami": "en",
             "tedlium": "en",
             "librispeech_fr": "fr",
@@ -39,6 +41,7 @@ class FABDataset(BaseDatasetGroup):
         
         self.dataset_name_to_cache_dir = {
             "librispeech_en_clean": self.cache_dir_librispeech,
+            "ami_validation": self.cache_dir_ami,
             "ami": self.cache_dir_ami,
             "tedlium": self.cache_dir_esb,
             "librispeech_fr": self.cache_dir_mls,
@@ -56,6 +59,11 @@ class FABDataset(BaseDatasetGroup):
                                                  cache_dir=self.dataset_name_to_cache_dir["librispeech_en_clean"],
                                                  streaming=self.streaming,
                                                  use_auth_token=True),
+            "ami_validation": load_dataset("edinburghcstr/ami",
+                                           name="ihm",
+                                           split="validation",
+                                           cache_dir=self.cache_dir_ami,
+                                           streaming=self.streaming),
             "ami": load_dataset("edinburghcstr/ami",
                                  name="ihm",
                                  split="test",
