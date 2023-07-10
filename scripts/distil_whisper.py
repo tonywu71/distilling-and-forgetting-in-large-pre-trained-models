@@ -6,12 +6,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.initialize import initialize_env, print_envs
 initialize_env()
 
-from typing import List
+from typing import List, Dict, Any
 from dataclasses import asdict
 from functools import partial
 from pathlib import Path
 from pprint import pprint
 
+import numpy as np
 import torch
 
 from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor
@@ -151,8 +152,23 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 10))
     
     
+    if is_seq_level and config.distillation_num_beams == 1:
+        if config.max_diff_tokens_filter:
+            print("Filtering out samples where the teacher's text is longer than the student's labels + 10 tokens...")
+            n_rows_before = dataset_dict["train"].num_rows
+            print(f"Train split before filtering: {n_rows_before} samples")
+            def filter_longer_than(x: Dict[str, Any]) -> bool:
+                n_tokens_teacher = len(student_processor.tokenizer(x["teacher_text"]).input_ids)
+                n_tokens_labels = len(x["labels"])
+                return np.abs(n_tokens_teacher - n_tokens_labels) <= config.max_diff_tokens_filter
+            dataset_dict = dataset_dict.filter(filter_longer_than)
+            n_rows_after = dataset_dict["train"].num_rows
+            print(f"Train split after filtering: {n_rows_after} samples")
+            print(f"Filtered out {n_rows_before - n_rows_after} samples")
+    
+    
     # Initialize the models from pretrained checkpoints:
-    if not is_seq_level:  # If word-level...
+    if config.method_distil == "word_level":
         print(f"Loading teacher model `{config.teacher_model_name_or_path}`...")
         teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
         # Freeze the teacher model:
