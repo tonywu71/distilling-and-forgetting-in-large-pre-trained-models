@@ -68,22 +68,22 @@ echo "python `which python`": >> $LOG
 
 # =====================       1-best       =====================
 
+python scripts/eval_whisper.py \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-max_10/final \
+    --dataset-name fab \
+    --subset ami --subset librispeech_fr \
+    --batch-size 1024 >> $LOG 2> $ERR
+
 # python scripts/eval_whisper.py \
-#     checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-3_epochs/final \
+#     checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-max_5/final \
 #     --dataset-name fab \
 #     --subset ami --subset librispeech_fr \
 #     --batch-size 1024 >> $LOG 2> $ERR
 
-python scripts/eval_whisper.py \
-    checkpoints/distil_word_level/whisper_medium_to_tiny/librispeech/alpha_5e-1_temp_1-no_freeze/final \
-    --dataset-name fab \
-    --subset librispeech_en_clean \
-    --batch-size 1024 >> $LOG 2> $ERR
-
 # =====================       Word-level       =====================
 
 # python scripts/eval_whisper.py \
-#     checkpoints/distil_word_level/whisper_finetuned_medium_to_pre_finetuned_tiny/hpt/alpha_5e-1_temp_1/final \
+#     checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_5e-1_temp_1/final \
 #     --dataset-name fab \
 #     --subset ami --subset librispeech_fr \
 #     --batch-size 1024 >> $LOG 2> $ERR

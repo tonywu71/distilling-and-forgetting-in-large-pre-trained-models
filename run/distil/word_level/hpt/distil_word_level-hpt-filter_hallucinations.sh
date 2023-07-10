@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_word_level_hpt
+#SBATCH -J distil_word_level_hpt_filter_hallucinations
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=03:00:00
+#SBATCH --time=01:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,20 +51,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/distil_whisper.py configs/distil_configs/word_level/hpt/distil_word_level-hpt-alpha_5e-1_temp_5e-1.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/word_level/hpt/distil_word_level-hpt-alpha_5e-1_temp_5e+1.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/word_level/hpt/distil_word_level-hpt-alpha_8e-1_temp_5e-1.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/word_level/hpt/distil_word_level-hpt-alpha_8e-1_temp_1e+0.yaml >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/distil_word_level-hpt-alpha_2e-1_temp_5e+0.yaml >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/distil_word_level-hpt-alpha_5e-1_temp_1e+0.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/distil_word_level-hpt-alpha_8e-1_temp_1e+0.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/distil_word_level-hpt-alpha_9e-1_temp_2e+0.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/distil_word_level-hpt-alpha_5e-1_temp_1.yaml >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium_to_pre_finetuned_tiny/distil_word_level-pre_finetuned-hpt-alpha_5e-1_temp_1.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium_to_pre_finetuned_tiny/distil_word_level-pre_finetuned-hpt-alpha_9e-1_temp_1.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper.py configs/distil_configs/1_best/hpt/filter_hallucinations/distil_1_best-medium_to_tiny-ami_100h-filter_20.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

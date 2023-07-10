@@ -1,15 +1,14 @@
 # Total training steps:
 # - 3391 for batch_size = 32 and num_train_epochs = 1
-# - 10173 for batch_size = 32 and num_train_epochs = 3
 
-experiment_name: distil_1_best-medium_to_tiny-ami_100h-3_epochs
+experiment_name: distil_1_best-medium_to_tiny-ami_100h-filter_10
 lang_name: english
 task: transcribe
 method_distil: seq_level_uniform
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-3_epochs
+model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/filter_hallucinations/filter_10
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -19,11 +18,11 @@ dataset_name: ami_100h
 optim: adamw_torch
 learning_rate: 1e-5
 warmup_steps: 300
-eval_steps: 1000
+eval_steps: 600
 generation_num_beams: 1
-logging_steps: 500
-save_steps: 3000
-num_train_epochs: 3
+logging_steps: 300
+save_steps: 600
+num_train_epochs: 1
 
 zero_shot_eval: False
 eval_batch_size: 256
@@ -34,6 +33,7 @@ save_final_model: True
 
 alpha_ce: 0.
 distillation_num_beams: 1
+max_diff_tokens_filter: 10
 
 smart_load: True
 force_reprocess_dataset: False
