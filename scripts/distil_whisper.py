@@ -154,7 +154,6 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     if is_seq_level and config.distillation_num_beams == 1:
         if config.max_diff_tokens_filter:
             print(f"Filtering out samples from the training split where the teacher's text is longer than the student's labels + {config.max_diff_tokens_filter} tokens...")
-            breakpoint()
             n_rows_before = dataset_dict["train"].num_rows
             print(f"Train split before filtering: {n_rows_before} samples")
             def filter_longer_than(x: Dict[str, Any]) -> bool:
