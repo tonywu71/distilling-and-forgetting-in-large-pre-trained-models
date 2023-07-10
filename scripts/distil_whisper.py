@@ -148,8 +148,8 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         print("Subsampling the 100h LibriSpeech validation split to 50% of its original size for faster evaluation...")
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 2))
     elif config.dataset_name == "ami_100h":
-        print("Subsampling the 100h AMI validation split to 10% of its original size for faster evaluation...")
-        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 10))
+        print("Subsampling the 100h AMI validation split to 20% of its original size for faster evaluation...")
+        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 5))
     
     
     if is_seq_level and config.distillation_num_beams == 1:
