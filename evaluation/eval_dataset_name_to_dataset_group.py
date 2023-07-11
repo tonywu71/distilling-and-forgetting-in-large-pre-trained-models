@@ -18,6 +18,7 @@ EVAL_DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
     "librispeech_clean": LibriSpeechCleanTestSet,
     "librispeech_dummy": LibriSpeechDummyDataset,
     "ami_validation": AMIValidationSet,
+    "ami_validation_10h": partial(AMIValidationSet, is_ami_10h=True),
     "ami": AMITestSet,
     "ami_10h": partial(AMITestSet, is_ami_10h=True),
     "esb_diagnostic": ESBDiagnosticDataset,
