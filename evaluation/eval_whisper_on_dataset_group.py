@@ -2,13 +2,13 @@ import os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from pathlib import Path
 from collections import defaultdict
-
-import torch
-
-import pandas as pd
 from tqdm.auto import tqdm
 
+import pandas as pd
+
+import torch
 from transformers.models.whisper import (WhisperTokenizer,
                                          WhisperTokenizerFast,
                                          WhisperFeatureExtractor,
@@ -19,7 +19,10 @@ from optimum.bettertransformer import BetterTransformer
 from dataloader.dataset_loader import gen_from_dataset
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from evaluation.string_edit_metrics import get_string_edit_metrics
+from evaluation.eval_whisper_utils import save_preds_to_json
 from normalization.whisper_normalization import get_whisper_normalizer
+from utils.file_io import extract_output_savepath_from_model_path
+
 from utils.constants import DEFAULT_EVAL_BATCH_SIZE, DEFAULT_LABEL_STR_COL, GEN_MAX_LENGTH
 
 
@@ -29,7 +32,8 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   zero_shot: bool = False,
                                   num_beams: int = 1,
                                   batch_size: int = DEFAULT_EVAL_BATCH_SIZE,
-                                  fast_tokenizer: bool = True) -> pd.DataFrame:
+                                  fast_tokenizer: bool = True,
+                                  save_preds: bool = False) -> pd.DataFrame:
     """
     Evaluate a Whisper model on a dataset group and return a DataFrame with the results.
     """
@@ -99,18 +103,38 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                     batch_size=batch_size,
                                     generate_kwargs=generate_kwargs),
                         total=num_rows):
-            ref = whisper_norm(out["reference"][0])
-            pred = whisper_norm(out[DEFAULT_LABEL_STR_COL])
-            
-            if not ref.strip():
-                continue  # skip empty references to avoid error in WER computation
-            
+            ref = out["reference"][0].lower()
+            pred = out[DEFAULT_LABEL_STR_COL].lower()
             references.append(ref)
             predictions.append(pred)
         
-        # Compute the WER in percent:
-        string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=references, predictions=predictions))
+        if save_preds:
+            print()
+            savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-preds_orthographic.json"
+            Path(savepath).parent.mkdir(parents=True, exist_ok=True)
+            save_preds_to_json(references, predictions, savepath)
+            print(f"Exported orthographic references and predictions to `{savepath}`.")
         
+        # Compute the orthographic WER in percent and save it in the dictionary:
+        string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=references, predictions=predictions))
+        dict_string_edit_metrics["WER ortho (%)"].append(string_edit_metrics["wer"])
+        dict_string_edit_metrics["Sub ortho (%)"].append(string_edit_metrics["sub"])
+        dict_string_edit_metrics["Del ortho (%)"].append(string_edit_metrics["del"])
+        dict_string_edit_metrics["Ins ortho (%)"].append(string_edit_metrics["ins"])
+        
+        # Get the normalized references and predictions (overwrites the previous lists to save memory):
+        predictions = list(map(whisper_norm, predictions))
+        references = list(map(whisper_norm, references))
+        
+        if save_preds:
+            savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-preds_normalized.json"
+            Path(savepath).parent.mkdir(parents=True, exist_ok=True)
+            save_preds_to_json(references, predictions, savepath)
+            print(f"Exported orthographic references and predictions to `{savepath}`.")
+            print()
+        
+        # Compute the normalized WER in percent and save it in the dictionary:
+        string_edit_metrics = 100 * pd.Series(get_string_edit_metrics(references=references, predictions=predictions))
         dict_string_edit_metrics["WER (%)"].append(string_edit_metrics["wer"])
         dict_string_edit_metrics["Sub (%)"].append(string_edit_metrics["sub"])
         dict_string_edit_metrics["Del (%)"].append(string_edit_metrics["del"])

@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=08:00:00
+#SBATCH --time=05:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -52,6 +52,7 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 # python scripts/finetune_whisper.py configs/finetune_configs/multilingual/librispeech/finetune_tiny-librispeech_100h.yaml >> $LOG 2> $ERR
+python scripts/finetune_whisper.py configs/finetune_configs/multilingual_model/librispeech_clean_100h/reference_for_distil/finetune_tiny-librispeech-reference_for_distil.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

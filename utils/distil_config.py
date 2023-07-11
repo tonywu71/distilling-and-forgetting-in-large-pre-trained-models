@@ -67,6 +67,9 @@ class DistilConfig:
     # `word_level`:
     temperature: Optional[float] = None
     
+    # 1-best sequence-level:
+    max_diff_tokens_filter: Optional[int] = None
+    
     # Sequence-level (`seq_level_uniform`, `seq_level_ranked`)
     distillation_num_beams: Optional[int] = None
     

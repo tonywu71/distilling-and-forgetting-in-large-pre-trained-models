@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=03:00:00
+#SBATCH --time=01:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,23 +51,11 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper_multiple_checkpoints.py \
-#     checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-600 \
-#     checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-1200 \
-#     checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-1800 \
-#     checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-2400 \
-#     checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-3000 \
-#     --dataset-name fab \
-#     --subset ami --subset tedlium --subset librispeech_fr \
-#     --batch-size 1024 \
-#     >> $LOG 2> $ERR
-
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/alpha_2e-1/final \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/alpha_5e-1/final \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/alpha_8e-1/final \
-    --dataset-name fab \
-    --subset ami --subset librispeech_fr \
+    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_0_temp_1/final \
+    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_0_temp_5e-1/final \
+    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_0_temp_5e+1/final \
+    --dataset-name ami_validation \
     --batch-size 1024 \
     >> $LOG 2> $ERR
 

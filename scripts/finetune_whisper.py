@@ -28,6 +28,7 @@ from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_string_edit_metrics_fct
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
+from normalization.whisper_normalization import get_whisper_normalizer
 from trainer.ewc_finetuning import EWCFinetuningTrainer, EWCFinetuningTrainingArguments
 from trainer.tac_finetuning import TACFinetuningTrainer, TACFinetuningTrainingArguments
 from utils.file_io import fix_model_dir_conflicts
@@ -42,7 +43,8 @@ def main(config_filepath: str,
          ewc: bool = typer.Option(False, help="Whether to use Elastic Weight Consolidation or not." + \
                                               "Config file should be formatted for EWC fine-tuning."),
          tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
-                                              "Config file should be formatted for TAC fine-tuning.")):
+                                              "Config file should be formatted for TAC fine-tuning."),
+         debug: bool = typer.Option(False, help="Whether to run in debug mode or not.")):
 
     """
     Fine-tune the Whisper model on the LibriSpeech dataset.
@@ -78,7 +80,8 @@ def main(config_filepath: str,
                job_type="finetuning",
                tags=list_tags,
                name=config.experiment_name,
-               config=asdict(config))
+               config=asdict(config),
+               mode="disabled" if debug else None)
     
     
     # ----------------------   Setup   ----------------------    
@@ -128,7 +131,10 @@ def main(config_filepath: str,
                                           lowercase=config.lowercase,
                                           augment=config.data_augmentation)
     
-    if config.dataset_name == "ami_100h":
+    if config.dataset_name == "librispeech_clean_100h":
+        print("Subsampling the 100h LibriSpeech validation split to 50% of its original size for faster evaluation...")
+        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 2))
+    elif config.dataset_name == "ami_100h":
         print("Subsampling the 100h AMI validation split to 10% of its original size for faster evaluation...")
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 10))
     
@@ -220,7 +226,7 @@ def main(config_filepath: str,
     # Define the compute_metrics function:
     compute_metrics = partial(compute_string_edit_metrics_fct,
                               processor=processor,
-                              normalize=True)
+                              whisper_norm=get_whisper_normalizer(language=config.lang_name))
     
     
     # Define callbacks:

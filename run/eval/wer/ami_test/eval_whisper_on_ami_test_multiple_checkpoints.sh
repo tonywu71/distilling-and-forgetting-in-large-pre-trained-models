@@ -55,8 +55,7 @@ python scripts/eval_whisper_multiple_checkpoints.py \
     checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_5e-1_temp_5e-1/final \
     checkpoints/distil_word_level/whisper_medium_to_tiny/hpt/alpha_5e-1_temp_5e+0/final \
     --dataset-name ami \
-    --batch-size 1024 \
-    >> $LOG 2> $ER
+    --batch-size 1024 >> $LOG 2> $ERR
 
 
 #! #############################################

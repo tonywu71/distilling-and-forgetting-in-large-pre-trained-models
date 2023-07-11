@@ -33,10 +33,11 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
     Should be used with `args=TACFinetuningTrainingArguments`.
     """
     def __init__(self,
+                 args: TACFinetuningTrainingArguments,
                  processor: WhisperProcessor,
-                 *args,
                  **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(args=args, **kwargs)
+        self.args = args
         self.processor = processor
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -79,8 +80,6 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         
         predicted_ids_tac = self.original_model.generate(inputs["input_features"],  # greedy decoding
                                                          max_length=GEN_MAX_LENGTH)
-        
-        # TODO: Check if this is correct...
         
         # Replace padding with correct token for correct loss computation:
         padded_mask = get_padded_mask_from_tensor(predicted_ids_tac)

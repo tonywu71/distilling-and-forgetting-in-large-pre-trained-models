@@ -1,6 +1,7 @@
 # Custom
 logs/
 outputs/**/*.csv
+outputs/**/*.json
 outputs/**/*.png
 wandb/
 .DS_Store

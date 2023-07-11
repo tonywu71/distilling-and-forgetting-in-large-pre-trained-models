@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.initialize import initialize_env, print_envs
 initialize_env()
 
-from typing import List
+from typing import List, Dict, Any
 from dataclasses import asdict
 from functools import partial
 from pathlib import Path
@@ -28,6 +28,7 @@ from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_string_edit_metrics_fct
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
+from normalization.whisper_normalization import get_whisper_normalizer
 from trainer.distillation_word_level import DistillationWordLevelTrainingArguments, DistillationWordLevelTrainer
 from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments, DistillationSeqLevelTrainer
 from utils.distil_config import DistilConfig
@@ -39,7 +40,8 @@ from utils.constants import GEN_MAX_LENGTH
 
 
 def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file."),
-         teacher_caching_batch_size: int = typer.Option(32, help="Batch size for caching teacher outputs."),):
+         teacher_caching_batch_size: int = typer.Option(32, help="Batch size for caching teacher outputs."),
+         debug: bool = typer.Option(False, help="Whether to run in debug mode or not.")):
     """
     Distil Whisper based on the provided config file.
     """
@@ -74,7 +76,8 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
                job_type="distillation",
                tags=list_tags,
                name=config.experiment_name,
-               config=asdict(config))
+               config=asdict(config),
+               mode="disabled" if debug else None)
     
     
     # ----------------------   Setup   ----------------------    
@@ -136,17 +139,35 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
         dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
                                                              dataset_dict=dataset_dict,
-                                                             teacher_caching_batch_size=teacher_caching_batch_size)    
+                                                             teacher_caching_batch_size=teacher_caching_batch_size)
         print("\n-----------------------\n")
     
     
-    if config.dataset_name == "ami_100h":
+    if config.dataset_name == "librispeech_clean_100h":
+        print("Subsampling the 100h LibriSpeech validation split to 50% of its original size for faster evaluation...")
+        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 2))
+    elif config.dataset_name == "ami_100h":
         print("Subsampling the 100h AMI validation split to 10% of its original size for faster evaluation...")
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 10))
     
     
+    if is_seq_level and config.distillation_num_beams == 1:
+        if config.max_diff_tokens_filter:
+            print(f"Filtering out samples from the training split where the teacher's text is longer than the student's labels + {config.max_diff_tokens_filter} tokens...")
+            n_rows_before = dataset_dict["train"].num_rows
+            print(f"Train split before filtering: {n_rows_before} samples")
+            def filter_longer_than(x: Dict[str, Any]) -> bool:
+                n_tokens_teacher = len(student_processor.tokenizer(x["teacher_text"]).input_ids)
+                n_tokens_labels = len(x["labels"])
+                return n_tokens_teacher - n_tokens_labels <= config.max_diff_tokens_filter
+            dataset_dict["train"] = dataset_dict["train"].filter(filter_longer_than)
+            n_rows_after = dataset_dict["train"].num_rows
+            print(f"Train split after filtering: {n_rows_after} samples")
+            print(f"Filtered out {n_rows_before - n_rows_after} samples")
+    
+    
     # Initialize the models from pretrained checkpoints:
-    if not is_seq_level:  # If word-level...
+    if config.method_distil == "word_level":
         print(f"Loading teacher model `{config.teacher_model_name_or_path}`...")
         teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
         # Freeze the teacher model:
@@ -245,7 +266,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Define the compute_metrics function:
     compute_metrics = partial(compute_string_edit_metrics_fct,
                               processor=student_processor,
-                              normalize=True)
+                              whisper_norm=get_whisper_normalizer(language=config.lang_name))
     
     
     # Define callbacks:

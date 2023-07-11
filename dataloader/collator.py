@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple, Union
+from typing import Dict, Tuple, Any
 
 import torch
 from transformers.models.whisper import WhisperTokenizer, WhisperFeatureExtractor
@@ -24,10 +24,12 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         self.replace_padded_with_loss_mask_for_labels = replace_padded_with_loss_mask_for_labels
         self.discard_first_bos_token = discard_first_bos_token
         self.add_k_beam_features = add_k_beam_features
+        
+        self.sot_token = self.tokenizer.convert_tokens_to_ids("<|startoftranscript|>")
     
     
     def __call__(self,
-                 features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
+                 features: Dict[str, Any]) -> Dict[str, torch.Tensor]:
         """
         Split inputs and labels since they have to be of different lengths and need different padding methods.
         
@@ -68,7 +70,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     
     
     def preprocess_tokenized_labels(self,
-                                    features: List[Dict[str, Union[List[int], torch.Tensor]]],
+                                    features: Dict[str, Any],
                                     replace_padded_with_loss_mask: bool = True,
                                     discard_first_bos_token: bool = True) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -95,7 +97,7 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             # If a BOS ("Beginning Of Sequence") token was appended in previous tokenization step (which is
             # the case with the default Whisper tokenizer), discard it as it will get appended later anyway
             # when computing loss (see the `shift_tokens_right` method).
-            if (labels[:, 0] == self.tokenizer.bos_token_id).all().cpu().item():
+            if (labels[:, 0] == self.sot_token).all().cpu().item():
                 labels = labels[:, 1:]
                 attention_mask = attention_mask[:, 1:]
         
