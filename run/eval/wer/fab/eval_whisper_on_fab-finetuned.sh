@@ -68,11 +68,11 @@ echo "python `which python`": >> $LOG
 
 # =====================       1-best       =====================
 
-python scripts/eval_whisper.py \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-max_10/final \
-    --dataset-name fab \
-    --subset ami --subset librispeech_fr \
-    --batch-size 1024 >> $LOG 2> $ERR
+# python scripts/eval_whisper.py \
+#     checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-max_10/final \
+#     --dataset-name fab \
+#     --subset ami --subset librispeech_fr \
+#     --batch-size 1024 >> $LOG 2> $ERR
 
 # python scripts/eval_whisper.py \
 #     checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-max_5/final \
@@ -99,11 +99,11 @@ python scripts/eval_whisper.py \
 
 # =====================       TAC       =====================
 
-# python scripts/eval_whisper.py \
-#     checkpoints/finetune_tac/whisper_tiny/hpt/gamma_1e+0/final \
-#     --dataset-name fab \
-#     --subset ami --subset librispeech_fr \
-#     --batch-size 1024 >> $LOG 2> $ERR
+python scripts/eval_whisper.py \
+    checkpoints/finetune_tac/whisper_tiny/hpt/gamma_1e+0-new/final \
+    --dataset-name fab \
+    --subset ami --subset librispeech_fr \
+    --batch-size 1024 >> $LOG 2> $ERR
 
 #! #############################################
 
