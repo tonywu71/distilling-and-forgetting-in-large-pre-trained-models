@@ -2,6 +2,7 @@ import os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from pathlib import Path
 from collections import defaultdict
 from tqdm.auto import tqdm
 
@@ -110,6 +111,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         if save_preds:
             print()
             savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-preds_orthographic.json"
+            Path(savepath).parent.mkdir(parents=True, exist_ok=True)
             save_preds_to_json(references, predictions, savepath)
             print(f"Exported orthographic references and predictions to `{savepath}`.")
         
@@ -126,6 +128,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         
         if save_preds:
             savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-preds_normalized.json"
+            Path(savepath).parent.mkdir(parents=True, exist_ok=True)
             save_preds_to_json(references, predictions, savepath)
             print(f"Exported orthographic references and predictions to `{savepath}`.")
             print()
