@@ -12,7 +12,8 @@ jiwer==3.0.2
 matplotlib==3.7.1
 numba==0.57.0
 numpy==1.24.3
-optimum=1.8.8
+openai-whisper==20230314
+optimum==1.8.8
 optuna==3.2.0
 pandas==2.0.2
 pytest==7.3.2
