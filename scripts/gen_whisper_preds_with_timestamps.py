@@ -78,6 +78,8 @@ def main(model_name: str = typer.Argument(..., help="The name of the model to us
     save_preds_to_json(references=references, predictions=results, savepath=savepath)
     print(f"Saved predictions to `{savepath}`.")
 
+    wandb.finish()
+
     return
 
 
