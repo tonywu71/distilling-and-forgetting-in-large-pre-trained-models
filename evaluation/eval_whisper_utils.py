@@ -66,5 +66,4 @@ def save_preds_to_json(references: List[str],
     data = {'references': references, 'predictions': predictions}
     with open(savepath, 'w') as file:
         json.dump(data, file)
-    print(f"Exported references and predictions to `{savepath}`.")
     return
