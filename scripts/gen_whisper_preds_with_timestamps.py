@@ -77,8 +77,10 @@ def main(model_name: str = typer.Argument(..., help="The name of the model to us
                                         language="en",
                                         temperature=0.0,
                                         word_timestamps=True,
+                                        no_speech_threshold=1.0,  # disable `no_speech_threshold`
+                                        condition_on_previous_text=False,
                                         beam_size=1,
-                                        max_length=GEN_MAX_LENGTH))
+                                        sample_len=GEN_MAX_LENGTH))
         references.append(sample["text"].lower())
     
     # Save the results:
