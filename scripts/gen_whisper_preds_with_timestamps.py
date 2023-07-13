@@ -30,7 +30,7 @@ def load_dataset(dataset_name: str) -> Dataset:
         if dataset_name == "librispeech_dummy":
             ds = ds_group.str2dataset["librispeech_dummy"]
             ds = ds.map(lambda x: {"text": x.lower()}, input_columns=["text"])
-        elif dataset_name in ["ami_test", "ami_10h_test"]:
+        elif dataset_name in ["ami", "ami_10h"]:
             ds = ds_group.str2dataset["ami"]
             ds = ds.map(lambda x: {"text": x.lower()}, input_columns=["text"])
     else:
