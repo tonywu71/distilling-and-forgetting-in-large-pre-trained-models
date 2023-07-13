@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 from datetime import datetime
 
@@ -61,3 +62,10 @@ def extract_output_savepath_from_model_path(model_filepath: str) -> str:
         savepath = (DEFAULT_OUTPUT_DIR / path.name.replace(".", "-")).as_posix()
     
     return savepath
+
+
+def load_json(filepath: str) -> dict:
+    assert Path(filepath).is_file()
+    with open(filepath, 'r') as f:
+        data = json.load(f)
+    return data
