@@ -2,15 +2,15 @@
 # - 3391 for batch_size = 32 and num_train_epochs = 1
 # - 10173 for batch_size = 32 and num_train_epochs = 3
 
-experiment_name: distil_1_best-medium_to_tiny-ami_100h
+experiment_name: distil_1_best-medium_to_tiny-ami_100h-no_freeze
 lang_name: english
 task: transcribe
 method_distil: seq_level_uniform
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h
-freeze_encoder: True
+model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-no_freeze
+freeze_encoder: False
 freeze_decoder: False
 batch_size: 32
 gradient_accumulation_steps: 1
