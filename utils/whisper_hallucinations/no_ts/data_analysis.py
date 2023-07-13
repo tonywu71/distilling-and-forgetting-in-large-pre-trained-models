@@ -40,4 +40,6 @@ def get_df_from_ds(ds: Dataset) -> pd.DataFrame:
 def add_features_to_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["diff_n_tokens"] = df["n_tokens_pred"] - df["n_tokens_labels"]
+    df["max_token_repetitions_label"] = df["labels"].apply(lambda x: pd.Series(x).value_counts().max())
+    df["max_token_repetitions_pred"] = df["pred_tokenized"].apply(lambda x: pd.Series(x).value_counts().max())
     return df
