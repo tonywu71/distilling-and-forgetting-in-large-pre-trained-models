@@ -17,7 +17,7 @@ import wandb
 from dataloader.dataset_loader import TRAIN_DATASET_NAME_TO_LOAD_FCT
 from evaluation.eval_dataset_name_to_dataset_group import EVAL_DATASET_NAME_TO_DATASET_GROUP
 from evaluation.eval_whisper_utils import save_preds_to_json
-from utils.constants import DEFAULT_OUTPUT_DIR
+from utils.constants import DEFAULT_OUTPUT_DIR, GEN_MAX_LENGTH
 
 
 def load_dataset(dataset_name: str) -> Dataset:
@@ -77,7 +77,8 @@ def main(model_name: str = typer.Argument(..., help="The name of the model to us
                                         language="en",
                                         temperature=0.0,
                                         word_timestamps=True,
-                                        beam_size=1))
+                                        beam_size=1,
+                                        max_length=GEN_MAX_LENGTH))
         references.append(sample["text"].lower())
     
     # Save the results:
