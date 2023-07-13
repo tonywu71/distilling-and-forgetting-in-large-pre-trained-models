@@ -8,29 +8,33 @@ initialize_env()
 
 from tqdm.auto import tqdm
 
-import numpy as np
 import torch
 import whisper
 from datasets import Dataset
 
 import wandb
 
+from dataloader.dataset_loader import TRAIN_DATASET_NAME_TO_LOAD_FCT
 from evaluation.eval_dataset_name_to_dataset_group import EVAL_DATASET_NAME_TO_DATASET_GROUP
 from evaluation.eval_whisper_utils import save_preds_to_json
+from utils.constants import DEFAULT_OUTPUT_DIR
 
 
 def load_dataset(dataset_name: str) -> Dataset:
-    ds_group = EVAL_DATASET_NAME_TO_DATASET_GROUP[dataset_name]()
-
-    if dataset_name == "librispeech_dummy":
-        ds = ds_group.str2dataset["librispeech_dummy"]
-        ds = ds.map(lambda x: {"text": x.lower()}, input_columns=["text"])
-    elif dataset_name in ["ami", "ami_10h"]:
-        ds = ds_group.str2dataset["ami"]
-        ds = ds.map(lambda x: {"text": x.lower()}, input_columns=["text"])
+    if dataset_name in ["ami_100h_train", "ami_10h_train"]:
+        dataset_dict = TRAIN_DATASET_NAME_TO_LOAD_FCT[dataset_name]()
+        ds = dataset_dict["train"]
+    elif dataset_name in ["librispeech_dummy", "ami_test", "ami_10h_test"]:
+        dataset_name = dataset_name.replace("_test", "")
+        ds_group = EVAL_DATASET_NAME_TO_DATASET_GROUP[dataset_name]()
+        if dataset_name == "librispeech_dummy":
+            ds = ds_group.str2dataset["librispeech_dummy"]
+            ds = ds.map(lambda x: {"text": x.lower()}, input_columns=["text"])
+        elif dataset_name in ["ami_test", "ami_10h_test"]:
+            ds = ds_group.str2dataset["ami"]
+            ds = ds.map(lambda x: {"text": x.lower()}, input_columns=["text"])
     else:
         raise ValueError(f"Unknown dataset name: {dataset_name}.")
-    
     return ds
 
 
@@ -51,21 +55,24 @@ def main(model_name: str = typer.Argument(..., help="The name of the model to us
 
     # Load the Whisper model
     model = whisper.load_model(model_name, device=device)
+    print(f"Loaded Whisper model `{model_name}`.")
 
     # Load the dataset:
     ds = load_dataset(dataset_name).with_format("torch")
+    print(f"Loaded dataset `{dataset_name}`.")
 
     # Create placeholders:
     results = []
     references = []
 
     # Predict:
+    print("Predicting...")
     for sample in tqdm(ds, total=ds.num_rows):
         audio = sample["audio"]["array"]
         if device == "cuda":
-            audio = audio.astype(np.float16)
+            audio = audio.to(torch.float16)
         else:
-            audio = audio.astype(np.float32)
+            pass  # keep the default float32
         results.append(model.transcribe(audio,
                                         language="en",
                                         temperature=0.0,
