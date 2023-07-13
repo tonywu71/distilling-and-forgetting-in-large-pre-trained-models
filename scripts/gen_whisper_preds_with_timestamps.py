@@ -75,6 +75,8 @@ def main(model_name: str = typer.Argument(..., help="The name of the model to us
     
     # Save the results:
     savepath = f"outputs/whisper_preds_with_timestamps/{model_name}/{dataset_name}.json"
+    savepath = (DEFAULT_OUTPUT_DIR / "whisper_preds_with_timestamps" / model_name / dataset_name).with_suffix(".json")
+    savepath.parent.mkdir(parents=True, exist_ok=True)
     save_preds_to_json(references=references, predictions=results, savepath=savepath)
     print(f"Saved predictions to `{savepath}`.")
 
