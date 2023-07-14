@@ -33,9 +33,9 @@ def eval_filter_criterion(ds: Dataset, filter_fn: Callable) -> None:
     print(f"Number of rows removed: {n_rows_before - n_rows_after} ({100 * (n_rows_before - n_rows_after) / n_rows_before:.2f} %)")
     print(f"Total audio length removed: {audio_length_before - audio_length_after:.2f} minutes ({100 * (audio_length_before - audio_length_after) / audio_length_before:.2f} %)")
     print("String edit metrics difference:")
-    pprint({key: round(metrics_after[key] - metrics_before[key], 2) for key in metrics_before.keys()})
+    pprint({key: round(metrics_before[key] - metrics_after[key], 2) for key in metrics_before.keys()})
     print()
     print("Relative string edit metrics difference:")
-    pprint({key: round((metrics_after[key] - metrics_before[key]) / metrics_before[key], 2) for key in metrics_before.keys()})
+    pprint({key: round((metrics_before[key] - metrics_after[key]) / metrics_before[key], 2) for key in metrics_before.keys()})
 
     return

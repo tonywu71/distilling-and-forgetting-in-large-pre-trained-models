@@ -1,6 +1,6 @@
 from typing import Dict, Any
-
-import pandas as pd
+import io
+import gzip
 from transformers.models.whisper import WhisperTokenizer, WhisperTokenizerFast
 from datasets import Dataset
 
@@ -12,22 +12,31 @@ def get_audio_length_in_seconds(x: Dict[str, Any]) -> Dict[str, float]:
     return {"audio_length": audio_length}
 
 
+def compute_gzip_compression_ratio(text: str) -> float:
+    # Convert text to bytes
+    text_bytes = text.encode('utf-8')
+
+    # Compress the bytes using gzip
+    compressed_bytes = io.BytesIO()
+    with gzip.GzipFile(fileobj=compressed_bytes, mode='wb') as f:
+        f.write(text_bytes)
+
+    # Compute the compression ratio
+    compression_ratio = len(text_bytes) / len(compressed_bytes.getvalue())
+
+    return compression_ratio
+
+
 def count_overlaps(result: Dict[str, Any]) -> int:
     counter = 0
+    list_words = []
     for segment in result["segments"]:
-        for w1, w2 in zip(segment["words"], segment["words"][1:]):
-            if w1["end"] > w2["start"]:
-                counter += 1
+        list_words.extend(segment["words"])
+    for w1, w2 in zip(list_words, list_words[1:]):
+        if w1["end"] > w2["start"]:
+            counter += 1
     return counter
 
-
-def check_words_within_delta(result, delta: float = 0.1, n_words: int = 5) -> bool:
-    for segment in result['segments']:
-        words = segment['words']
-        for i in range(len(words) - n_words):
-            if words[i + n_words]['start'] - words[i]['end'] <= delta:
-                return True
-    return False
 
 
 def add_features_to_ds(ds: Dataset,
@@ -53,17 +62,17 @@ def add_features_to_ds(ds: Dataset,
     # Add n_tokens to the dataset features:
     ds = ds.map(lambda x: {"n_tokens_labels": len(x["labels"]), "n_tokens_teacher": len(x["teacher_labels"])})
 
-    # Add number of overlaps per example:
-    ds = ds.add_column(name="n_overlaps", column=[count_overlaps(result) for result in results])
-
-    # Add if the prediction is a fast utterance:
-    ds = ds.add_column(name="is_fast_utterance", column=[check_words_within_delta(result) for result in results])
-
     # Add diff_n_tokens to the dataset features:
     ds = ds.map(lambda x: {"diff_n_tokens": x["n_tokens_teacher"] - x["n_tokens_labels"]})
 
-    # Add max_token_repetitions to the dataset features:
-    ds = ds.map(lambda x: {"max_token_repetitions_labels": pd.Series(x["labels"]).value_counts().max()})
-    ds = ds.map(lambda x: {"max_token_repetitions_teacher": pd.Series(x["teacher_labels"]).value_counts().max()})
+    # Add compression ratios to the dataset features:
+    ds = ds.map(lambda x: {"gzip_ratio": compute_gzip_compression_ratio(x["text"]),
+                           "teacher_gzip_ratio": compute_gzip_compression_ratio(x["teacher_text"])})
+    
+    # Add diff_gzip_ratio to the dataset features:
+    ds = ds.map(lambda x: {"diff_gzip_ratio": x["teacher_gzip_ratio"] - x["gzip_ratio"]})
+
+    # Add number of overlaps per example:
+    ds = ds.add_column(name="n_overlaps", column=[count_overlaps(result) for result in results])
 
     return ds
