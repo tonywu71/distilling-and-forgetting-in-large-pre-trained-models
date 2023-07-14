@@ -1,3 +1,4 @@
+data/*
 experiments/*
 *.csv
 *.json
