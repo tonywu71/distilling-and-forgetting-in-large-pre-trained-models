@@ -24,6 +24,7 @@ from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.collator_distil import DataCollatorWithPaddingForSeqLevelDistillation
 from dataloader.dataset_loader import load_dataset_dict
+from dataloader.filtering import filter_samples_1_best
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_string_edit_metrics_fct
@@ -34,9 +35,8 @@ from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
-from utils.whisper_hallucinations.get_features import get_audio_length_in_seconds
 
-from utils.constants import GEN_MAX_LENGTH, DEFAULT_NUM_PROC
+from utils.constants import GEN_MAX_LENGTH
 
 
 
@@ -153,28 +153,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     
     if is_seq_level and config.distillation_num_beams == 1:
-        if config.max_diff_tokens_filter:
-            print(f"Filtering out samples from the training split where the teacher's text is longer than the student's labels + {config.max_diff_tokens_filter} tokens...")
-
-            dataset_dict["train"] = dataset_dict["train"].map(get_audio_length_in_seconds, num_proc=DEFAULT_NUM_PROC)
-            dataset_dict["train"] = dataset_dict["train"].map(lambda x: {"teacher_labels": student_processor.tokenizer(x["teacher_text"]).input_ids}, batched=True)
-            
-            n_rows_before = dataset_dict["train"].num_rows
-            audio_length_before = sum(dataset_dict["train"]["audio_length"]) / 3600  # in hours
-            print(f"Train split before filtering: {n_rows_before} samples")
-            print(f"Total audio length before filtering: {audio_length_before:.2f} hours")
-
-            dataset_dict["train"] = dataset_dict["train"].filter(lambda x: len(x["teacher_labels"]) - len(x["labels"]) <= config.max_diff_tokens_filter)
-
-            n_rows_after = dataset_dict["train"].num_rows
-            audio_length_after = sum(dataset_dict["train"]["audio_length"]) / 3600 # in hours
-            print(f"Train split after filtering: {n_rows_after} samples")
-            print(f"Total audio length after filtering: {audio_length_after:.2f} hours")
-
-            print(f"Filtered out {n_rows_before - n_rows_after} samples ({(n_rows_before - n_rows_after) / n_rows_before * 100:.2f}%)")
-            print(f"Filtered out {audio_length_before - audio_length_after:.2f} hours of audio ({(audio_length_before - audio_length_after) / audio_length_before * 100:.2f}%)")
-
-            dataset_dict["train"] = dataset_dict["train"].remove_columns(["audio_length", "teacher_labels"])
+        if config.max_diff_tokens_filter or config.thresh_abs_diff_gzip:
+            print("Filtering out samples for which the teacher got poor transcriptions...")
+            dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
     
     
     # Initialize the models from pretrained checkpoints:

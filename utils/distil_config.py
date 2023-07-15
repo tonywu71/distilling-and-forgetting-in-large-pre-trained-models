@@ -69,6 +69,7 @@ class DistilConfig:
     
     # 1-best sequence-level:
     max_diff_tokens_filter: Optional[int] = None
+    thresh_abs_diff_gzip: Optional[float] = None
     
     # Sequence-level (`seq_level_uniform`, `seq_level_ranked`)
     distillation_num_beams: Optional[int] = None
