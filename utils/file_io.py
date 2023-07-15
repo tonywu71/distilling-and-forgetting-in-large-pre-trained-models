@@ -34,12 +34,12 @@ def extract_exp_name_from_model_path(model_filepath: str) -> str:
     
     Examples:
     - "tw581/checkpoints/whisper_small/librispeech_clean_100h/checkpoint-200" -> "whisper_small/librispeech_clean_100h/checkpoint-200"
-    - "openai/whisper-tiny.en" -> "openai/whisper-tiny-en"
+    - "openai/whisper-tiny.en" -> "whisper-tiny-en"
     """
     path = Path(model_filepath)
     
     if CHECKPOINTS_DIR.name in path.parts:  # if the path is a checkpoint...
-        experiment_name = path.relative_to(CHECKPOINTS_DIR).as_posix()
+        experiment_name = (CHECKPOINTS_DIR / path.relative_to(CHECKPOINTS_DIR)).as_posix()
     else:  # if the path is a model name from the HuggingFace Hub...
         experiment_name = path.name.replace(".", "-")
     
