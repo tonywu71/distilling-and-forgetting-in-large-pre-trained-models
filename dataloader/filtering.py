@@ -116,8 +116,8 @@ def filter_samples_1_best(ds: Dataset, config: DistilConfig) -> Dataset:
     if config.thresh_abs_diff_gzip:
         print(f"Filtering out samples with an absolite gzip compression ratio difference greater than {config.thresh_abs_diff_gzip}...")
         ds = ds.filter(
-            lambda x: abs(compute_gzip_compression_ratio(x["teacher_labels"]) - compute_gzip_compression_ratio(x["labels"])) <= config.thresh_abs_diff_gzip)
-
+            lambda x: abs(compute_gzip_compression_ratio(x["teacher_text"]) - compute_gzip_compression_ratio(x["text"])) <= config.thresh_abs_diff_gzip)
+    
     n_rows_after = ds.num_rows
     audio_length_after = sum(ds["audio_length"]) / 3600 # in hours
     print(f"Dataset after filtering: {n_rows_after} samples")
