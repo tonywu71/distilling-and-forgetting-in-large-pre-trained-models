@@ -1,14 +1,14 @@
 # Total training steps:
 # - 3391 for batch_size = 32 and num_train_epochs = 1
 
-experiment_name: distil_1_best-medium_to_tiny-ami_100h-filter_5_gzip_prefinetune
+experiment_name: distil_1_best-medium_to_tiny-ami_100h-filter_prefinetune
 lang_name: english
 task: transcribe
 method_distil: seq_level_uniform
 teacher_model_name_or_path: checkpoints/finetuning/whisper_medium/ami_25h_hpt_reference_teacher/final
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/filter_hallucinations/filter_5_gzip_prefinetune
+model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/filter_hallucinations/filter_prefinetune
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -33,8 +33,8 @@ save_final_model: True
 
 alpha_ce: 0.
 distillation_num_beams: 1
-max_diff_tokens_filter: 5
-thresh_abs_diff_gzip: 0.282
+max_diff_tokens_filter: 3
+thresh_abs_diff_gzip:
 
 smart_load: True
 force_reprocess_dataset: False
