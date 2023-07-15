@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.initialize import initialize_env, print_envs
 initialize_env()
 
-from typing import List, Dict, Any
+from typing import List
 from dataclasses import asdict
 from functools import partial
 from pathlib import Path
@@ -34,8 +34,9 @@ from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
+from utils.whisper_hallucinations.get_features import get_audio_length_in_seconds
 
-from utils.constants import GEN_MAX_LENGTH
+from utils.constants import GEN_MAX_LENGTH, DEFAULT_NUM_PROC
 
 
 
@@ -154,16 +155,26 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     if is_seq_level and config.distillation_num_beams == 1:
         if config.max_diff_tokens_filter:
             print(f"Filtering out samples from the training split where the teacher's text is longer than the student's labels + {config.max_diff_tokens_filter} tokens...")
+
+            dataset_dict["train"] = dataset_dict["train"].map(get_audio_length_in_seconds, num_proc=DEFAULT_NUM_PROC)
+            dataset_dict["train"] = dataset_dict["train"].map(lambda x: {"teacher_labels": student_processor.tokenizer(x["teacher_text"]).input_ids}, batched=True)
+            
             n_rows_before = dataset_dict["train"].num_rows
+            audio_length_before = sum(dataset_dict["train"]["audio_length"]) / 3600  # in hours
             print(f"Train split before filtering: {n_rows_before} samples")
-            def filter_longer_than(x: Dict[str, Any]) -> bool:
-                n_tokens_teacher = len(student_processor.tokenizer(x["teacher_text"]).input_ids)
-                n_tokens_labels = len(x["labels"])
-                return n_tokens_teacher - n_tokens_labels <= config.max_diff_tokens_filter
-            dataset_dict["train"] = dataset_dict["train"].filter(filter_longer_than)
+            print(f"Total audio length before filtering: {audio_length_before:.2f} hours")
+
+            dataset_dict["train"] = dataset_dict["train"].filter(lambda x: len(x["teacher_labels"]) - len(x["labels"]) <= config.max_diff_tokens_filter)
+
             n_rows_after = dataset_dict["train"].num_rows
+            audio_length_after = sum(dataset_dict["train"]["audio_length"]) / 3600 # in hours
             print(f"Train split after filtering: {n_rows_after} samples")
-            print(f"Filtered out {n_rows_before - n_rows_after} samples")
+            print(f"Total audio length after filtering: {audio_length_after:.2f} hours")
+
+            print(f"Filtered out {n_rows_before - n_rows_after} samples ({(n_rows_before - n_rows_after) / n_rows_before * 100:.2f}%)")
+            print(f"Filtered out {audio_length_before - audio_length_after:.2f} hours of audio ({(audio_length_before - audio_length_after) / audio_length_before * 100:.2f}%)")
+
+            dataset_dict["train"] = dataset_dict["train"].remove_columns(["audio_length", "teacher_labels"])
     
     
     # Initialize the models from pretrained checkpoints:
