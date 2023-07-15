@@ -1,12 +1,14 @@
 # Total training steps:
 # - 3391 for batch_size = 32 and num_train_epochs = 1
 
-experiment_name: finetune_ewc-whisper_tiny-ami_100h-lambda_1e-3-full
+experiment_name: distil_1_best-medium_to_tiny-ami_100h-filter_5
 lang_name: english
 task: transcribe
-pretrained_model_name_or_path: openai/whisper-tiny
+method_distil: seq_level_uniform
+teacher_model_name_or_path: openai/whisper-medium
+student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/finetune_ewc/whisper_tiny/full/ami_100h-lambda_1e-3-full
+model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/filter_hallucinations/filter_5
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -20,17 +22,18 @@ eval_steps: 600
 generation_num_beams: 1
 logging_steps: 300
 save_steps: 600
-num_train_epochs: 2
+num_train_epochs: 1
 
 zero_shot_eval: False
 eval_batch_size: 256
 eval_accumulation_steps:
 save_total_limit:
-early_stopping_patience: 3
+early_stopping_patience:
 save_final_model: True
 
-dirpath_ewc: checkpoints/whisper-tiny/english/transcribe/ami_100h/train
-lambda_ewc: 0.001
+alpha_ce: 0.
+distillation_num_beams: 1
+max_diff_tokens_filter: 3
 
 smart_load: True
 force_reprocess_dataset: False

@@ -52,10 +52,10 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_0_temp_1/final \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_0_temp_5e-1/final \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_0_temp_5e+1/final \
-    --dataset-name ami_validation \
+    checkpoints/finetune_ewc/whisper_tiny/ami_100h-lambda_1e-3-full/checkpoint-3000 \
+    checkpoints/finetune_ewc/whisper_tiny/ami_100h-lambda_1e-3-full/checkpoint-4500 \
+    --dataset-name fab \
+    --subset ami --subset librispeech_fr \
     --batch-size 1024 \
     >> $LOG 2> $ERR
 

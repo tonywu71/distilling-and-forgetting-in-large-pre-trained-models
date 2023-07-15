@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=02:30:00
+#SBATCH --time=04:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,8 +51,8 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/gen_whisper_preds_with_timestamps.py tiny ami_test >> $LOG 2> $ERR
-python scripts/gen_whisper_preds_with_timestamps.py medium ami_test >> $LOG 2> $ERR
+# python scripts/gen_whisper_preds_with_timestamps.py tiny ami_100h_test >> $LOG 2> $ERR
+python scripts/gen_whisper_preds_with_timestamps.py medium ami_validation >> $LOG 2> $ERR
 
 #! #############################################
 
