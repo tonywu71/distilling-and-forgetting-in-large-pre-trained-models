@@ -98,12 +98,14 @@ def filter_labels(dataset: Dataset | IterableDataset,
 
 
 def filter_samples_1_best(ds: Dataset, config: DistilConfig) -> Dataset:
-    
+    """
+    Filter out samples for which the teacher is not good enough for 1-best knowledge distillation.
+    """
+
     tokenizer = WhisperTokenizerFast.from_pretrained(config.teacher_model_name_or_path, language=config.lang_name, task=config.task)
 
-
+    print("Computing audio length...")
     ds = ds.map(get_audio_length_in_seconds, num_proc=DEFAULT_NUM_PROC)
-    ds = ds.map(lambda x: {"teacher_labels": tokenizer(x["teacher_text"]).input_ids}, batched=True)
 
     n_rows_before = ds.num_rows
     audio_length_before = sum(ds["audio_length"]) / 3600  # in hours
@@ -112,12 +114,13 @@ def filter_samples_1_best(ds: Dataset, config: DistilConfig) -> Dataset:
 
     if config.max_diff_tokens_filter:
         print(f"Filtering out samples where the teacher's text is longer than the student's labels + {config.max_diff_tokens_filter} tokens...")
-        ds = ds.filter(lambda x: len(x["teacher_labels"]) - len(x["labels"]) <= config.max_diff_tokens_filter)
+        ds = ds.filter(lambda x: len(x["teacher_sequences"]) - len(x["labels"]) <= config.max_diff_tokens_filter, num_proc=DEFAULT_NUM_PROC)
     if config.thresh_abs_diff_gzip:
         print(f"Filtering out samples with an absolite gzip compression ratio difference greater than {config.thresh_abs_diff_gzip}...")
-        ds = ds.filter(
-            lambda x: abs(compute_gzip_compression_ratio(x["teacher_text"]) - compute_gzip_compression_ratio(x["text"])) <= config.thresh_abs_diff_gzip)
-    
+        def filter_gzip(x: Dict[str, Any]) -> bool:
+            teacher_seq = tokenizer.decode(x["teacher_sequences"], skip_special_tokens=True)
+            return abs(compute_gzip_compression_ratio(teacher_seq) - compute_gzip_compression_ratio(x["text"])) <= config.thresh_abs_diff_gzip
+        ds = ds.filter(filter_gzip, num_proc=DEFAULT_NUM_PROC)
     n_rows_after = ds.num_rows
     audio_length_after = sum(ds["audio_length"]) / 3600 # in hours
     print(f"Dataset after filtering: {n_rows_after} samples")
@@ -126,6 +129,6 @@ def filter_samples_1_best(ds: Dataset, config: DistilConfig) -> Dataset:
     print(f"Filtered out {n_rows_before - n_rows_after} samples ({(n_rows_before - n_rows_after) / n_rows_before * 100:.2f}%)")
     print(f"Filtered out {audio_length_before - audio_length_after:.2f} hours of audio ({(audio_length_before - audio_length_after) / audio_length_before * 100:.2f}%)")
 
-    ds = ds.remove_columns(["audio_length", "teacher_labels"])
+    ds = ds.remove_columns(["audio_length"])
 
     return ds

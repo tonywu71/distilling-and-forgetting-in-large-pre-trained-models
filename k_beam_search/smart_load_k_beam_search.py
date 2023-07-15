@@ -5,13 +5,16 @@ from pathlib import Path
 
 import torch
 
-from transformers.models.whisper import WhisperTokenizerFast, WhisperForConditionalGeneration
+from transformers.models.whisper import WhisperForConditionalGeneration
 from optimum.bettertransformer import BetterTransformer
 from datasets import load_from_disk, DatasetDict, Dataset
 
+from dataloader.utils import remove_unnecessary_features_for_1_best
 from k_beam_search.prepare_k_beam_features import prepare_k_beam_features_fct
 from utils.distil_config import DistilConfig
 from utils.file_io import extract_exp_name_from_model_path
+from utils.process_tokenized_seq import remove_redundant_eot
+from utils.constants import DEFAULT_NUM_PROC
 
 
 
@@ -37,8 +40,8 @@ def get_k_beam_cache_dir(config: DistilConfig, parent_cache_dir: Path) -> str | 
 
 
 def smart_load_dataset_with_k_beam_search(config: DistilConfig,
-                                          dataset_dict: DatasetDict | Dataset,
-                                          teacher_caching_batch_size: int = 32) -> DatasetDict | Dataset:
+                                          dataset_dict: DatasetDict,
+                                          teacher_caching_batch_size: int = 32) -> DatasetDict:
     """
     Return a dataset with K-Beam search results. If a suitable cached dataset is found, it is loaded from disk.
     Otherwise, the dataset is preprocessed from scratch.
@@ -87,7 +90,7 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
                 print(f"Deleting previously saved K-Beam search results at `{k_beam_cache_dir}`...")
                 os.remove(k_beam_cache_dir)
         else:
-            print(f"No previously cached K-Beam search results could be found in `{k_beam_cache_dir}`.")
+            print("No previously cached K-Beam search results could be found.")
         
         # Get the device:
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -99,18 +102,13 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         # Speed up inference if possible:
         if device == "cuda:0":
             model = BetterTransformer.transform(model)
-        model.generate = partial(model.generate, language=config.lang_name, task=config.task, use_cache=True)
+        model.generate = partial(model.generate, language=config.lang_name, task=config.task, max_length=255, use_cache=True)
         
         if config.distillation_num_beams == 1:
             dataset_dict = dataset_dict.with_format("pt")
-            dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": model.generate(batch["input_features"].to(device), max_length=255)},
+            dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": model.generate(batch["input_features"].to(device))},
                                             batched=True, batch_size=teacher_caching_batch_size)
-            tokenizer = WhisperTokenizerFast.from_pretrained(config.teacher_model_name_or_path, 
-                                                             language=config.lang_name,
-                                                             task=config.task)
-            dataset_dict = dataset_dict.map(lambda batch: {"teacher_text": tokenizer.batch_decode(batch["teacher_sequences"], skip_special_tokens=True)},
-                                            batched=True,  # use default batch size for decoding
-                                            remove_columns=["teacher_sequences"])
+            dataset_dict = dataset_dict.map(lambda x: {"teacher_sequences": remove_redundant_eot(x["teacher_sequences"])}, num_proc=DEFAULT_NUM_PROC)
         else:
             prepare_k_beam_features = partial(prepare_k_beam_features_fct,
                                               model=model,
@@ -119,6 +117,10 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
             dataset_dict = dataset_dict.with_format("pt").map(prepare_k_beam_features,
                                                               batched=True,
                                                               batch_size=teacher_caching_batch_size)
+        
+        # Select features of interest:
+        for split in dataset_dict:
+            dataset_dict[split] = remove_unnecessary_features_for_1_best(dataset_dict[split])
         
         if device == "cuda:0":
             model = BetterTransformer.reverse(model)
