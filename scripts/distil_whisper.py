@@ -241,7 +241,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         predict_with_generate=True,
         generation_max_length=GEN_MAX_LENGTH,
         remove_unused_columns=not(is_seq_level),  # keep the K-beam features if sequence-level, remove them if word-level
-        load_best_model_at_end=True,
+        load_best_model_at_end=False,
         metric_for_best_model="wer",
         greater_is_better=False,  # the lower the WER, the better
         report_to="wandb"

@@ -98,9 +98,6 @@ class DistilConfig:
         if self.early_stopping_patience is None:
             self.early_stopping_patience = -1
         
-        assert self.save_total_limit is None or self.save_total_limit >= 2, \
-            "The `save_total_limit` must be at least 2, or None."
-        
         self._validate_distillation_args()
     
     
