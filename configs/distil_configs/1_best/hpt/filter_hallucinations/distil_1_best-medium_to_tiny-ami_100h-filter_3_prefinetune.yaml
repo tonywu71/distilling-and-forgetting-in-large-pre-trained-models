@@ -5,7 +5,7 @@ experiment_name: distil_1_best-medium_to_tiny-ami_100h-filter_3_prefinetune
 lang_name: english
 task: transcribe
 method_distil: seq_level_uniform
-teacher_model_name_or_path: checkpoints/finetuning/whisper_medium/ami_25h_hpt_reference_teacher/final
+teacher_model_name_or_path: checkpoints/finetuning/whisper_medium/ami_100h_hpt_reference_teacher/checkpoint-3000
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
 model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/filter_hallucinations/filter_3_prefinetune
