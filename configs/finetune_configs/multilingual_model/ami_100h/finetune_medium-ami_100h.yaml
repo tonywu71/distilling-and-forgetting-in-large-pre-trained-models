@@ -1,18 +1,16 @@
 # Total training steps:
 # - 3391 for batch_size = 32 and num_train_epochs = 1
 
-experiment_name: distil_1_best-medium_to_tiny-ami_100h-filter_3_prefinetune
+experiment_name: finetune-whisper_medium-ami_100h
 lang_name: english
 task: transcribe
-method_distil: seq_level_uniform
-teacher_model_name_or_path: checkpoints/finetuning/whisper_medium/ami_25h_hpt_reference_teacher/final
-student_model_name_or_path: openai/whisper-tiny
+pretrained_model_name_or_path: openai/whisper-medium
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/filter_hallucinations/filter_3_prefinetune
+model_dir: ./checkpoints/finetuning/whisper_medium/ami_100h_hpt_reference_teacher
 freeze_encoder: True
 freeze_decoder: False
-batch_size: 32
-gradient_accumulation_steps: 1
+batch_size: 16
+gradient_accumulation_steps: 2
 gradient_checkpointing: False
 dataset_name: ami_100h
 optim: adamw_torch
@@ -21,20 +19,15 @@ warmup_steps: 300
 eval_steps: 600
 generation_num_beams: 1
 logging_steps: 300
-save_steps: 6000 # do not save
+save_steps: 600
 num_train_epochs: 1
 
 zero_shot_eval: False
-eval_batch_size: 256
+eval_batch_size: 128
 eval_accumulation_steps:
-save_total_limit:
+save_total_limit: 2
 early_stopping_patience:
 save_final_model: True
-
-alpha_ce: 0.
-distillation_num_beams: 1
-max_diff_tokens_filter: 3
-thresh_abs_diff_gzip:
 
 smart_load: True
 force_reprocess_dataset: False
