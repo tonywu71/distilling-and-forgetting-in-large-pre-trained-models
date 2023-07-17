@@ -3,35 +3,35 @@
 # - 850 for batch_size = 32 and num_train_epochs = 0.25
 # - 340 for batch_size = 32 and num_train_epochs = 0.1
 
-experiment_name: distil_word_level-finetuned_medium_to_tiny-full-alpha_8e-1_temp_1_lr_5e-5
+experiment_name: distil_word_level-finetuned_medium_to_tiny-hpt_lr_1e-5
 lang_name: english
 task: transcribe
 method_distil: word_level
 teacher_model_name_or_path: checkpoints/finetuning/whisper_medium/ami_100h_hpt_reference_teacher/checkpoint-3000
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/full/alpha_8e-1_temp_1_lr_5e-5
+model_dir: ./checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/lr_1e-5
 freeze_encoder: True
 freeze_decoder: False
-batch_size: 16
+batch_size: 32
 gradient_accumulation_steps: 1
 gradient_checkpointing: False
 dataset_name: ami_100h
 optim: adamw_torch
-learning_rate: 5e-5
-warmup_steps: 300
-eval_steps: 500
+learning_rate: 1e-5
+warmup_steps: 85
+eval_steps: 140
 generation_num_beams: 1
-logging_steps: 250
-save_steps: 500
-num_train_epochs: 0.5
+logging_steps: 140
+save_steps: 2800  # do not save the model during training
+num_train_epochs: 0.20
 
 zero_shot_eval: False
 eval_batch_size: 256
 eval_accumulation_steps:
-save_total_limit: 3
-early_stopping_patience: 3
-save_final_model: True
+save_total_limit:
+early_stopping_patience:
+save_final_model: True  # save the model only at the end of training
 
 alpha_ce: 0.8
 temperature: 1
