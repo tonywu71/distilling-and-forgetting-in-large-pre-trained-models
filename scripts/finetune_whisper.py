@@ -205,7 +205,7 @@ def main(config_filepath: str,
         save_total_limit=config.save_total_limit,
         predict_with_generate=True,
         generation_max_length=GEN_MAX_LENGTH,
-        load_best_model_at_end=False,
+        load_best_model_at_end=False if config.save_total_limit == 1 else True,
         metric_for_best_model="wer",
         greater_is_better=False,  # the lower the WER, the better
         report_to="wandb"  # type: ignore
