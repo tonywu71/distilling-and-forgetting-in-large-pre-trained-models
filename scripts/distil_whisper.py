@@ -16,6 +16,7 @@ import torch
 
 from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor
 from transformers.trainer_callback import TrainerCallback, EarlyStoppingCallback
+from optimum.bettertransformer import BetterTransformer
 
 import wandb
 
@@ -47,7 +48,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     Distil Whisper based on the provided config file.
     """
     
-    device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
     
     # --------------------   Load config   --------------------
     config = DistilConfig.from_yaml(config_filepath)
@@ -162,6 +163,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     if config.method_distil == "word_level":
         print(f"Loading teacher model `{config.teacher_model_name_or_path}`...")
         teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
+        if torch.cuda.is_available():
+            print("CUDA is available. Transforming the teacher model to use the BetterTransformer...")
+            teacher_model = BetterTransformer.transform(teacher_model)
         # Freeze the teacher model:
         for param in teacher_model.parameters():
             param.requires_grad = False
