@@ -42,12 +42,19 @@ def count_overlaps(result: Dict[str, Any]) -> int:
 def add_features_to_ds(ds: Dataset,
                        results: Dict[str, Any],
                        tokenizer: WhisperTokenizer | WhisperTokenizerFast,
-                       num_proc: int = 1) -> Dataset:
+                       num_proc: int = 1,
+                       lowercase_teacher: bool = False) -> Dataset:
     
     assert "labels" in ds.features, "The dataset must have a 'labels' column for the tokenized ground-truth text"
     
     # Get teacher predictions:
-    teacher_text = [x["text"].lower() for x in results]
+    if lowercase_teacher:
+        teacher_text = [x["text"].lower() for x in results]
+    else:
+        teacher_text = [x["text"] for x in results]
+    
+    # NOTE: When alpha_ce = 0, we shouldn't lowercase the teacher predictions because the goal of 1-best KD is for
+    #       the student to learn to predict the raw teacher's predictions (without any normalization).
 
     # Add teacher predictions to the dataset features:
     assert ds.num_rows == len(teacher_text), "Number of predictions must match number of examples in the dataset"
