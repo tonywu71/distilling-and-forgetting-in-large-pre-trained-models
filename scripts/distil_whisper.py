@@ -43,10 +43,15 @@ from utils.constants import GEN_MAX_LENGTH
 
 def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file."),
          teacher_caching_batch_size: int = typer.Option(64, help="Batch size for caching teacher outputs."),
+         end_after_caching: bool = typer.Option(False, help="Whether to end the script after caching. " + \
+                                                "Used when the maximum compute time is too short to perform distillation right after caching"),
          debug: bool = typer.Option(False, help="Whether to run in debug mode or not.")):
     """
     Distil Whisper based on the provided config file.
     """
+
+    if end_after_caching:
+        print("Ending script after caching is enabled. Distillation will not be performed.")
     
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     
@@ -143,6 +148,11 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
                                                              dataset_dict=dataset_dict,
                                                              teacher_caching_batch_size=teacher_caching_batch_size)
         print("\n-----------------------\n")
+    
+
+    if end_after_caching:
+        print("Ending script after caching teacher outputs.")
+        return
     
     
     if config.dataset_name == "librispeech_clean_100h":

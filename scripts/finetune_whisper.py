@@ -44,12 +44,17 @@ def main(config_filepath: str,
                                               "Config file should be formatted for EWC fine-tuning."),
          tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
                                               "Config file should be formatted for TAC fine-tuning."),
+         end_after_caching: bool = typer.Option(False, help="Whether to end the script after caching. " + \
+                                                "Used when the maximum compute time is too short to perform distillation right after caching"),
          debug: bool = typer.Option(False, help="Whether to run in debug mode or not.")):
 
     """
     Fine-tune the Whisper model on the LibriSpeech dataset.
     """
     
+    if end_after_caching:
+        print("Ending script after caching is enabled. Distillation will not be performed.")
+
     assert not (ewc and tac), "EWC and TAC cannot be used at the same time."
     
     
@@ -140,6 +145,11 @@ def main(config_filepath: str,
     
     print("\n-----------------------\n")
     
+
+    if end_after_caching:
+        print("Ending script after caching teacher outputs.")
+        return
+
     
     # Initialize the model from a pretrained checkpoint:
     print(f"Loading pretrained model `{config.pretrained_model_name_or_path}`...")
