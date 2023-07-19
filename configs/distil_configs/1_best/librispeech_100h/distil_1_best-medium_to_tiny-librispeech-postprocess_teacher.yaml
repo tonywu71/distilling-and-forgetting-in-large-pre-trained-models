@@ -1,14 +1,14 @@
 # Total training steps:
 # - 1784 for batch_size = 32 and num_train_epochs = 2
 
-experiment_name: distil_1_best-medium_to_tiny-librispeech_100h-postprocessed_teacher
+experiment_name: distil_1_best-medium_to_tiny-librispeech_100h-postprocess_teacher
 lang_name: english
 task: transcribe
 method_distil: seq_level_uniform
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/librispeech_clean_100h-postprocessed_teacher
+model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/librispeech_clean_100h-postprocess_teacher
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32

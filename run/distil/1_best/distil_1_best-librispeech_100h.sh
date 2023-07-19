@@ -51,8 +51,11 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/1_best/librispeech_100h/distil_1_best-medium_to_tiny-librispeech.yaml \
+#     >> $LOG 2> $ERR
 python scripts/distil_whisper.py \
-    configs/distil_configs/1_best/librispeech_100h/distil_1_best-medium_to_tiny-librispeech.yaml \
+    configs/distil_configs/1_best/librispeech_100h/distil_1_best-medium_to_tiny-librispeech-postprocess_teacher.yaml \
     >> $LOG 2> $ERR
 
 #! #############################################
