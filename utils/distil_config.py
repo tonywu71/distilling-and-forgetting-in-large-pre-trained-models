@@ -68,6 +68,7 @@ class DistilConfig:
     temperature: Optional[float] = None
     
     # 1-best sequence-level:
+    postprocess_teacher: bool = False
     max_diff_tokens_filter: Optional[int] = None
     thresh_abs_diff_gzip: Optional[float] = None
     

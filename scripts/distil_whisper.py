@@ -14,7 +14,7 @@ from pprint import pprint
 
 import torch
 
-from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor
+from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor, WhisperTokenizerFast
 from transformers.trainer_callback import TrainerCallback, EarlyStoppingCallback
 from optimum.bettertransformer import BetterTransformer
 
@@ -30,14 +30,16 @@ from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_string_edit_metrics_fct
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
+from normalization.formatting import remove_casing_and_punctuation
 from normalization.whisper_normalization import get_whisper_normalizer
 from trainer.distillation_word_level import DistillationWordLevelTrainingArguments, DistillationWordLevelTrainer
 from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments, DistillationSeqLevelTrainer
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
+from utils.process_tokenized_seq import remove_redundant_eot
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
 
-from utils.constants import GEN_MAX_LENGTH
+from utils.constants import GEN_MAX_LENGTH, DEFAULT_NUM_PROC
 
 
 
@@ -161,6 +163,19 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     elif config.dataset_name == "ami_100h":
         print("Subsampling the 100h AMI validation split to 20% of its original size for faster evaluation...")
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 5))
+    
+
+    if config.method_distil == "word_level" and config.postprocess_teacher:
+        print("Remove casing and punctuation from the teacher's outputs...")
+        tokenizer = WhisperTokenizerFast.from_pretrained(config.teacher_model_name_or_path, language=config.lang_name, task=config.task)
+        dataset_dict = dataset_dict.map(lambda batch: {"teacher_text": tokenizer.batch_decode(batch["teacher_sequences"])},
+                                        batched=True)
+        dataset_dict = dataset_dict.map(lambda x: {"teacher_text": remove_casing_and_punctuation(x["teacher_text"])},
+                                        num_proc=DEFAULT_NUM_PROC)
+        dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": tokenizer(batch["teacher_text"])},
+                                        batched=True, batch_size=teacher_caching_batch_size)
+        dataset_dict = dataset_dict.map(lambda x: {"teacher_sequences": remove_redundant_eot(x["teacher_sequences"])},
+                                        num_proc=DEFAULT_NUM_PROC)
     
     
     if is_seq_level and config.distillation_num_beams == 1:
