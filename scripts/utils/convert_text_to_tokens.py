@@ -25,7 +25,7 @@ def main(dirpath: str = typer.Argument(..., help="Path to the dataset directory.
                                                                                                         pretrained_model_name_or_path="openai/whisper-tiny",
                                                                                                         language="en",
                                                                                                         task="transcribe")
-    dataset_dict = dataset_dict.map(map_funcion_to_restore_missing_special_tokens, num_proc=DEFAULT_NUM_PROC)
+    dataset_dict = dataset_dict.map(map_funcion_to_restore_missing_special_tokens, num_proc=1)
     
     Path(savepath).parent.mkdir(parents=True, exist_ok=True)
     dataset_dict.save_to_disk(savepath)
