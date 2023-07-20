@@ -37,10 +37,9 @@ from trainer.distillation_word_level import DistillationWordLevelTrainingArgumen
 from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments, DistillationSeqLevelTrainer
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
-from utils.process_tokenized_seq import remove_redundant_eot
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
 
-from utils.constants import GEN_MAX_LENGTH, DEFAULT_NUM_PROC
+from utils.constants import DEFAULT_TOKENIZER_MAX_LENGTH, GEN_MAX_LENGTH, DEFAULT_NUM_PROC
 
 
 
@@ -166,18 +165,25 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 5))
     
 
-    if config.method_distil == "seq_level_uniform" and config.distillation_num_beams == 1 and config.postprocess_teacher:
-        print("Remove casing and punctuation from the teacher's outputs...")
+    is_1_best = (config.method_distil == "seq_level_uniform") and (config.distillation_num_beams == 1)
+    if is_1_best and (config.postprocess_teacher or config.strip_teacher):
         tokenizer = WhisperTokenizerFast.from_pretrained(config.teacher_model_name_or_path, language=config.lang_name, task=config.task)
         dataset_dict = dataset_dict.map(lambda batch: {"teacher_text": tokenizer.batch_decode(batch["teacher_sequences"], skip_special_tokens=True)},
                                         batched=True)
-        dataset_dict = dataset_dict.map(lambda x: {"teacher_text": remove_casing_and_punctuation(x["teacher_text"])},
-                                        num_proc=DEFAULT_NUM_PROC)
+        
+        if config.postprocess_teacher:
+            print("Remove casing and punctuation from the teacher's outputs...")
+            dataset_dict = dataset_dict.map(lambda x: {"teacher_text": remove_casing_and_punctuation(x["teacher_text"])},
+                                            num_proc=DEFAULT_NUM_PROC)
+        
         if config.strip_teacher:
             print("Strip starting/ending whitespaces from the teacher's outputs...")
             dataset_dict = dataset_dict.map(lambda x: {"teacher_text": x["teacher_text"].strip()},
                                             num_proc=DEFAULT_NUM_PROC)
-        dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": tokenizer(batch["teacher_text"]).input_ids},
+        
+        dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": tokenizer(batch["teacher_text"],
+                                                                                     truncation=True,
+                                                                                     max_length=DEFAULT_TOKENIZER_MAX_LENGTH).input_ids},
                                         batched=True, remove_columns=["teacher_text"])
         map_funcion_to_restore_missing_special_tokens = get_map_funcion_to_restore_missing_special_tokens(col="teacher_sequences",
                                                                                                           pretrained_model_name_or_path=config.student_model_name_or_path,
