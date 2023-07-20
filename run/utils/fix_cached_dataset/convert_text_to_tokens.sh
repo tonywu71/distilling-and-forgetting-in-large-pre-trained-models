@@ -46,8 +46,8 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/utils/convert_text_to_tokens.py \
-    /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/k_beam_search_cache/ami_100h/whisper-medium/k_1_old \
-    /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/k_beam_search_cache/ami_100h/whisper-medium/k_1 >> $LOG 2> $ERR
+    /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/k_beam_search_cache/ami_100h/checkpoints/finetuning/whisper_medium/ami_100h_hpt_reference_teacher/checkpoint-3000/k_1_old \
+    /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/k_beam_search_cache/ami_100h/checkpoints/finetuning/whisper_medium/ami_100h_hpt_reference_teacher/checkpoint-3000/k_1 >> $LOG 2> $ERR
 
 #! #############################################
 

@@ -60,8 +60,12 @@ echo "python `which python`": >> $LOG
 #     >> $LOG 2> $ERR
 
 python scripts/distil_whisper.py \
-    configs/distil_configs/1_best/librispeech_100h/distil_1_best-medium_to_tiny-librispeech-postprocess_strip_teacher.yaml \
+    configs/distil_configs/1_best/librispeech_100h/distil_1_best-medium_to_tiny-librispeech-strip_teacher.yaml \
     >> $LOG 2> $ERR
+
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/1_best/librispeech_100h/distil_1_best-medium_to_tiny-librispeech-postprocess_strip_teacher.yaml \
+#     >> $LOG 2> $ERR
 
 #! #############################################
 
