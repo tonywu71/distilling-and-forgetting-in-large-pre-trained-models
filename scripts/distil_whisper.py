@@ -174,7 +174,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         dataset_dict = dataset_dict.map(lambda x: {"teacher_text": remove_casing_and_punctuation(x["teacher_text"])},
                                         num_proc=DEFAULT_NUM_PROC)
         dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": tokenizer(batch["teacher_text"]).input_ids},
-                                        batched=True, batch_size=teacher_caching_batch_size, remove_columns=["teacher_text"])
+                                        batched=True, remove_columns=["teacher_text"])
         map_funcion_to_restore_missing_special_tokens = get_map_funcion_to_restore_missing_special_tokens(col="teacher_sequences",
                                                                                                           pretrained_model_name_or_path=config.student_model_name_or_path,
                                                                                                           language=config.lang_name,

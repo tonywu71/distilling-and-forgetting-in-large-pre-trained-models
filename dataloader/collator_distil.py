@@ -42,11 +42,10 @@ class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWi
         if self.distillation_k_beam == 1:
             label_features = [{"input_ids": feature["teacher_sequences"]} for feature in features]
             
-            # NOTE: The text has not been lowercased. We will keep it this way to get the full signal from the teacher model.
-            
             labels, attention_mask = self.preprocess_tokenized_labels(label_features,
                                                                       replace_padded_with_loss_mask=self.replace_padded_with_loss_mask_for_labels,
                                                                       discard_first_bos_token=self.discard_first_bos_token)  # (batch_size, n_tokens)
+            
             batch["teacher_sequences"] = labels  # (batch_size, n_tokens)
             
             if self.return_attention_mask:
