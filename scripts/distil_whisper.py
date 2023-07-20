@@ -173,6 +173,10 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
                                         batched=True)
         dataset_dict = dataset_dict.map(lambda x: {"teacher_text": remove_casing_and_punctuation(x["teacher_text"])},
                                         num_proc=DEFAULT_NUM_PROC)
+        if config.strip_teacher:
+            print("Strip starting/ending whitespaces from the teacher's outputs...")
+            dataset_dict = dataset_dict.map(lambda x: {"teacher_text": x["teacher_text"].strip()},
+                                            num_proc=DEFAULT_NUM_PROC)
         dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": tokenizer(batch["teacher_text"]).input_ids},
                                         batched=True, remove_columns=["teacher_text"])
         map_funcion_to_restore_missing_special_tokens = get_map_funcion_to_restore_missing_special_tokens(col="teacher_sequences",

@@ -69,6 +69,7 @@ class DistilConfig:
     
     # 1-best sequence-level:
     postprocess_teacher: bool = False
+    strip_teacher: bool = False
     max_diff_tokens_filter: Optional[int] = None
     thresh_abs_diff_gzip: Optional[float] = None
     
