@@ -1,13 +1,12 @@
-from typing import Dict, Tuple, Any
+from typing import Dict, Any
 
 import torch
 from transformers.models.whisper import WhisperTokenizer, WhisperFeatureExtractor
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from dataloader.utils import get_fast_tokenizer
-from trainer.trainer_utils import get_language_special_token, get_padded_mask_from_tensor, get_task_special_token
+from trainer.trainer_utils import get_padded_mask_from_tensor
 
-from utils.constants import DEFAULT_TOKENIZER_MAX_LENGTH, LOSS_MASK_IDX
+from utils.constants import LOSS_MASK_IDX
 
 
 class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWithPadding):
