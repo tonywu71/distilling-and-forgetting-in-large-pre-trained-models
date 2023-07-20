@@ -3,7 +3,7 @@ from typing import Dict, Tuple, Any
 import torch
 from transformers.models.whisper import WhisperTokenizer, WhisperFeatureExtractor
 
-from utils.constants import DEFAULT_LABEL_TOKENIZED_COL, LOSS_MASK_IDX
+from utils.constants import DEFAULT_LABEL_TOKENIZED_COL, LOSS_MASK_IDX, DEFAULT_TOKENIZER_MAX_LENGTH
 
 
 class DataCollatorSpeechSeq2SeqWithPadding:
@@ -88,6 +88,10 @@ class DataCollatorSpeechSeq2SeqWithPadding:
         # Get the labels and attention mask:
         labels = labels_batch["input_ids"]
         attention_mask = labels_batch["attention_mask"]
+
+        # Truncate the labels if they are too long:
+        labels = labels[:, :DEFAULT_TOKENIZER_MAX_LENGTH]
+        attention_mask = attention_mask[:, :DEFAULT_TOKENIZER_MAX_LENGTH]
         
         if replace_padded_with_loss_mask:
             # Replace padding with correct token for correct loss computation:
