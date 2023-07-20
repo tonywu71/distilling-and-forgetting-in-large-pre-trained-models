@@ -15,7 +15,7 @@
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How much wallclock time will be required?
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -45,8 +45,7 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# mv /home/tw581/rds/hpc-work/preprocessed_datasets /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/
-# mv /home/tw581/rds/hpc-work/k_beam_search_cache /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/
+mv /home/tw581/mlmi_dissertation/distilling-and-forgetting-in-large-pre-trained-models/checkpoints/finetuning/whisper_medium /home/tw581/rds/hpc-work/checkpoints/finetuning/
 
 #! #############################################
 

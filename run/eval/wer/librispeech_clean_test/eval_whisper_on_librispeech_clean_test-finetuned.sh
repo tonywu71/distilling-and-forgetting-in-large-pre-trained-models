@@ -52,9 +52,10 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper.py \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/librispeech_clean_100h/checkpoint-2450 \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/librispeech_clean_100h-postprocess_teacher/checkpoint-2100 \
     --dataset-name librispeech_clean \
-    --batch-size 1024 >> $LOG 2> $ERR
+    --batch-size 1024 \
+    --save-preds >> $LOG 2> $ERR
 
 #! #############################################
 
