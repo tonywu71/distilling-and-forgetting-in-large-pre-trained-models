@@ -9,21 +9,27 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J fix_lowercase
+#SBATCH -J distil_1_best-ami_100h
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-CPU
+#SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
+#! How many (MPI) tasks will there be in total?
+#! Note probably this should not exceed the total number of GPUs in use.
+#SBATCH --ntasks=1
+#! Specify the number of GPUs per node (between 1 and 4; must be 4 if nodes>1).
+#! Note that the job submission script will enforce no more than 32 cpus per GPU.
+#SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=03:00:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
 #! interrupted by node failure or system downtime):
 ##SBATCH --no-requeue
 
-#! Do not change (CPU-only partition):
-#SBATCH -p cclake-himem
+#! Do not change:
+#SBATCH -p ampere
 #! ############################################################
 
 
@@ -35,7 +41,7 @@ LOG=$DIRPATH_EXP/$SLURM_JOB_ID.log
 ERR=$DIRPATH_EXP/$SLURM_JOB_ID.err
 
 
-echo -e "JobID: $JOBID\n======" > $LOG
+echo -e "JobID: $SLURM_JOB_ID\n======" > $LOG
 echo "Time: `date`" >> $LOG
 echo "Running on master node: `hostname`" >> $LOG
 echo "python `which python`": >> $LOG
@@ -45,13 +51,13 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/utils/fix_lowercase.py \
-#     /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/k_beam_search_cache/ami_10h/whisper-medium/k_5 \
-#     /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/k_beam_search_cache_new/ami_10h/whisper-medium/k_5 >> $LOG 2> $ERR
+python scripts/distil_whisper.py \
+    configs/distil_configs/1_best/ami_100h/distil_1_best-medium_to_tiny-ami_100h-partial.yaml \
+    >> $LOG 2> $ERR
 
-# python scripts/utils/fix_lowercase.py \
-#     /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/k_beam_search_cache/ami_100h/whisper-medium/k_3 \
-#     /home/tw581/rds/rds-altaslp-8YSp2LXTlkY/experiments/tw581/cache/huggingface/k_beam_search_cache_new/ami_100h/whisper-medium/k_3 >> $LOG 2> $ERR
+# configs/distil_configs/1_best/ami_100h/distil_1_best-medium_to_tiny-ami_100h-postprocess_teacher-partial.yaml
+# configs/distil_configs/1_best/ami_100h/distil_1_best-medium_to_tiny-ami_100h-postprocess_teacher-prefinetune-partial.yaml
+# configs/distil_configs/1_best/ami_100h/distil_1_best-medium_to_tiny-ami_100h-prefinetune-partial.yaml
 
 #! #############################################
 
