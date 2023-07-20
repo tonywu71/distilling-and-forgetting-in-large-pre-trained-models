@@ -7,7 +7,7 @@ experiment_name: distil_word_level-finetuned_medium_to_tiny-hpt_lr_1e-4
 lang_name: english
 task: transcribe
 method_distil: word_level
-teacher_model_name_or_path: checkpoints/finetuning/whisper_medium/ami_100h_hpt_reference_teacher/checkpoint-3000
+teacher_model_name_or_path: /home/tw581/rds/hpc-work/checkpoints/finetuning/whisper_medium/ami_100h_hpt_reference_teacher/checkpoint-3000
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
 model_dir: ./checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/lr_1e-4
