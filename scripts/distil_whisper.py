@@ -79,6 +79,10 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     list_tags = [config.dataset_name,
                  config.method_distil]
     
+    if end_after_caching:
+        print("Ending script after caching is enabled. Distillation will not be performed.")
+        list_tags.append("caching")
+    
     # -----------------------   W&B   -----------------------
     wandb.login()
     wandb.init(project=os.environ["WANDB_PROJECT_TRAINING"],
@@ -154,6 +158,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
 
     if end_after_caching:
         print("Ending script after caching teacher outputs.")
+        wandb.finish()
         return
     
     

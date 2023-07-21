@@ -54,6 +54,7 @@ def main(config_filepath: str,
     
     if end_after_caching:
         print("Ending script after caching is enabled. Distillation will not be performed.")
+        list_tags.append("caching")
 
     assert not (ewc and tac), "EWC and TAC cannot be used at the same time."
     
@@ -148,6 +149,7 @@ def main(config_filepath: str,
 
     if end_after_caching:
         print("Ending script after caching teacher outputs.")
+        wandb.finish()
         return
 
     
