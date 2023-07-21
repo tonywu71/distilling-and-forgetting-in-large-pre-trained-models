@@ -11,6 +11,6 @@ def listen_to_audio(ds: Dataset, list_idx: List[int], pred_col: Optional[str]) -
         print(f"Reference: {sample['text']}")
         if pred_col:
             print(f"Prediction: {sample[pred_col]}")
-        display(Audio(data=sample["audio"]["array"], rate=sample["audio"]["sampling_rate"]))
+        display(Audio(data=sample["audio"]["array"], rate=sample["audio"]["sampling_rate"].item()))
         print()
     return
