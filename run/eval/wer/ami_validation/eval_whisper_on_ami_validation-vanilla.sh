@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J eval_whisper_on_ami_validation-vanilla
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -54,7 +54,8 @@ echo "python `which python`": >> $LOG
 python scripts/eval_whisper.py \
     openai/whisper-medium \
     --dataset-name ami_validation \
-    --batch-size 64 >> $LOG 2> $ERR
+    --batch-size 64\
+    --save-preds >> $LOG 2> $ERR
 
 #! #############################################
 

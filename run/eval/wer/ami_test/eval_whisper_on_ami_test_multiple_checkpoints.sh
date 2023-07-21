@@ -52,10 +52,11 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-full-filter_prefinetune/checkpoint-9000 \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/filter_hallucinations/filter_3_prefinetune/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h-strip_teacher-partial/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h-postprocess_strip_teacher-partial/final \
     --dataset-name ami \
     --batch-size 1024 >> $LOG 2> $ERR
+
 
 #! #############################################
 

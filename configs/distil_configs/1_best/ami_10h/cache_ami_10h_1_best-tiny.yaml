@@ -3,14 +3,14 @@
 
 # NOT USED FOR DISTIL -> only for caching
 
-experiment_name: cache_ami_10h_1_best
+experiment_name: cache_ami_10h_1_best_tiny
 lang_name: english
 task: transcribe
 method_distil: seq_level_uniform
-teacher_model_name_or_path: openai/whisper-medium
+teacher_model_name_or_path: openai/whisper-tiny
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/ami_10h-partial
+model_dir: ./checkpoints/distil_1_best/whisper_tiny_to_tiny/ami_10h-partial
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32

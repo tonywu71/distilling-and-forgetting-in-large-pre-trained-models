@@ -52,8 +52,8 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/filter_hallucinations/filter_2/final \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/filter_hallucinations/filter_3_gzip/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h-strip_teacher-partial/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h-postprocess_strip_teacher-partial/final \
     --dataset-name ami_validation \
     --batch-size 1024 >> $LOG 2> $ERR
 
