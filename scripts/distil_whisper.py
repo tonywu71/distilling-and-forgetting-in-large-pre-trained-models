@@ -44,7 +44,7 @@ from utils.constants import DEFAULT_TOKENIZER_MAX_LENGTH, GEN_MAX_LENGTH, DEFAUL
 
 
 def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file."),
-         teacher_caching_batch_size: int = typer.Option(64, help="Batch size for caching teacher outputs."),
+         teacher_caching_batch_size: int = typer.Option(16, help="Batch size for caching teacher outputs."),
          end_after_caching: bool = typer.Option(False, help="Whether to end the script after caching. " + \
                                                 "Used when the maximum compute time is too short to perform distillation right after caching"),
          debug: bool = typer.Option(False, help="Whether to run in debug mode or not.")):
