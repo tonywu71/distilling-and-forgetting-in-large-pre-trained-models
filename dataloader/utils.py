@@ -39,7 +39,7 @@ def remove_unnecessary_features_for_1_best(ds: Dataset, verbose: bool = True) ->
     """
     Remove unnecessary features from the dataset to save memory. Used before saving 1-best cache.
     """
-    COLS_FOR_1_BEST = ["audio", "text", "input_features", "input_ids", "labels", "teacher_sequences"]
+    COLS_FOR_1_BEST = ["audio", "text", "input_features", "input_ids", "labels", "teacher_sequences", "token_timestamps"]
     cols_to_remove = [feature_name for feature_name in ds.column_names if feature_name not in COLS_FOR_1_BEST]
     ds = ds.remove_columns(cols_to_remove)
     if verbose:

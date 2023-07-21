@@ -44,6 +44,9 @@ class DistilConfig:
     num_train_epochs: int
     
     
+    # ======== Optional (sequence-level KD teacher caching) ========
+    teacher_original_name: Optional[str] = None  # need to be set when the teacher was already pre-fine-tuned to correctly align heads when predicting timestamps
+
     # ======== Optional (data preprocessing) ========
     data_augmentation: bool = False
     lowercase: bool = True  # set to False if and only if the text is not fully uppercased

@@ -1,15 +1,23 @@
+from typing import Dict, Any
 import torch
 
-def remove_redundant_eot(tensor: torch.Tensor, eot_token: int = 50257) -> torch.Tensor:
+
+def remove_padding_fct(x: Dict[str, Any], 
+                       col_sequences: str,
+                       col_timestamps: str,
+                       eot_token: int = 50257) -> Dict[str, Any]:
     """
-    Remove redundant EOT tokens from a tensor.
-    Note that we need this function because the EOT token is the same as the PAD token.
+    Remove padding added in the output of `model.generate()`.
     """
-    count = (tensor == eot_token).sum()
+    sequences = x[col_sequences]
+    timestamps = x[col_timestamps]
+
+    count = (sequences == eot_token).sum()
+    
     if count == 0 or count == 1:
-        return tensor
+        return {col_sequences: sequences, col_timestamps: timestamps}
     else:
         slice_idx = count - 1
-        mask = torch.ones_like(tensor, dtype=torch.bool)
+        mask = torch.ones_like(sequences, dtype=torch.bool)
         mask[-slice_idx:] = 0
-        return tensor[mask]
+        return {col_sequences: sequences[mask], col_timestamps: timestamps[mask]}

@@ -1,20 +1,21 @@
-from functools import partial
-
 import os
+from functools import partial
+from typing import Any, Dict
 from pathlib import Path
 
 import torch
 
 from transformers.models.whisper import WhisperForConditionalGeneration
 from optimum.bettertransformer import BetterTransformer
-from datasets import load_from_disk, DatasetDict, Dataset
+from datasets import load_from_disk, DatasetDict
 
 from dataloader.utils import remove_unnecessary_features_for_1_best
 from k_beam_search.prepare_k_beam_features import prepare_k_beam_features_fct
+from k_beam_search.ts_alignment_heads import MODEL_NAME_TO_ALIGNMENT_HEADS
 from utils.distil_config import DistilConfig
 from utils.file_io import extract_exp_name_from_model_path
-from utils.process_tokenized_seq import remove_redundant_eot
-from utils.constants import DEFAULT_NUM_PROC
+from utils.process_tokenized_seq import remove_padding_fct
+from utils.constants import DEFAULT_NUM_PROC, GEN_MAX_LENGTH
 
 
 
@@ -93,37 +94,65 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
             print("No previously cached K-Beam search results could be found.")
         
         # Get the device:
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        if torch.cuda.is_available():
+            device = "cuda:0"
+            torch_dtype = torch.float16  # see https://huggingface.co/learn/audio-course/chapter5/evaluation?fw=pt
+        elif torch.backends.mps.is_available():  # for Apple Silicon
+            device = torch.device('mps')
+            torch_dtype = torch.float32  # float16 not supported by MPS
+        else:
+            device = "cpu"
+            torch_dtype = torch.float32
         
         # Initialize the model from pretrained checkpoint:
         print(f"Loading teacher model for K-Beam search from `{config.teacher_model_name_or_path}`...")
-        model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)
+        teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path, torch_dtype=torch_dtype).to(device)
+        if config.teacher_original_name is not None:
+            print(f"Set the alignment heads of the teacher model using the config from `{config.teacher_original_name}`...")
+            teacher_model.generation_config.alignment_heads = MODEL_NAME_TO_ALIGNMENT_HEADS[config.teacher_original_name]
+        else:
+            print(f"Set the alignment heads of the teacher model using the config from `{config.teacher_model_name_or_path}`...")
+            teacher_model.generation_config.alignment_heads = MODEL_NAME_TO_ALIGNMENT_HEADS[config.teacher_model_name_or_path]
         
+        # NOTE: BetterTransformer is not compatible with `return_token_timestamps`
         # Speed up inference if possible:
-        if device == "cuda:0":
-            model = BetterTransformer.transform(model)
-        model.generate = partial(model.generate, language=config.lang_name, task=config.task, max_length=255, use_cache=True)
+        # if device == "cuda:0":
+        #     teacher_model = BetterTransformer.transform(teacher_model)
+
+        teacher_model.generate = partial(teacher_model.generate, language=config.lang_name, task=config.task,
+                                         max_length=GEN_MAX_LENGTH, return_token_timestamps=True, use_cache=True)
         
         if config.distillation_num_beams == 1:
             dataset_dict = dataset_dict.with_format("pt")
-            dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": model.generate(batch["input_features"].to(device))},
-                                            batched=True, batch_size=teacher_caching_batch_size)
-            dataset_dict = dataset_dict.map(lambda x: {"teacher_sequences": remove_redundant_eot(x["teacher_sequences"])}, num_proc=DEFAULT_NUM_PROC)
+
+            def predict_seq_with_ts(batch: Dict[str, Any]) -> Dict[str, Any]:
+                outputs = teacher_model.generate(batch["input_features"].to(device).to(torch_dtype))
+                return {"teacher_sequences": outputs.sequences,
+                        "token_timestamps": outputs.token_timestamps}
+            
+            print("Generating 1-Best output...")
+            dataset_dict = dataset_dict.map(predict_seq_with_ts, batched=True, batch_size=teacher_caching_batch_size)
+
+            print("Removing padding created by `model.generate()`...")
+            remove_padding = partial(remove_padding_fct, col_sequences="teacher_sequences", col_timestamps="token_timestamps")
+            dataset_dict = dataset_dict.map(remove_padding, num_proc=DEFAULT_NUM_PROC)
+        
         else:
             prepare_k_beam_features = partial(prepare_k_beam_features_fct,
-                                              model=model,
+                                              model=teacher_model,
                                               num_beams=config.distillation_num_beams)
-            print("\nGenerating K-Beam search output...")
+            print("Generating K-Beam search output...")
             dataset_dict = dataset_dict.with_format("pt").map(prepare_k_beam_features,
                                                               batched=True,
                                                               batch_size=teacher_caching_batch_size)
         
         # Select features of interest:
+        print("Removing unnecessary features from the dataset...")
         for split in dataset_dict:
             dataset_dict[split] = remove_unnecessary_features_for_1_best(dataset_dict[split])
         
-        if device == "cuda:0":
-            model = BetterTransformer.reverse(model)
+        # if device == "cuda:0":
+        #     teacher_model = BetterTransformer.reverse(teacher_model)
         
         # Set the path to save the K-Beam search results:
         cache_filepath = str(parent_cache_dir / f"k_{config.distillation_num_beams}")
@@ -131,5 +160,6 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         Path(cache_filepath).parent.mkdir(parents=True, exist_ok=True)
         dataset_dict.save_to_disk(cache_filepath)
         print(f"Dataset with K-Beam search saved to `{cache_filepath}`. It will be loaded from disk next time.")
+        breakpoint()
     
     return dataset_dict
