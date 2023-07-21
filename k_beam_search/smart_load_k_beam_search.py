@@ -160,6 +160,5 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         Path(cache_filepath).parent.mkdir(parents=True, exist_ok=True)
         dataset_dict.save_to_disk(cache_filepath)
         print(f"Dataset with K-Beam search saved to `{cache_filepath}`. It will be loaded from disk next time.")
-        breakpoint()
     
     return dataset_dict
