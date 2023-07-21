@@ -52,7 +52,7 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper.py \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h-postprocess_teacher-partial/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h-partial/final \
     --dataset-name ami \
     --batch-size 1024 >> $LOG 2> $ERR
 

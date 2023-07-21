@@ -52,7 +52,7 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/distil_whisper.py \
-    configs/distil_configs/1_best/ami_100h/distil_1_best-medium_to_tiny-ami_100h-partial.yaml \
+    configs/distil_configs/1_best/ami_100h/distil_1_best-medium_to_tiny-ami_100h-postprocess_strip_teacher-partial.yaml \
     >> $LOG 2> $ERR
 
 # configs/distil_configs/1_best/ami_100h/distil_1_best-medium_to_tiny-ami_100h-postprocess_teacher-partial.yaml
