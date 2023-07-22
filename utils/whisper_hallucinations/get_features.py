@@ -73,8 +73,9 @@ def add_features_to_ds(ds: Dataset, num_proc: int = 1) -> Dataset:
     ds = ds.map(lambda x: {"diff_gzip_ratio": x["teacher_gzip_ratio"] - x["gzip_ratio"]})
 
     # Add number of overlaps per example:
-    ds = ds.map(lambda x: {"n_instant_tokens": count_zero_length_elements(x["token_timestamps"]),
-                           "max_subarray_length": max_subarray_length(x["token_timestamps"])},
-                           num_proc=num_proc)
+    if "token_timestamps" in ds.features:
+        ds = ds.map(lambda x: {"n_instant_tokens": count_zero_length_elements(x["token_timestamps"]),
+                               "max_subarray_length": max_subarray_length(x["token_timestamps"])},
+                    num_proc=num_proc)
 
     return ds
