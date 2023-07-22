@@ -28,7 +28,7 @@ from dataloader.dataset_loader import load_dataset_dict
 from dataloader.filtering import filter_samples_1_best
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from dataloader.utils import get_map_funcion_to_restore_missing_special_tokens
+from dataloader.utils import get_map_function_to_restore_missing_special_tokens
 from evaluation.wer_metric import compute_string_edit_metrics_fct
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
 from normalization.formatting import remove_casing_and_punctuation
@@ -190,11 +190,11 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
                                                                                      truncation=True,
                                                                                      max_length=DEFAULT_TOKENIZER_MAX_LENGTH).input_ids},
                                         batched=True, remove_columns=["teacher_text"])
-        map_funcion_to_restore_missing_special_tokens = get_map_funcion_to_restore_missing_special_tokens(col="teacher_sequences",
-                                                                                                          pretrained_model_name_or_path=config.student_model_name_or_path,
-                                                                                                          language=config.lang_name,
-                                                                                                          task=config.task)
-        dataset_dict = dataset_dict.map(map_funcion_to_restore_missing_special_tokens, num_proc=DEFAULT_NUM_PROC)
+        map_function_to_restore_missing_special_tokens = get_map_function_to_restore_missing_special_tokens(col="teacher_sequences",
+                                                                                                            pretrained_model_name_or_path=config.student_model_name_or_path,
+                                                                                                            language=config.lang_name,
+                                                                                                            task=config.task)
+        dataset_dict = dataset_dict.map(map_function_to_restore_missing_special_tokens, num_proc=DEFAULT_NUM_PROC)
     
     
     if is_seq_level and config.distillation_num_beams == 1:

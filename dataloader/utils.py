@@ -18,10 +18,10 @@ def get_fast_tokenizer(tokenizer: WhisperTokenizer) -> WhisperTokenizerFast:
                                                 task=tokenizer.task)
 
 
-def get_map_funcion_to_restore_missing_special_tokens(col: str,
-                                                      pretrained_model_name_or_path: str,
-                                                      language: Optional[str] = None,
-                                                      task: Optional[str] = None) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
+def get_map_function_to_restore_missing_special_tokens(col: str,
+                                                       pretrained_model_name_or_path: str,
+                                                       language: Optional[str] = None,
+                                                       task: Optional[str] = None) -> Callable[[Dict[str, Any]], Dict[str, Any]]:
     """
     Concatenate the language and task special tokens to the tokenized labels.
     Important: We assumed that all token sequences begin with a SOT token.
@@ -29,10 +29,10 @@ def get_map_funcion_to_restore_missing_special_tokens(col: str,
     tokenizer = WhisperTokenizer.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
     missing_tokens = tokenizer("").input_ids[1:3]
     
-    def map_funcion_to_restore_missing_special_tokens(x: Dict[str, Any]) -> Dict[str, Any]:
+    def map_function_to_restore_missing_special_tokens(x: Dict[str, Any]) -> Dict[str, Any]:
         return {col: torch.cat([x[col][0:1], torch.LongTensor(missing_tokens), x[col][1:]])}
     
-    return map_funcion_to_restore_missing_special_tokens
+    return map_function_to_restore_missing_special_tokens
 
 
 def remove_unnecessary_features_for_1_best(ds: Dataset, verbose: bool = True) -> Dataset:
