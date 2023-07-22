@@ -5,7 +5,7 @@ from transformers.models.whisper import WhisperTokenizerFast
 from datasets import Dataset, IterableDataset
 
 from utils.distil_config import DistilConfig
-from utils.whisper_hallucinations.get_features import get_audio_length_in_seconds, compute_gzip_compression_ratio
+from utils.whisper_hallucinations.get_features import count_zero_length_elements, get_audio_length_in_seconds, compute_gzip_compression_ratio
 from utils.constants import (DEFAULT_LABEL_STR_COL,
                              MIN_INPUT_LENGTH,
                              MAX_INPUT_LENGTH,
@@ -112,15 +112,23 @@ def filter_samples_1_best(ds: Dataset, config: DistilConfig) -> Dataset:
     print(f"Dataset before filtering: {n_rows_before} samples")
     print(f"Total audio length before filtering: {audio_length_before:.2f} hours")
 
-    if config.max_diff_tokens_filter:
-        print(f"Filtering out samples where the teacher's text is longer than the student's labels + {config.max_diff_tokens_filter} tokens...")
-        ds = ds.filter(lambda x: len(x["teacher_sequences"]) - len(x["labels"]) <= config.max_diff_tokens_filter, num_proc=DEFAULT_NUM_PROC)
-    if config.thresh_abs_diff_gzip:
-        print(f"Filtering out samples with an absolite gzip compression ratio difference greater than {config.thresh_abs_diff_gzip}...")
-        def filter_gzip(x: Dict[str, Any]) -> bool:
+    if config.max_exceeding_tokens:
+        print(f"Filtering out samples where the teacher's text is longer than the student's labels + {config.max_exceeding_tokens} tokens...")
+        ds = ds.filter(lambda x: len(x["teacher_sequences"]) - len(x["labels"]) <= config.max_exceeding_tokens, num_proc=DEFAULT_NUM_PROC)
+
+    if config.max_teacher_gzip_ratio:
+        print(f"Filtering out samples with a teacher compression ratio greater than {config.max_teacher_gzip_ratio}...")
+        def filter_teacher_gzip_ratio(x: Dict[str, Any]) -> bool:
             teacher_seq = tokenizer.decode(x["teacher_sequences"], skip_special_tokens=True)
-            return abs(compute_gzip_compression_ratio(teacher_seq) - compute_gzip_compression_ratio(x["text"])) <= config.thresh_abs_diff_gzip
-        ds = ds.filter(filter_gzip, num_proc=DEFAULT_NUM_PROC)
+            return (compute_gzip_compression_ratio(teacher_seq) <= config.max_teacher_gzip_ratio)
+        ds = ds.filter(filter_teacher_gzip_ratio, num_proc=DEFAULT_NUM_PROC)
+    
+    if config.max_ratio_instant_tokens:
+        print(f"Filtering out samples with a ratio of instant tokens greater than {config.max_ratio_instant_tokens}...")
+        ds = ds.map(lambda x: {"ratio_instant_tokens": count_zero_length_elements(x["token_timestamps"]) / len(x["teacher_sequences"])},
+                    num_proc=DEFAULT_NUM_PROC)
+        ds = ds.filter(lambda x: x["ratio_instant_tokens"] <= config.max_ratio_instant_tokens, num_proc=DEFAULT_NUM_PROC)
+    
     n_rows_after = ds.num_rows
     audio_length_after = sum(ds["audio_length"]) / 3600 # in hours
     print(f"Dataset after filtering: {n_rows_after} samples")

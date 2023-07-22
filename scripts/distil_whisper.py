@@ -198,7 +198,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     
     
     if is_seq_level and config.distillation_num_beams == 1:
-        if config.max_diff_tokens_filter or config.thresh_abs_diff_gzip:
+        if config.max_exceeding_tokens or config.max_teacher_gzip_ratio or config.max_ratio_instant_tokens:
             print("Filtering out samples for which the teacher got poor transcriptions...")
             dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
     

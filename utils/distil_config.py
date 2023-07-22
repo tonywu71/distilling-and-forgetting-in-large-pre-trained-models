@@ -73,8 +73,9 @@ class DistilConfig:
     # 1-best sequence-level:
     postprocess_teacher: bool = False
     strip_teacher: bool = False
-    max_diff_tokens_filter: Optional[int] = None
-    thresh_abs_diff_gzip: Optional[float] = None
+    max_exceeding_tokens: Optional[int] = None
+    max_teacher_gzip_ratio: Optional[float] = None
+    max_ratio_instant_tokens: Optional[float] = None
     
     # Sequence-level (`seq_level_uniform`, `seq_level_ranked`)
     distillation_num_beams: Optional[int] = None
