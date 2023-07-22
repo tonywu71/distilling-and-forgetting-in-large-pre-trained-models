@@ -6,6 +6,8 @@ import torch
 from transformers.models.whisper import WhisperTokenizer, WhisperTokenizerFast
 from datasets import Dataset
 
+from dataloader.utils import get_map_function_to_restore_missing_special_tokens
+
 
 def get_audio_length_in_seconds(x: Dict[str, Any]) -> Dict[str, float]:
     assert "audio" in x, "x must have an 'audio' key"
@@ -60,6 +62,19 @@ def add_features_to_ds(ds: Dataset,
     
     # Tokenize teacher predictions:
     ds = ds.map(lambda batch: {"teacher_labels": tokenizer(batch["teacher_text"]).input_ids}, batched=True)
+
+    # IMPORTANT: There is a bug in the current version of transformers (4.30.2) that makes
+    #            `WhisperTokenizerFast` not work properly as it won't output the special tokens
+    #            for `language` and `task`.
+    # HOTFIX: Concatenate the special tokens to the vocabulary of the fast tokenizer manually
+    #         using `add_missing_special_tokens_to_fast_tokenizer`.
+
+    if isinstance(tokenizer, WhisperTokenizerFast):
+        map_function_to_restore_missing_special_tokens = get_map_function_to_restore_missing_special_tokens(col="teacher_labels",
+                                                                                                            pretrained_model_name_or_path=tokenizer.name_or_path,
+                                                                                                            language=tokenizer.language,
+                                                                                                            task=tokenizer.task)
+        ds = ds.map(map_function_to_restore_missing_special_tokens, num_proc=num_proc)
 
     # Add audio length to the dataset features:
     ds = ds.map(get_audio_length_in_seconds, num_proc=num_proc)
