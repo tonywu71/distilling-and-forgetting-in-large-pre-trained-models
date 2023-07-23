@@ -1,14 +1,14 @@
 # Total training steps:
 # - 3391 for batch_size = 32 and num_train_epochs = 1
 
-experiment_name: distil_1_best-medium_to_tiny-ami_100h-filter_3_prefinetune
+experiment_name: distil_1_best-medium_to_tiny-ami_100h-teacher_gzip_ratio-60p
 lang_name: english
 task: transcribe
 method_distil: seq_level_uniform
-teacher_model_name_or_path: /home/tw581/rds/hpc-work/checkpoints/finetuning/whisper_medium/ami_100h_hpt_reference_teacher/checkpoint-3000
+teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/filter_hallucinations/filter_3_prefinetune
+model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/teacher_gzip_ratio/60p
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -21,19 +21,19 @@ warmup_steps: 300
 eval_steps: 600
 generation_num_beams: 1
 logging_steps: 300
-save_steps: 6000 # do not save
+save_steps: 6000  # do not save
 num_train_epochs: 1
 
 zero_shot_eval: False
 eval_batch_size: 256
 eval_accumulation_steps:
-save_total_limit: 2
+save_total_limit:
 early_stopping_patience:
 save_final_model: True
 
 alpha_ce: 0.
 distillation_num_beams: 1
-max_exceeding_tokens: 3
+max_teacher_gzip_ratio: 0.60
 
 smart_load: True
 force_reprocess_dataset: False

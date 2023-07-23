@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J cache_ami_100h_1_best
+#SBATCH -J distil_1_best_hpt_ratio_instant_tokens
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=12:00:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,10 +51,17 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper.py \
-    configs/distil_configs/1_best/ami_100h/cache_ami_100h_1_best-medium.yaml \
-    --end-after-caching \
-    >> $LOG 2> $ERR
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/1_best/hpt/ratio_instant_tokens/distil_1_best-medium_to_tiny-ami_100h-ratio_instant_tokens-85p.yaml \
+#     >> $LOG 2> $ERR
+
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/1_best/hpt/ratio_instant_tokens/distil_1_best-medium_to_tiny-ami_100h-ratio_instant_tokens-90p.yaml \
+#     >> $LOG 2> $ERR
+
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/1_best/hpt/ratio_instant_tokens/distil_1_best-medium_to_tiny-ami_100h-ratio_instant_tokens-95p.yaml \
+#     >> $LOG 2> $ERR
 
 #! #############################################
 
