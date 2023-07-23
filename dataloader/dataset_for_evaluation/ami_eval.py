@@ -6,24 +6,20 @@ from dataloader.dataset_for_training.dataset_loader_ami import remove_unnecessar
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 
 
-class AMIValidationSet(BaseDatasetGroup):
+class AMIEvalSet(BaseDatasetGroup):
     """
-    DatasetGroup that contains the test split of AMI IHM.
+    DatasetGroup that contains both the validation and the test split of AMI IHM.
     """
     
     def __init__(self,
                  streaming: bool=False,
-                 is_ami_10h: bool = False,
                  subset: Optional[List[str]]=None) -> None:
         super().__init__(streaming=streaming, subset=subset)
-        self.is_ami_10h = is_ami_10h
-        
-        if self.is_ami_10h:
-            assert not self.streaming, "Streaming is not supported for the 10h AMI set."
         
         # Set the abstract class attributes:
         self.available_datasets = [
-            "ami_validation"
+            "ami_validation",
+            "ami_test"
         ]
         self.is_multilingual = False
         self.language = "english"
@@ -35,12 +31,18 @@ class AMIValidationSet(BaseDatasetGroup):
         self.str2dataset = {
             "ami_validation": load_dataset("edinburghcstr/ami",
                                            name="ihm",
-                                           split="validation" if not self.is_ami_10h else "validation[:10%]",
+                                           split="validation",
                                            cache_dir=self.cache_dir_ami,
-                                           streaming=self.streaming)
+                                           streaming=self.streaming),
+            "ami_test": load_dataset("edinburghcstr/ami",
+                                     name="ihm",
+                                     split="test",
+                                     cache_dir=self.cache_dir_ami,
+                                     streaming=self.streaming)
         }
         
-        self.str2dataset["ami_validation"] = remove_unnecessary_cols_for_ami(self.str2dataset["ami_validation"])
+        for ds_name in self.str2dataset:
+            self.str2dataset[ds_name] = remove_unnecessary_cols_for_ami(self.str2dataset[ds_name])
 
 
     def _load_cache_dir_from_env_var(self) -> None:
