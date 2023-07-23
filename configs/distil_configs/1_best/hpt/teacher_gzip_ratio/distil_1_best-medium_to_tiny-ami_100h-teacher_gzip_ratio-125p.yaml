@@ -1,14 +1,14 @@
 # Total training steps:
 # - 3391 for batch_size = 32 and num_train_epochs = 1
 
-experiment_name: distil_1_best-medium_to_tiny-ami_100h-teacher_gzip_ratio-40p
+experiment_name: distil_1_best-medium_to_tiny-ami_100h-teacher_gzip_ratio-125p
 lang_name: english
 task: transcribe
 method_distil: seq_level_uniform
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/teacher_gzip_ratio/40p
+model_dir: ./checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/teacher_gzip_ratio/125p
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -33,7 +33,7 @@ save_final_model: True
 
 alpha_ce: 0.
 distillation_num_beams: 1
-max_teacher_gzip_ratio: 0.40
+max_teacher_gzip_ratio: 1.25
 
 smart_load: True
 force_reprocess_dataset: False

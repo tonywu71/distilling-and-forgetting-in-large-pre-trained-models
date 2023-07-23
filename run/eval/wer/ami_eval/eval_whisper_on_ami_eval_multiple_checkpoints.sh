@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_1_best_hpt_max_teacher_gzip_ratio
+#SBATCH -J eval_whisper_on_ami_eval_multiple_checkpoints
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=02:00:00
+#SBATCH --time=03:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -41,7 +41,7 @@ LOG=$DIRPATH_EXP/$SLURM_JOB_ID.log
 ERR=$DIRPATH_EXP/$SLURM_JOB_ID.err
 
 
-echo -e "JobID: $SLURM_JOB_ID\n======" > $LOG
+echo -e "JobID: $JOBID\n======" > $LOG
 echo "Time: `date`" >> $LOG
 echo "Running on master node: `hostname`" >> $LOG
 echo "python `which python`": >> $LOG
@@ -51,15 +51,15 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper.py \
-    configs/distil_configs/1_best/hpt/teacher_gzip_ratio/distil_1_best-medium_to_tiny-ami_100h-teacher_gzip_ratio-200p.yaml \
-    >> $LOG 2> $ERR
-
-# configs/distil_configs/1_best/hpt/teacher_gzip_ratio/distil_1_best-medium_to_tiny-ami_100h-teacher_gzip_ratio-100p.yaml
-# configs/distil_configs/1_best/hpt/teacher_gzip_ratio/distil_1_best-medium_to_tiny-ami_100h-teacher_gzip_ratio-125p.yaml
-# configs/distil_configs/1_best/hpt/teacher_gzip_ratio/distil_1_best-medium_to_tiny-ami_100h-teacher_gzip_ratio-150p.yaml
-# configs/distil_configs/1_best/hpt/teacher_gzip_ratio/distil_1_best-medium_to_tiny-ami_100h-teacher_gzip_ratio-175p.yaml
-# configs/distil_configs/1_best/hpt/teacher_gzip_ratio/distil_1_best-medium_to_tiny-ami_100h-teacher_gzip_ratio-200p.yaml
+python scripts/eval_whisper_multiple_checkpoints.py \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/ratio_instant_tokens/85p/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/ratio_instant_tokens/90p/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/ratio_instant_tokens/95p/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/teacher_gzip_ratio/40p/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/teacher_gzip_ratio/60p/final \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/teacher_gzip_ratio/80p/final \
+    --dataset-name ami_eval \
+    --batch-size 1024 >> $LOG 2> $ERR
 
 #! #############################################
 
