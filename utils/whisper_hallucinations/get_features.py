@@ -30,11 +30,18 @@ def compute_gzip_compression_ratio(text: str) -> float:
 
 
 def count_zero_length_elements(tensor):
+    """
+    Count the number of zero-length elements in a tensor.
+    Used to count the number of instantaneous tokens.
+    """
     end_times = torch.roll(tensor, -1)
     return torch.sum(end_times == tensor)
 
 
 def max_subarray_length(x):
+    """
+    Not used.
+    """
     # Compute the differences between adjacent elements
     diffs = torch.diff(x)
 
@@ -49,6 +56,35 @@ def max_subarray_length(x):
     max_length = torch.max(lengths)
 
     return max_length
+
+
+def max_contiguous_ngrams(text: str, n: int) -> int:
+    """
+    Compute the maximum number of contiguous n-grams in the text.
+    Not used.
+    """
+    assert n >= 1, "n must be at least 1."
+    words = text.split(" ")
+    max_count = 0
+
+    for i in range(len(words)-n+1):
+        j = i
+        current_count = 0
+        prev_ngram = None
+        while j + n <= len(words):
+            ngram = ' '.join(words[j:j+n])
+            if prev_ngram is None:
+                prev_ngram = ngram
+                current_count = 1
+                j += n
+            elif ngram == prev_ngram: 
+                current_count += 1
+                j += n
+            else:
+                break
+        max_count = max(max_count, current_count)
+    
+    return max_count
 
 
 def add_features_to_ds(ds: Dataset, num_proc: int = 1) -> Dataset:
@@ -74,8 +110,7 @@ def add_features_to_ds(ds: Dataset, num_proc: int = 1) -> Dataset:
 
     # Add number of overlaps per example:
     if "token_timestamps" in ds.features:
-        ds = ds.map(lambda x: {"n_instant_tokens": count_zero_length_elements(x["token_timestamps"]),
-                               "max_subarray_length": max_subarray_length(x["token_timestamps"])},
+        ds = ds.map(lambda x: {"n_instant_tokens": count_zero_length_elements(x["token_timestamps"])},
                     num_proc=num_proc)
 
     return ds
