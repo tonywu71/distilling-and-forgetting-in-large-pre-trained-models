@@ -170,7 +170,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 5))
     
 
+    # 1-best specific filtering/post-processing:
     is_1_best = (config.method_distil == "seq_level_uniform") and (config.distillation_num_beams == 1)
+
     if is_1_best and (config.postprocess_teacher or config.strip_teacher):
         tokenizer = WhisperTokenizerFast.from_pretrained(config.teacher_model_name_or_path, language=config.lang_name, task=config.task)
         dataset_dict = dataset_dict.map(lambda batch: {"teacher_text": tokenizer.batch_decode(batch["teacher_sequences"], skip_special_tokens=True)},
@@ -197,10 +199,20 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         dataset_dict = dataset_dict.map(map_function_to_restore_missing_special_tokens, num_proc=DEFAULT_NUM_PROC)
     
     
-    if is_seq_level and config.distillation_num_beams == 1:
-        if config.max_exceeding_tokens or config.max_teacher_gzip_ratio or config.max_ratio_instant_tokens:
+    if config.max_exceeding_tokens or config.max_teacher_gzip_ratio or config.max_ratio_instant_tokens:
+        if is_1_best:
             print("Filtering out samples for which the teacher got poor transcriptions...")
             dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
+        elif config.method_distil == "word_level":
+            config.method_distil = "seq_level_uniform"  # hotfix for `smart_load_dataset_with_k_beam_search`
+            dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
+                                                                 dataset_dict=dataset_dict,
+                                                                 teacher_caching_batch_size=teacher_caching_batch_size)
+            dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
+            # NOTE: Do we need to remove columns? I think it should be handled by the collator...
+            config.method_distil = "word_level"
+        else:
+            raise NotImplementedError(f"Filtering not implement for distillation method `{config.method_distil}`.")
     
     
     # Initialize the models from pretrained checkpoints:
