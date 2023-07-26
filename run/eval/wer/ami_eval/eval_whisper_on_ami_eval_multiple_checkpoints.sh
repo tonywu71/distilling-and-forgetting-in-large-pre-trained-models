@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J eval_whisper_on_ami_eval_multiple_checkpoints
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A DUDLEY-SL3-GPU
+#SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=03:30:00
+#SBATCH --time=02:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -52,12 +52,9 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/ratio_instant_tokens/85p/final \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/ratio_instant_tokens/90p/final \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/ratio_instant_tokens/95p/final \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/teacher_gzip_ratio/40p/final \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/teacher_gzip_ratio/60p/final \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/hpt/ami_100h/teacher_gzip_ratio/80p/final \
+    checkpoints/distil_1_best/whisper_medium_prefinetuned_to_tiny/hpt/ami_100h-postprocessed-partial/final \
+    checkpoints/distil_1_best/whisper_medium_prefinetuned_to_tiny/hpt/ami_100h-postprocessed-filtered-partial/final \
+    checkpoints/distil_1_best/whisper_medium_prefinetuned_to_tiny/hpt/ami_100h-filtered-partial/final \
     --dataset-name ami_eval \
     --batch-size 1024 >> $LOG 2> $ERR
 

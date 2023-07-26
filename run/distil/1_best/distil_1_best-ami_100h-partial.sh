@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J distil_1_best-ami_100h
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -52,12 +52,16 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/distil_whisper.py \
-    configs/distil_configs/1_best/ami_100h/distil_1_best-medium_to_tiny-ami_100h-postprocess_strip_teacher-partial.yaml \
+    configs/distil_configs/1_best/ami_100h/prefinetuned/distil_1_best-medium_prefinetuned_to_tiny-ami_100h-postprocessed-filtered-partial.yaml \
     >> $LOG 2> $ERR
 
-# configs/distil_configs/1_best/ami_100h/distil_1_best-medium_to_tiny-ami_100h-postprocess_teacher-partial.yaml
-# configs/distil_configs/1_best/ami_100h/distil_1_best-medium_to_tiny-ami_100h-postprocess_teacher-prefinetune-partial.yaml
-# configs/distil_configs/1_best/ami_100h/distil_1_best-medium_to_tiny-ami_100h-prefinetune-partial.yaml
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/1_best/ami_100h/prefinetuned/distil_1_best-medium_prefinetuned_to_tiny-ami_100h-filtered-partial.yaml \
+#     >> $LOG 2> $ERR
+
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/1_best/ami_100h/prefinetuned/distil_1_best-medium_prefinetuned_to_tiny-ami_100h-postprocessed-partial.yaml \
+#     >> $LOG 2> $ERR
 
 #! #############################################
 

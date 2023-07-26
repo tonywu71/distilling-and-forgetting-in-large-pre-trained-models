@@ -54,7 +54,7 @@ echo "python `which python`": >> $LOG
 python scripts/eval_whisper.py \
     openai/whisper-medium \
     --dataset-name ami_validation \
-    --batch-size 64\
+    --batch-size 64 \
     --save-preds >> $LOG 2> $ERR
 
 #! #############################################

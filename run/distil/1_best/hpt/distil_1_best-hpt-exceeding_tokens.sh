@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J distil_1_best_hpt_filter_hallucinations
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -52,7 +52,7 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/distil_whisper.py \
-    configs/distil_configs/1_best/hpt/filter_hallucinations/distil_1_best-medium_to_tiny-ami_100h-filter_3_prefinetune.yaml >> $LOG 2> $ERR
+    configs/distil_configs/1_best/hpt/filter_hallucinations/distil_1_best-medium_to_tiny-ami_100h-filter_3.yaml >> $LOG 2> $ERR
 
 #! #############################################
 

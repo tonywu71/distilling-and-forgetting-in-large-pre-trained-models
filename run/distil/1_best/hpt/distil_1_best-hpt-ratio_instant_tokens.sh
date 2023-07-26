@@ -51,17 +51,9 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/1_best/hpt/ratio_instant_tokens/distil_1_best-medium_to_tiny-ami_100h-ratio_instant_tokens-85p.yaml \
-#     >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/1_best/hpt/ratio_instant_tokens/distil_1_best-medium_to_tiny-ami_100h-ratio_instant_tokens-90p.yaml \
-#     >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/1_best/hpt/ratio_instant_tokens/distil_1_best-medium_to_tiny-ami_100h-ratio_instant_tokens-95p.yaml \
-#     >> $LOG 2> $ERR
+python scripts/distil_whisper.py \
+    configs/distil_configs/1_best/hpt/ratio_instant_tokens/distil_1_best-medium_to_tiny-ami_100h-ratio_instant_tokens-925p.yaml \
+    >> $LOG 2> $ERR
 
 #! #############################################
 
