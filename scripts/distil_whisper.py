@@ -205,12 +205,13 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
             dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
         elif config.method_distil == "word_level":
             config.method_distil = "seq_level_uniform"  # hotfix for `smart_load_dataset_with_k_beam_search`
+            config.distillation_num_beams = 1
             dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
                                                                  dataset_dict=dataset_dict,
                                                                  teacher_caching_batch_size=teacher_caching_batch_size)
             dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
-            # NOTE: Do we need to remove columns? I think it should be handled by the collator...
             config.method_distil = "word_level"
+            config.distillation_num_beams = None
         else:
             raise NotImplementedError(f"Filtering not implement for distillation method `{config.method_distil}`.")
     
