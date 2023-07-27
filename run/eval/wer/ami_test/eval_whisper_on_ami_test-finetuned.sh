@@ -57,9 +57,10 @@ echo "python `which python`": >> $LOG
 #     --batch-size 1024 >> $LOG 2> $ERR
 
 python scripts/eval_whisper.py \
-    checkpoints/finetuning/whisper_medium/ami_100h_hpt_reference_teacher/checkpoint-3000 \
+    checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-postprocess+filter-full/checkpoint-6000 \
     --dataset-name ami \
-    --batch-size 64 >> $LOG 2> $ERR
+    --batch-size 1024 \
+    --save-preds >> $LOG 2> $ERR
 
 #! #############################################
 

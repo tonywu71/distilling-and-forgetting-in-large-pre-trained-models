@@ -56,10 +56,10 @@ echo "python `which python`": >> $LOG
 #     --ewc \
 #     >> $LOG 2> $ERR
 
-# python scripts/finetune_whisper.py \
-#     configs/finetune_ewc_configs/preserve_french/finetune_ewc_tiny-ami_100h-preserve_french-lambda_1e-1-full.yaml \
-#     --ewc \
-#     >> $LOG 2> $ERR
+python scripts/finetune_whisper.py \
+    configs/finetune_ewc_configs/preserve_french/finetune_ewc_tiny-ami_100h-preserve_french-lambda_1e-2-full.yaml \
+    --ewc \
+    >> $LOG 2> $ERR
 
 #! #############################################
 
