@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J distil_1_best-ami_100h_full
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A DUDLEY-SL3-GPU
+#SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -51,8 +51,12 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/1_best/ami_100h/prefinetuned/full/distil_1_best-medium_prefinetuned_to_tiny-ami_100h-gzip_filter-full.yaml \
+#     >> $LOG 2> $ERR
+
 python scripts/distil_whisper.py \
-    configs/distil_configs/1_best/ami_100h/default/full/distil_1_best-medium_to_tiny-ami_100h-postprocess+filter-full.yaml \
+    configs/distil_configs/1_best/ami_100h/default/full/distil_1_best-medium_to_tiny-ami_100h-postprocess_gzip_filter-full.yaml \
     >> $LOG 2> $ERR
 
 #! #############################################

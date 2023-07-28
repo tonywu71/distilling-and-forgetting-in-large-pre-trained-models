@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=02:00:00
+#SBATCH --time=01:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -52,11 +52,8 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h/checkpoint-600 \
-    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h/checkpoint-1200 \
-    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h/checkpoint-1800 \
-    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h/checkpoint-2400 \
-    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h/checkpoint-3000 \
+    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-2/checkpoint-1200 \
+    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-2/checkpoint-3000 \
     --dataset-name fab \
     --subset ami --subset librispeech_fr \
     --batch-size 1024 \
