@@ -45,6 +45,7 @@ class DistilConfig:
     
     
     # ======== Optional (sequence-level KD teacher caching) ========
+    add_timestamps: bool = False
     teacher_original_name: Optional[str] = None  # need to be set when the teacher was already pre-fine-tuned to correctly align heads when predicting timestamps
 
     # ======== Optional (data preprocessing) ========

@@ -1,7 +1,6 @@
 from typing import Dict, Any
 import torch
 from transformers.models.whisper import WhisperForConditionalGeneration
-from utils.constants import GEN_MAX_LENGTH
 
 
 def prepare_k_beam_features_fct(batch: Dict[str, Any],
@@ -25,11 +24,11 @@ def prepare_k_beam_features_fct(batch: Dict[str, Any],
     
     # Generate teacher predictions using K-beam search:
     outputs = model.generate(input_features,
-                                max_length=GEN_MAX_LENGTH,
-                                num_beams=num_beams,
-                                num_return_sequences=num_beams,
-                                output_scores=True,
-                                return_dict_in_generate=True)
+                             num_beams=num_beams,
+                             num_return_sequences=num_beams,
+                             output_scores=True,
+                             return_dict_in_generate=True)
+    
     # NOTE:
     # - outputs.sequences -> (batch_size * num_beams, n_tokens)
     # - outputs.sequences_scores -> (batch_size * num_beams,)
@@ -38,6 +37,11 @@ def prepare_k_beam_features_fct(batch: Dict[str, Any],
     batch["teacher_sequences"] = list(torch.split(outputs.sequences,
                                                   split_size_or_sections=num_beams,
                                                   dim=0))  # `batch_size` tensors of shape (num_beams, n_tokens)
+
+    # TODO: Create and apply function to truncate each element (each element being a tensor) of batch["teacher_sequences"]
+    # Use `remove_padding_fct` as a start
+    breakpoint()
+
     batch["teacher_sequences_scores"] = list(torch.split(outputs.sequences_scores,
                                                          split_size_or_sections=num_beams,
                                                          dim=0))  # `batch_size` tensors of shape (num_beams,)

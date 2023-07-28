@@ -107,31 +107,40 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         # Initialize the model from pretrained checkpoint:
         print(f"Loading teacher model for K-Beam search from `{config.teacher_model_name_or_path}`...")
         teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path, torch_dtype=torch_dtype).to(device)
-        if config.teacher_original_name is not None:
-            print(f"Set the alignment heads of the teacher model using the config from `{config.teacher_original_name}`...")
-            teacher_model.generation_config.alignment_heads = MODEL_NAME_TO_ALIGNMENT_HEADS[config.teacher_original_name]
-        else:
-            print(f"Set the alignment heads of the teacher model using the config from `{config.teacher_model_name_or_path}`...")
-            teacher_model.generation_config.alignment_heads = MODEL_NAME_TO_ALIGNMENT_HEADS[config.teacher_model_name_or_path]
         
-        # NOTE: BetterTransformer is not compatible with `return_token_timestamps`
-        # Speed up inference if possible:
-        # if device == "cuda:0":
-        #     teacher_model = BetterTransformer.transform(teacher_model)
+        if config.add_timestamps:
+            if config.teacher_original_name is not None:
+                print(f"Set the alignment heads of the teacher model using the config from `{config.teacher_original_name}`...")
+                teacher_model.generation_config.alignment_heads = MODEL_NAME_TO_ALIGNMENT_HEADS[config.teacher_original_name]
+            else:
+                print(f"Set the alignment heads of the teacher model using the config from `{config.teacher_model_name_or_path}`...")
+                teacher_model.generation_config.alignment_heads = MODEL_NAME_TO_ALIGNMENT_HEADS[config.teacher_model_name_or_path]
+        
 
-        teacher_model.generate = partial(teacher_model.generate, language=config.lang_name, task=config.task,
-                                         max_length=GEN_MAX_LENGTH, return_token_timestamps=True, use_cache=True)
+        if config.add_timestamps:
+            # NOTE: BetterTransformer is not compatible with `return_token_timestamps`
+            teacher_model.generate = partial(teacher_model.generate, language=config.lang_name, task=config.task,
+                                             max_length=GEN_MAX_LENGTH, return_token_timestamps=True, use_cache=True)
+        else:
+            if device == "cuda:0":
+                teacher_model = BetterTransformer.transform(teacher_model)
+            teacher_model.generate = partial(teacher_model.generate, language=config.lang_name, task=config.task,
+                                            max_length=GEN_MAX_LENGTH, use_cache=True)
         
         if config.distillation_num_beams == 1:
             dataset_dict = dataset_dict.with_format("pt")
-
-            def predict_seq_with_ts(batch: Dict[str, Any]) -> Dict[str, Any]:
-                outputs = teacher_model.generate(batch["input_features"].to(device).to(torch_dtype))
-                return {"teacher_sequences": outputs.sequences,
-                        "token_timestamps": outputs.token_timestamps}
             
+            def predict_sequence(batch: Dict[str, Any], add_timestamps: bool = False) -> Dict[str, Any]:
+                preds = teacher_model.generate(batch["input_features"].to(device).to(torch_dtype))
+                preds = {"teacher_sequences": preds.sequences}
+                if add_timestamps:
+                    preds["token_timestamps"] = preds.token_timestamps
+                return preds
+            
+            predict_sequence_fn = partial(predict_sequence, add_timestamps=config.add_timestamps)
+
             print("Generating 1-Best output...")
-            dataset_dict = dataset_dict.map(predict_seq_with_ts, batched=True, batch_size=teacher_caching_batch_size)
+            dataset_dict = dataset_dict.map(predict_sequence_fn, batched=True, batch_size=teacher_caching_batch_size)
 
             print("Removing padding created by `model.generate()`...")
             remove_padding = partial(remove_padding_fct, col_sequences="teacher_sequences", col_timestamps="token_timestamps")
@@ -151,8 +160,8 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
         for split in dataset_dict:
             dataset_dict[split] = remove_unnecessary_features_for_1_best(dataset_dict[split])
         
-        # if device == "cuda:0":
-        #     teacher_model = BetterTransformer.reverse(teacher_model)
+        if not config.add_timestamps and device == "cuda:0":
+            teacher_model = BetterTransformer.reverse(teacher_model)
         
         # Set the path to save the K-Beam search results:
         cache_filepath = str(parent_cache_dir / f"k_{config.distillation_num_beams}")

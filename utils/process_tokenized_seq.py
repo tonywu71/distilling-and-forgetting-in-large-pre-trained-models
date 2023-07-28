@@ -1,23 +1,30 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import torch
 
 
 def remove_padding_fct(x: Dict[str, Any], 
                        col_sequences: str,
-                       col_timestamps: str,
+                       col_timestamps: Optional[str] = None,
                        eot_token: int = 50257) -> Dict[str, Any]:
     """
     Remove padding added in the output of `model.generate()`.
     """
     sequences = x[col_sequences]
-    timestamps = x[col_timestamps]
+    if col_timestamps:
+        timestamps = x[col_timestamps]
 
     count = (sequences == eot_token).sum()
     
     if count == 0 or count == 1:
-        return {col_sequences: sequences, col_timestamps: timestamps}
+        outputs = {col_sequences: sequences}
+        if col_timestamps:
+            outputs[col_timestamps] = timestamps
+        return outputs
     else:
         slice_idx = count - 1
         mask = torch.ones_like(sequences, dtype=torch.bool)
         mask[-slice_idx:] = 0
-        return {col_sequences: sequences[mask], col_timestamps: timestamps[mask]}
+        outputs = {col_sequences: sequences[mask]}
+        if col_timestamps:
+            outputs[col_timestamps] = timestamps[mask]
+        return outputs
