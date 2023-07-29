@@ -1,16 +1,16 @@
 # Total training steps:
 # - 30 for batch_size = 32 and num_train_epochs = 10
-experiment_name: distil_whisper_base_to_tiny-seq_level_uniform-k_1-debug
+experiment_name: distil_1_best-base_to_tiny-debug
 lang_name: english
 task: transcribe
 method_distil: seq_level_uniform
 teacher_model_name_or_path: openai/whisper-base
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distillation/whisper_base_to_tiny/librispeech_debug/seq_level_uniform/k_1
+model_dir: ./checkpoints/distillation/whisper_base_to_tiny/librispeech_debug/1_best
 freeze_encoder: True
 freeze_decoder: False
-batch_size: 32
+batch_size: 16
 gradient_accumulation_steps: 1
 eval_accumulation_steps:
 gradient_checkpointing: False
