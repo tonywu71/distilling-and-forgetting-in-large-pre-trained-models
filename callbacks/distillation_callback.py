@@ -185,7 +185,7 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
             pred_ids_student = student_model.generate(input_features,
                                                       max_length=GEN_MAX_LENGTH,
                                                       num_beams=self.config.generation_num_beams)  # type: ignore
-            pred_ids_teacher = self.teacher_model.generate(input_features,
+            pred_ids_teacher = self.teacher_model.generate(input_features.to(self.teacher_model.dtype),
                                                            max_length=GEN_MAX_LENGTH,
                                                            num_beams=self.config.generation_num_beams)  # type: ignore
         

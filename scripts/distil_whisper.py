@@ -52,7 +52,16 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     Distil Whisper based on the provided config file.
     """
 
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    # Get the device:
+    if torch.cuda.is_available():
+        device = "cuda:0"
+        teacher_dtype = torch.float16  # see https://huggingface.co/learn/audio-course/chapter5/evaluation?fw=pt
+    elif torch.backends.mps.is_available():  # for Apple Silicon
+        device = torch.device('mps')
+        teacher_dtype = torch.float32  # float16 not supported by MPS
+    else:
+        device = "cpu"
+        teacher_dtype = torch.float32
     
     # --------------------   Load config   --------------------
     config = DistilConfig.from_yaml(config_filepath)
@@ -221,7 +230,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Initialize the models from pretrained checkpoints:
     if config.method_distil == "word_level":
         print(f"Loading teacher model `{config.teacher_model_name_or_path}`...")
-        teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
+        teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device).to(teacher_dtype)
         if torch.cuda.is_available():
             print("CUDA is available. Transforming the teacher model to use the BetterTransformer...")
             teacher_model = BetterTransformer.transform(teacher_model)

@@ -71,7 +71,7 @@ class DistillationWordLevelTrainer(DistillationTrainerBase):
         # Extract logits from teacher
         with torch.no_grad():
             # Forward pass through teacher (teacher-forced):
-            output_teacher: Seq2SeqLMOutput = self.teacher_model.forward(input_features=input_features,
+            output_teacher: Seq2SeqLMOutput = self.teacher_model.forward(input_features=input_features.to(self.teacher_model.dtype),
                                                                          labels=labels,
                                                                          attention_mask=attention_mask)
             logits_teacher = output_teacher.logits  # (batch_size, n_tokens_labels, vocab_size)
