@@ -72,10 +72,6 @@ class FinetuneConfig:
             self.eval_batch_size = self.batch_size
         if self.early_stopping_patience is None:
             self.early_stopping_patience = -1
-        
-        # Sanity checks:
-        assert self.save_total_limit is None or self.save_total_limit >= 2, \
-            "The `save_total_limit` must be at least 2, or None."
     
     
     @staticmethod

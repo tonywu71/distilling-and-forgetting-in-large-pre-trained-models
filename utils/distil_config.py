@@ -44,6 +44,10 @@ class DistilConfig:
     num_train_epochs: int
     
     
+    # ======== Optional (sequence-level KD teacher caching) ========
+    add_timestamps: bool = False
+    teacher_original_name: Optional[str] = None  # need to be set when the teacher was already pre-fine-tuned to correctly align heads when predicting timestamps
+
     # ======== Optional (data preprocessing) ========
     data_augmentation: bool = False
     lowercase: bool = True  # set to False if and only if the text is not fully uppercased
@@ -68,7 +72,11 @@ class DistilConfig:
     temperature: Optional[float] = None
     
     # 1-best sequence-level:
-    max_diff_tokens_filter: Optional[int] = None
+    postprocess_teacher: bool = False
+    strip_teacher: bool = False
+    max_exceeding_tokens: Optional[int] = None
+    max_teacher_gzip_ratio: Optional[float] = None
+    max_ratio_instant_tokens: Optional[float] = None
     
     # Sequence-level (`seq_level_uniform`, `seq_level_ranked`)
     distillation_num_beams: Optional[int] = None
@@ -96,9 +104,6 @@ class DistilConfig:
             self.eval_batch_size = self.batch_size
         if self.early_stopping_patience is None:
             self.early_stopping_patience = -1
-        
-        assert self.save_total_limit is None or self.save_total_limit >= 2, \
-            "The `save_total_limit` must be at least 2, or None."
         
         self._validate_distillation_args()
     

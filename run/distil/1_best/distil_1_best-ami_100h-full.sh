@@ -51,7 +51,13 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper.py configs/distil_configs/1_best/full/distil_1_best-medium_to_tiny-ami_100h-full.yaml >> $LOG 2> $ERR
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/1_best/ami_100h/prefinetuned/full/distil_1_best-medium_prefinetuned_to_tiny-ami_100h-gzip_filter-full.yaml \
+#     >> $LOG 2> $ERR
+
+python scripts/distil_whisper.py \
+    configs/distil_configs/1_best/ami_100h/default/full/distil_1_best-medium_to_tiny-ami_100h-postprocess_gzip_filter-full.yaml \
+    >> $LOG 2> $ERR
 
 #! #############################################
 

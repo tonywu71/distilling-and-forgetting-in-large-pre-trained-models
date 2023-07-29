@@ -79,7 +79,9 @@ class WandbDistillationCallback(BaseWandbTrainingCallback):
                model: PreTrainedModel,
                logs: Optional[Dict[str, float]]=None,
                **kwargs):
-        # NOTE: `model` corresponds to the student model in this method.
+        """
+        Note: `model` corresponds to the student model in this method.
+        """
         
         # Call `BaseWandbTrainingCallback`'s parent (`WandbCallback`) method `on_log` for basic logging:
         super(BaseWandbTrainingCallback, self).on_log(args, state, control, model, logs, **kwargs)  # type: ignore

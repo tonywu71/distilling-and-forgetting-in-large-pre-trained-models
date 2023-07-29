@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J eval_whisper_on_fab_multiple_checkpoints
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=01:00:00
+#SBATCH --time=01:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -52,10 +52,10 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_0_temp_1/final \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_0_temp_5e-1/final \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/hpt/alpha_0_temp_5e+1/final \
-    --dataset-name ami_validation \
+    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-2/checkpoint-1200 \
+    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-2/checkpoint-3000 \
+    --dataset-name fab \
+    --subset ami --subset librispeech_fr \
     --batch-size 1024 \
     >> $LOG 2> $ERR
 

@@ -44,12 +44,18 @@ def main(config_filepath: str,
                                               "Config file should be formatted for EWC fine-tuning."),
          tac: bool = typer.Option(False, help="Whether to use Task Alignment Consolidation or not. " + \
                                               "Config file should be formatted for TAC fine-tuning."),
+         end_after_caching: bool = typer.Option(False, help="Whether to end the script after caching. " + \
+                                                "Used when the maximum compute time is too short to perform distillation right after caching"),
          debug: bool = typer.Option(False, help="Whether to run in debug mode or not.")):
 
     """
     Fine-tune the Whisper model on the LibriSpeech dataset.
     """
     
+    if end_after_caching:
+        print("Ending script after caching is enabled. Distillation will not be performed.")
+        list_tags.append("caching")
+
     assert not (ewc and tac), "EWC and TAC cannot be used at the same time."
     
     
@@ -135,11 +141,17 @@ def main(config_filepath: str,
         print("Subsampling the 100h LibriSpeech validation split to 50% of its original size for faster evaluation...")
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 2))
     elif config.dataset_name == "ami_100h":
-        print("Subsampling the 100h AMI validation split to 10% of its original size for faster evaluation...")
-        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 10))
+        print("Subsampling the 100h AMI validation split to 20% of its original size for faster evaluation...")
+        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 5))
     
     print("\n-----------------------\n")
     
+
+    if end_after_caching:
+        print("Ending script after caching teacher outputs.")
+        wandb.finish()
+        return
+
     
     # Initialize the model from a pretrained checkpoint:
     print(f"Loading pretrained model `{config.pretrained_model_name_or_path}`...")
@@ -205,7 +217,7 @@ def main(config_filepath: str,
         save_total_limit=config.save_total_limit,
         predict_with_generate=True,
         generation_max_length=GEN_MAX_LENGTH,
-        load_best_model_at_end=True,
+        load_best_model_at_end=False if config.save_total_limit == 1 else True,
         metric_for_best_model="wer",
         greater_is_better=False,  # the lower the WER, the better
         report_to="wandb"  # type: ignore

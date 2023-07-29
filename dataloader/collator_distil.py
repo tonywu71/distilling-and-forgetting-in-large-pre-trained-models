@@ -1,13 +1,12 @@
-from typing import Dict, Tuple, Any
+from typing import Dict, Any
 
 import torch
 from transformers.models.whisper import WhisperTokenizer, WhisperFeatureExtractor
 
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
-from dataloader.utils import get_fast_tokenizer
-from trainer.trainer_utils import get_language_special_token, get_padded_mask_from_tensor, get_task_special_token
+from trainer.trainer_utils import get_padded_mask_from_tensor
 
-from utils.constants import DEFAULT_TOKENIZER_MAX_LENGTH, LOSS_MASK_IDX
+from utils.constants import LOSS_MASK_IDX
 
 
 class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWithPadding):
@@ -40,14 +39,12 @@ class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWi
         batch = super().__call__(features)
         
         if self.distillation_k_beam == 1:
-            # --- Teacher labels (NON-tokenized) ---
-            label_features = [feature["teacher_text"].lower() for feature in features]  # get only the feature of interest
+            label_features = [{"input_ids": feature["teacher_sequences"]} for feature in features]
             
-            # NOTE: The text has not been lowercased yet. We have to do it here as Whisper has been trained on lowercased text.
+            labels, attention_mask = self.preprocess_tokenized_labels(label_features,
+                                                                      replace_padded_with_loss_mask=self.replace_padded_with_loss_mask_for_labels,
+                                                                      discard_first_bos_token=self.discard_first_bos_token)  # (batch_size, n_tokens)
             
-            labels, attention_mask = self.preprocess_untokenized_labels(label_features,
-                                                                        replace_padded_with_loss_mask=self.replace_padded_with_loss_mask_for_labels,
-                                                                        discard_first_bos_token=self.discard_first_bos_token)  # (batch_size, n_tokens)
             batch["teacher_sequences"] = labels  # (batch_size, n_tokens)
             
             if self.return_attention_mask:
@@ -88,49 +85,3 @@ class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWi
             batch["teacher_sequences_scores"] = torch.stack([feature["teacher_sequences_scores"] for feature in features], dim=0)  # (batch_size, num_beams)
         
         return batch
-    
-    
-    def preprocess_untokenized_labels(self,
-                                      features: Dict[str, Any],
-                                      replace_padded_with_loss_mask: bool = True,
-                                      discard_first_bos_token: bool = True) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Tokenize, pad, and replace padding with correct token for correct loss computation. Features are expected to
-        be a list of dicts with a key `input_ids` containing the raw string labels (UNTOKENIZED).
-        """
-        
-        # Get the fast tokenizer:
-        fast_tokenizer = get_fast_tokenizer(self.tokenizer)
-        
-        # Pad the features:
-        labels_batch = fast_tokenizer(features, padding=True, truncation=True, max_length=DEFAULT_TOKENIZER_MAX_LENGTH, return_tensors="pt")
-        
-        # IMPORTANT: There is a bug in the current version of transformers (4.30.2) that makes
-        #            `WhisperTokenizerFast` not work properly. It would forget to output the special tokens
-        #            for `language` and `task`.
-        # HOTFIX: Concatenate the special tokens to the vocabulary of the fast tokenizer manually.
-        assert self.tokenizer.language is not None, "The tokenizer must have a language set."
-        language_token = get_language_special_token(self.tokenizer.language)
-        assert self.tokenizer.task is not None, "The tokenizer must have a task set."
-        task_token = get_task_special_token(self.tokenizer.task)
-        missing_special_tokens = torch.LongTensor([language_token, task_token]).expand(labels_batch["input_ids"].shape[0], -1)
-        labels_batch["input_ids"] = torch.cat([labels_batch["input_ids"][..., 0:1], missing_special_tokens, labels_batch["input_ids"][..., 1:]], axis=1)
-        labels_batch["attention_mask"] = torch.cat([labels_batch["attention_mask"][..., 0:1], torch.ones_like(missing_special_tokens), labels_batch["attention_mask"][..., 1:]], axis=1)
-        
-        # Get the labels and attention mask:
-        tokenized_labels = labels_batch["input_ids"]
-        attention_mask = labels_batch["attention_mask"]
-        
-        if replace_padded_with_loss_mask:
-            # Replace padding with correct token for correct loss computation:
-            tokenized_labels = tokenized_labels.masked_fill(attention_mask.ne(1), LOSS_MASK_IDX)
-        
-        if discard_first_bos_token:
-            # If a BOS ("Beginning Of Sequence") token was appended in previous tokenization step (which is
-            # the case with the default Whisper tokenizer), discard it as it will get appended later anyway
-            # when computing loss (see the `shift_tokens_right` method).
-            if (tokenized_labels[:, 0] == self.sot_token).all().cpu().item():
-                tokenized_labels = tokenized_labels[:, 1:]
-                attention_mask = attention_mask[:, 1:]
-        
-        return tokenized_labels, attention_mask

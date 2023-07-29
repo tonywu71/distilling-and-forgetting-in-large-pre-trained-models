@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J eval_whisper_on_ami_test-finetuned
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -51,14 +51,16 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-1600 --dataset-name ami >> $LOG 2> $ERR
-# python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-3200 --dataset-name ami >> $LOG 2> $ERR
-# python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/ami_10h-benchmark/checkpoint-340 --dataset-name ami_10h_test >> $LOG 2> $ERR
+# python scripts/eval_whisper.py \
+#     checkpoints/distil_1_best/whisper_medium_prefinetuned_to_tiny/hpt/ami_100h-filtered-full/final \
+#     --dataset-name ami \
+#     --batch-size 1024 >> $LOG 2> $ERR
 
 python scripts/eval_whisper.py \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-full/final \
+    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/full/alpha_8e-1_temp_1/final \
     --dataset-name ami \
-    --batch-size 1024 >> $LOG 2> $ERR
+    --batch-size 1024 \
+    --save-preds >> $LOG 2> $ERR
 
 #! #############################################
 

@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J distil_word_level_full
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -51,7 +51,9 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper.py configs/distil_configs/word_level/librispeech/distil_word_level-medium_to_tiny-librispeech-full.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper.py \
+    configs/distil_configs/word_level/from_vanilla_medium/full/distil_word_level-full-alpha_8e-1_temp_1-filtered.yaml \
+    >> $LOG 2> $ERR
 
 #! #############################################
 

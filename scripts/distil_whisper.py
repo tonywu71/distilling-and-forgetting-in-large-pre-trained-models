@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.initialize import initialize_env, print_envs
 initialize_env()
 
-from typing import List, Dict, Any
+from typing import List
 from dataclasses import asdict
 from functools import partial
 from pathlib import Path
@@ -14,8 +14,9 @@ from pprint import pprint
 
 import torch
 
-from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor
+from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor, WhisperTokenizerFast
 from transformers.trainer_callback import TrainerCallback, EarlyStoppingCallback
+from optimum.bettertransformer import BetterTransformer
 
 import wandb
 
@@ -24,10 +25,13 @@ from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.collator_distil import DataCollatorWithPaddingForSeqLevelDistillation
 from dataloader.dataset_loader import load_dataset_dict
+from dataloader.filtering import filter_samples_1_best
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
+from dataloader.utils import get_map_function_to_restore_missing_special_tokens
 from evaluation.wer_metric import compute_string_edit_metrics_fct
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
+from normalization.formatting import remove_casing_and_punctuation
 from normalization.whisper_normalization import get_whisper_normalizer
 from trainer.distillation_word_level import DistillationWordLevelTrainingArguments, DistillationWordLevelTrainer
 from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments, DistillationSeqLevelTrainer
@@ -35,18 +39,20 @@ from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
 
-from utils.constants import GEN_MAX_LENGTH
+from utils.constants import DEFAULT_TOKENIZER_MAX_LENGTH, GEN_MAX_LENGTH, DEFAULT_NUM_PROC
 
 
 
 def main(config_filepath: str = typer.Argument(..., help="Path to the YAML config file."),
-         teacher_caching_batch_size: int = typer.Option(32, help="Batch size for caching teacher outputs."),
+         teacher_caching_batch_size: int = typer.Option(16, help="Batch size for caching teacher outputs."),
+         end_after_caching: bool = typer.Option(False, help="Whether to end the script after caching. " + \
+                                                "Used when the maximum compute time is too short to perform distillation right after caching"),
          debug: bool = typer.Option(False, help="Whether to run in debug mode or not.")):
     """
     Distil Whisper based on the provided config file.
     """
-    
-    device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
     
     # --------------------   Load config   --------------------
     config = DistilConfig.from_yaml(config_filepath)
@@ -57,9 +63,12 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     is_seq_level = config.method_distil in ["seq_level_uniform", "seq_level_ranked"]
     
     if is_seq_level and config.distillation_num_beams > 1:
+        print("\n-----------------------\n")
         print(f"Sequence-level distillation will be performed. Although the batch size is set to {config.batch_size}, " + \
               f"because {config.distillation_num_beams} beams will be used for distillation, " + \
               f"the actual batch size will {config.batch_size * config.distillation_num_beams}.")
+        print("\n-----------------------\n")
+
     
     # If a previous run has its checkpoints saved in the same directory,
     # add a timestamp to the model directory. This is to avoid overwriting
@@ -69,6 +78,12 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Prepare tags for W&B:
     list_tags = [config.dataset_name,
                  config.method_distil]
+    
+    if end_after_caching:
+        print("\n-----------------------\n")
+        print("Ending script after caching is enabled. Distillation will not be performed.")
+        print("\n-----------------------\n")
+        list_tags.append("caching")
     
     # -----------------------   W&B   -----------------------
     wandb.login()
@@ -102,9 +117,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         language=config.lang_name,
         task=config.task
     )
+
     # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
     #       special tokens to the decoded sentence.
-    
     
     # Create the data collator that will be used to prepare the data for training:
     data_collator_args = dict(
@@ -142,34 +157,74 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
                                                              teacher_caching_batch_size=teacher_caching_batch_size)
         print("\n-----------------------\n")
     
+
+    if end_after_caching:
+        print("Ending script after caching teacher outputs.")
+        wandb.finish()
+        return
+    
     
     if config.dataset_name == "librispeech_clean_100h":
         print("Subsampling the 100h LibriSpeech validation split to 50% of its original size for faster evaluation...")
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 2))
     elif config.dataset_name == "ami_100h":
-        print("Subsampling the 100h AMI validation split to 10% of its original size for faster evaluation...")
-        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 10))
+        print("Subsampling the 100h AMI validation split to 20% of its original size for faster evaluation...")
+        dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 5))
+    
+
+    # 1-best specific filtering/post-processing:
+    is_1_best = (config.method_distil == "seq_level_uniform") and (config.distillation_num_beams == 1)
+
+    if is_1_best and (config.postprocess_teacher or config.strip_teacher):
+        tokenizer = WhisperTokenizerFast.from_pretrained(config.teacher_model_name_or_path, language=config.lang_name, task=config.task)
+        dataset_dict = dataset_dict.map(lambda batch: {"teacher_text": tokenizer.batch_decode(batch["teacher_sequences"], skip_special_tokens=True)},
+                                        batched=True)
+        
+        if config.postprocess_teacher:
+            print("Remove casing and punctuation from the teacher's outputs...")
+            dataset_dict = dataset_dict.map(lambda x: {"teacher_text": remove_casing_and_punctuation(x["teacher_text"])},
+                                            num_proc=DEFAULT_NUM_PROC)
+        
+        if config.strip_teacher:
+            print("Strip starting/ending whitespaces from the teacher's outputs...")
+            dataset_dict = dataset_dict.map(lambda x: {"teacher_text": x["teacher_text"].strip()},
+                                            num_proc=DEFAULT_NUM_PROC)
+        
+        dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": tokenizer(batch["teacher_text"],
+                                                                                     truncation=True,
+                                                                                     max_length=DEFAULT_TOKENIZER_MAX_LENGTH).input_ids},
+                                        batched=True, remove_columns=["teacher_text"])
+        map_function_to_restore_missing_special_tokens = get_map_function_to_restore_missing_special_tokens(col="teacher_sequences",
+                                                                                                            pretrained_model_name_or_path=config.student_model_name_or_path,
+                                                                                                            language=config.lang_name,
+                                                                                                            task=config.task)
+        dataset_dict = dataset_dict.map(map_function_to_restore_missing_special_tokens, num_proc=DEFAULT_NUM_PROC)
     
     
-    if is_seq_level and config.distillation_num_beams == 1:
-        if config.max_diff_tokens_filter:
-            print(f"Filtering out samples from the training split where the teacher's text is longer than the student's labels + {config.max_diff_tokens_filter} tokens...")
-            n_rows_before = dataset_dict["train"].num_rows
-            print(f"Train split before filtering: {n_rows_before} samples")
-            def filter_longer_than(x: Dict[str, Any]) -> bool:
-                n_tokens_teacher = len(student_processor.tokenizer(x["teacher_text"]).input_ids)
-                n_tokens_labels = len(x["labels"])
-                return n_tokens_teacher - n_tokens_labels <= config.max_diff_tokens_filter
-            dataset_dict["train"] = dataset_dict["train"].filter(filter_longer_than)
-            n_rows_after = dataset_dict["train"].num_rows
-            print(f"Train split after filtering: {n_rows_after} samples")
-            print(f"Filtered out {n_rows_before - n_rows_after} samples")
+    if config.max_exceeding_tokens or config.max_teacher_gzip_ratio or config.max_ratio_instant_tokens:
+        if is_1_best:
+            print("Filtering out samples for which the teacher got poor transcriptions...")
+            dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
+        elif config.method_distil == "word_level":
+            config.method_distil = "seq_level_uniform"  # hotfix for `smart_load_dataset_with_k_beam_search`
+            config.distillation_num_beams = 1
+            dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
+                                                                 dataset_dict=dataset_dict,
+                                                                 teacher_caching_batch_size=teacher_caching_batch_size)
+            dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
+            config.method_distil = "word_level"
+            config.distillation_num_beams = None
+        else:
+            raise NotImplementedError(f"Filtering not implement for distillation method `{config.method_distil}`.")
     
     
     # Initialize the models from pretrained checkpoints:
     if config.method_distil == "word_level":
         print(f"Loading teacher model `{config.teacher_model_name_or_path}`...")
         teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
+        if torch.cuda.is_available():
+            print("CUDA is available. Transforming the teacher model to use the BetterTransformer...")
+            teacher_model = BetterTransformer.transform(teacher_model)
         # Freeze the teacher model:
         for param in teacher_model.parameters():
             param.requires_grad = False
@@ -249,7 +304,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         predict_with_generate=True,
         generation_max_length=GEN_MAX_LENGTH,
         remove_unused_columns=not(is_seq_level),  # keep the K-beam features if sequence-level, remove them if word-level
-        load_best_model_at_end=True,
+        load_best_model_at_end=False if config.save_total_limit == 1 else True,
         metric_for_best_model="wer",
         greater_is_better=False,  # the lower the WER, the better
         report_to="wandb"

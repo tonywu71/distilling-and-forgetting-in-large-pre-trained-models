@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict, Any
 
 import numpy as np
 import torch
@@ -68,7 +68,7 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
     
     def compute_loss_1_best(self,
                             model: WhisperForConditionalGeneration,
-                            inputs,
+                            inputs: Dict[str, Any],
                             return_outputs: bool = False):
         """
         Compute the loss for 1-best sequence-level distillation where `k = self.args.distillation_num_beams`.
@@ -93,7 +93,7 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
     
     def compute_loss_k_best(self,
                             model: WhisperForConditionalGeneration,
-                            inputs,
+                            inputs: Dict[str, Any],
                             return_outputs: bool = False):
         """
         Compute the loss for k-best sequence-level distillation where `k = self.args.distillation_num_beams`.
@@ -107,6 +107,7 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
         inputs = inputs.to(self.device)  # inputs.keys -> ['input_features', 'labels', 'attention_mask', 'teacher_sequences',
                                          #                 'attention_mask_teacher_sequences', 'teacher_sequences_scores']
         
+        # Get all useful features from `inputs`:
         input_features = inputs["input_features"]  # (batch_size, 80, 3000)
         labels = inputs["labels"]  # (batch_size, n_tokens_labels)
         attention_mask_labels = inputs["attention_mask"]  # (batch_size, n_tokens_labels)
@@ -114,6 +115,7 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
         attention_mask_teacher_sequences = inputs["attention_mask_teacher_sequences"]  # (batch_size, num_beams, n_tokens_teacher_seq)
         teacher_sequences_scores = inputs["teacher_sequences_scores"]  # (batch_size, num_beams)
         
+        # Get additional useful information for K-best KD:
         batch_size = input_features.shape[0]
         distillation_num_beams = self.args.distillation_num_beams
         n_tokens_teacher_seq = teacher_sequences.shape[-1]
@@ -187,8 +189,10 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
         # - loss_kd_per_sentence -> (batch_size, distillation_num_beams)
         # Output:
         # - weights * teacher_sequences_prob * loss_kd_per_sentence -> (batch_size, distillation_num_beams) [broadcasting]
+
         if self.args.use_ranking:
             weights = self.get_rank_based_exp_decay_weights(K=self.args.distillation_num_beams, beta=self.args.beta_decay)
+            breakpoint()
             loss_kd = torch.sum(weights * teacher_sequences_prob * loss_kd_per_sentence, axis=-1)  # (batch_size,)
         else:
             loss_kd = torch.sum(teacher_sequences_prob * loss_kd_per_sentence, axis=-1)  # (batch_size,)

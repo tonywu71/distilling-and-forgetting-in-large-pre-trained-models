@@ -44,7 +44,7 @@ def load_ami_100h() -> DatasetDict:
 
 def load_ami_10h() -> DatasetDict:
     """Load the train/eval/test splits of the AMI dataset.
-    Only 10% of the 100h-dataset is loaded, i.e. 10h of audio data."""
+    Only 10% of the train split is loaded, i.e. a bit less than 10h of audio data."""
     
     cache_dir_ami = os.environ.get("CACHE_DIR_AMI", None)
     if cache_dir_ami is None:
@@ -60,7 +60,7 @@ def load_ami_10h() -> DatasetDict:
                                          cache_dir=cache_dir_ami)
     dataset_dict["validation"] = load_dataset("edinburghcstr/ami",
                                               name="ihm",
-                                              split="validation[:10%]",
+                                              split="validation",
                                               cache_dir=cache_dir_ami)
     dataset_dict = DatasetDict(dataset_dict)
     

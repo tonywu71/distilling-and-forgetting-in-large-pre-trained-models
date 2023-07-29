@@ -8,7 +8,7 @@ from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGrou
 
 class AMIValidationSet(BaseDatasetGroup):
     """
-    Util DatasetGroup to eval the vanilla Whisper model on the AMI set.
+    DatasetGroup that contains the test split of AMI IHM.
     """
     
     def __init__(self,

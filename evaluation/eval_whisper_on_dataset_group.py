@@ -104,7 +104,7 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                     generate_kwargs=generate_kwargs),
                         total=num_rows):
             ref = out["reference"][0].lower()
-            pred = out[DEFAULT_LABEL_STR_COL].lower()
+            pred = out[DEFAULT_LABEL_STR_COL]
             references.append(ref)
             predictions.append(pred)
         
