@@ -28,3 +28,21 @@ def remove_padding_fct(x: Dict[str, Any],
         if col_timestamps:
             outputs[col_timestamps] = timestamps[mask]
         return outputs
+
+
+def remove_padding_k_beam(x: torch.Tensor, eot_token: int = 50257) -> torch.Tensor:
+    """
+    Remove padding added in the output of `model.generate()` when used with k-beam search.
+    """
+    assert x.dim() == 2, f"Invalid shape: {x.shape}. Must be (batch_size, n_tokens)."
+
+    count = (x == eot_token).sum(axis=1).min()
+    
+    if count == 0 or count == 1:
+        return x
+    
+    slice_idx = count - 1
+    mask = torch.ones_like(x[0], dtype=torch.bool)
+    mask[-slice_idx:] = 0
+
+    return x[:, mask]

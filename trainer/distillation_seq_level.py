@@ -190,10 +190,9 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
         # Output:
         # - weights * teacher_sequences_prob * loss_kd_per_sentence -> (batch_size, distillation_num_beams) [broadcasting]
 
-        # TODO: Quick assert: assert (teacher_sequences_prob.sum(axis=1) == 1).all()
-
         if self.args.use_ranking:
             weights = self.get_rank_based_exp_decay_weights(K=self.args.distillation_num_beams, beta=self.args.beta_decay)
+            breakpoint()
             loss_kd = torch.sum(weights * teacher_sequences_prob * loss_kd_per_sentence, axis=-1)  # (batch_size,)
         else:
             loss_kd = torch.sum(teacher_sequences_prob * loss_kd_per_sentence, axis=-1)  # (batch_size,)

@@ -42,7 +42,8 @@ def get_k_beam_cache_dir(config: DistilConfig, parent_cache_dir: Path) -> str | 
 
 def smart_load_dataset_with_k_beam_search(config: DistilConfig,
                                           dataset_dict: DatasetDict,
-                                          teacher_caching_batch_size: int = 32) -> DatasetDict:
+                                          teacher_caching_batch_size: int = 32,
+                                          remove_unnecessary_cols: bool = True) -> DatasetDict:
     """
     Return a dataset with K-Beam search results. If a suitable cached dataset is found, it is loaded from disk.
     Otherwise, the dataset is preprocessed from scratch.
@@ -125,7 +126,7 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
             if device == "cuda:0":
                 teacher_model = BetterTransformer.transform(teacher_model)
             teacher_model.generate = partial(teacher_model.generate, language=config.lang_name, task=config.task,
-                                            max_length=GEN_MAX_LENGTH, use_cache=True)
+                                             max_length=GEN_MAX_LENGTH, use_cache=True)
         
         if config.distillation_num_beams == 1:
             dataset_dict = dataset_dict.with_format("pt")
@@ -155,14 +156,17 @@ def smart_load_dataset_with_k_beam_search(config: DistilConfig,
                                                               batched=True,
                                                               batch_size=teacher_caching_batch_size)
         
-        # Select features of interest:
-        print("Removing unnecessary features from the dataset...")
-        for split in dataset_dict:
-            dataset_dict[split] = remove_unnecessary_features_for_1_best(dataset_dict[split])
+
+        if remove_unnecessary_cols:
+            print("Removing unnecessary features from the dataset...")
+            for split in dataset_dict:
+                dataset_dict[split] = remove_unnecessary_features_for_1_best(dataset_dict[split], verbose=False)
         
+
         if not config.add_timestamps and device == "cuda:0":
             teacher_model = BetterTransformer.reverse(teacher_model)
         
+
         # Set the path to save the K-Beam search results:
         cache_filepath = str(parent_cache_dir / f"k_{config.distillation_num_beams}")
         

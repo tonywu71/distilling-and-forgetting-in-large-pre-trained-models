@@ -52,9 +52,6 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     Distil Whisper based on the provided config file.
     """
 
-    if end_after_caching:
-        print("Ending script after caching is enabled. Distillation will not be performed.")
-    
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     
     # --------------------   Load config   --------------------
@@ -66,9 +63,12 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     is_seq_level = config.method_distil in ["seq_level_uniform", "seq_level_ranked"]
     
     if is_seq_level and config.distillation_num_beams > 1:
+        print("\n-----------------------\n")
         print(f"Sequence-level distillation will be performed. Although the batch size is set to {config.batch_size}, " + \
               f"because {config.distillation_num_beams} beams will be used for distillation, " + \
               f"the actual batch size will {config.batch_size * config.distillation_num_beams}.")
+        print("\n-----------------------\n")
+
     
     # If a previous run has its checkpoints saved in the same directory,
     # add a timestamp to the model directory. This is to avoid overwriting
@@ -80,7 +80,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
                  config.method_distil]
     
     if end_after_caching:
+        print("\n-----------------------\n")
         print("Ending script after caching is enabled. Distillation will not be performed.")
+        print("\n-----------------------\n")
         list_tags.append("caching")
     
     # -----------------------   W&B   -----------------------
@@ -115,9 +117,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         language=config.lang_name,
         task=config.task
     )
+
     # NOTE: Because `language` and `task` have been set, the tokenizer will append the associated
     #       special tokens to the decoded sentence.
-    
     
     # Create the data collator that will be used to prepare the data for training:
     data_collator_args = dict(
