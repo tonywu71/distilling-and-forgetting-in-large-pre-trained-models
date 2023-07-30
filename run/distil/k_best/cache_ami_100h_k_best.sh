@@ -9,9 +9,9 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_whisper-ami-exp_1
+#SBATCH -J cache_ami_100h_k_best
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=01:00:00
+#SBATCH --time=12:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,8 +51,10 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/distil_whisper.py configs/others/distillation_limiting_behavior/exp_1/word_level-temperature_0.yaml >> $LOG 2> $ERR
-python scripts/distil_whisper.py configs/others/distillation_limiting_behavior/exp_1/seq_level_uniform-k_1.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper.py \
+    configs/distil_configs/k_best/cache_ami_100h-k_best-medium.yaml \
+    --end-after-caching \
+    >> $LOG 2> $ERR
 
 #! #############################################
 
