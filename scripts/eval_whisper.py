@@ -29,7 +29,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
          zero_shot: bool = typer.Option(False, help="Whether to use zero-shot inference. Defaults to False."),
          num_beams: int = typer.Option(DEFAULT_EVAL_NUM_BEAMS, help="Number of beams for the ASR pipeline."),
          batch_size: int = typer.Option(DEFAULT_EVAL_BATCH_SIZE, help="Batch size for the ASR pipeline."),
-         savepath: Optional[str] = typer.Option(None, help="Filename of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename."),
+         savepath: Optional[str] = typer.Option(None, help="Path of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename."),
          save_preds: bool = typer.Option(False, help="Whether to save the predictions in a JSON file or not."),
          debug: bool = typer.Option(False, help="Whether to run in debug mode or not.")) -> None:
     """
