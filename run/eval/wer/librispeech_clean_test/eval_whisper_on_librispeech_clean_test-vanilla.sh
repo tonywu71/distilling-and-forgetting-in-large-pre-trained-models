@@ -59,7 +59,7 @@ python scripts/eval_whisper.py \
     --dataset-name librispeech_clean \
     --batch-size 1024 \
     --num-beams 3 \
-    --savepath "./outputs/vanilla/whisper-tiny-k_3-librispeech" \
+    --savepath "./outputs/distil_k_best/whisper-tiny-k_3-librispeech" \
     >> $LOG 2> $ERR
 
 #! #############################################
