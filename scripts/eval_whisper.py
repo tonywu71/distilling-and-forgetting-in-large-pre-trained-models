@@ -9,6 +9,7 @@ initialize_env()
 from typing import List, Optional
 from pprint import pprint 
 
+from transformers import set_seed
 import wandb
 
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
@@ -27,8 +28,14 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
          filter_audio_length: bool = typer.Option(False, help="Whether to filter out audio files that are too short or too long. Disabled by default."),
          task: str = typer.Option("transcribe", help="Task to evaluate on."),
          zero_shot: bool = typer.Option(False, help="Whether to use zero-shot inference. Defaults to False."),
-         num_beams: int = typer.Option(DEFAULT_EVAL_NUM_BEAMS, help="Number of beams for the ASR pipeline."),
-         batch_size: int = typer.Option(DEFAULT_EVAL_BATCH_SIZE, help="Batch size for the ASR pipeline."),
+         num_beams: int = typer.Option(DEFAULT_EVAL_NUM_BEAMS, help="Number of beams for decoding."),
+         batch_size: int = typer.Option(DEFAULT_EVAL_BATCH_SIZE, help="Batch size for decoding."),
+         no_repeat_ngram_size: Optional[int] = typer.Option(None, help="No repeat ngram size for decoding."),
+         sampling: bool = typer.Option(False, help="Whether to use sampling for decoding."),
+         gen_top_k: Optional[int] = typer.Option(None, help="Top-k for decoding."),
+         gen_temperature: float = typer.Option(1., help="Temperature for decoding."),
+         gen_top_p: Optional[float] = typer.Option(None, help="Top-p for decoding."),
+         seed: Optional[int] = typer.Option(None, help="Set seed to reproduce results."),
          savepath: Optional[str] = typer.Option(None, help="Path of the output CSV file. Leave to `None` to use the name of `pretrained_model_name_or_path` as the filename."),
          save_preds: bool = typer.Option(False, help="Whether to save the predictions in a JSON file or not."),
          debug: bool = typer.Option(False, help="Whether to run in debug mode or not.")) -> None:
@@ -37,6 +44,28 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     """
     
     assert dataset_name in EVAL_DATASET_NAME_TO_DATASET_GROUP.keys(), f"Dataset name must be one of {list(EVAL_DATASET_NAME_TO_DATASET_GROUP.keys())}."
+    if num_beams > 1:
+        assert (gen_top_k is None) and (gen_top_p is None), "Cannot use both `num_beams` and `gen_top_k`/`gen_top_p`."
+    
+    if seed:
+        print(f"Setting seed to {seed}...")
+        set_seed(seed)
+    
+    # Prepare generate_kwargs:
+    generate_kwargs = {}
+    if no_repeat_ngram_size:
+        generate_kwargs.update({"no_repeat_ngram_size": no_repeat_ngram_size})
+    if sampling:
+        generate_kwargs.update({"do_sample": True, "top_k": 0, "temperature": gen_temperature})  # override the default value of `top_k` which is 50
+    if gen_top_k:
+        generate_kwargs.update({"top_k": gen_top_k})
+    if gen_top_p:
+        generate_kwargs.update({"top_p": gen_top_p})
+    
+    if generate_kwargs:
+        print("\n-----------------------\n")
+        pprint(generate_kwargs)
+        print("\n-----------------------\n")
     
     # Load dataset:
     dataset_group: BaseDatasetGroup = EVAL_DATASET_NAME_TO_DATASET_GROUP[dataset_name](streaming=streaming, subset=subset)
@@ -51,7 +80,9 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
         "task": task,
         "zero_shot": zero_shot,
         "num_beams": num_beams,
-        "batch_size": batch_size
+        "batch_size": batch_size,
+        "savepath": savepath,
+        "save_preds": save_preds
     }
     
     # Initialize W&B:
@@ -66,6 +97,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     # Print config:
     print("Parameters:")
     pprint(config)
+    print("\n-----------------------\n")
     
     # Load dataset:
     if subset:
@@ -87,7 +119,8 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
                                                     zero_shot=zero_shot,
                                                     batch_size=batch_size,
                                                     num_beams=num_beams,
-                                                    save_preds=save_preds)
+                                                    save_preds=save_preds,
+                                                    generate_kwargs=generate_kwargs)
     
     # Round the results:
     df_edit_metrics = df_edit_metrics.round(2)

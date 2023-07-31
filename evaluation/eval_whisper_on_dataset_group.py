@@ -1,7 +1,4 @@
-import os, sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+from typing import Dict, Any, Optional
 from pathlib import Path
 from collections import defaultdict
 from tqdm.auto import tqdm
@@ -33,7 +30,8 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
                                   num_beams: int = 1,
                                   batch_size: int = DEFAULT_EVAL_BATCH_SIZE,
                                   fast_tokenizer: bool = True,
-                                  save_preds: bool = False) -> pd.DataFrame:
+                                  save_preds: bool = False,
+                                  generate_kwargs: Optional[Dict[str, Any]] = None) -> pd.DataFrame:
     """
     Evaluate a Whisper model on a dataset group and return a DataFrame with the results.
     """
@@ -93,7 +91,8 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
         references = []
         
         # Prepare the generation kwargs:
-        generate_kwargs = {"max_length": GEN_MAX_LENGTH, "num_beams": num_beams}
+        generate_kwargs = generate_kwargs.copy() if generate_kwargs else {}
+        generate_kwargs.update({"max_length": GEN_MAX_LENGTH, "num_beams": num_beams})
         if not zero_shot:
             generate_kwargs.update({"language": language, "task": task})
         
