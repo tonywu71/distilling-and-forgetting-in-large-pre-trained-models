@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_k_best-librispeech_clean_100h-hpt
+#SBATCH -J eval_whisper_on_librispeech_clean_test-multiple_checkpoints
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=05:00:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -41,7 +41,7 @@ LOG=$DIRPATH_EXP/$SLURM_JOB_ID.log
 ERR=$DIRPATH_EXP/$SLURM_JOB_ID.err
 
 
-echo -e "JobID: $SLURM_JOB_ID\n======" > $LOG
+echo -e "JobID: $JOBID\n======" > $LOG
 echo "Time: `date`" >> $LOG
 echo "Running on master node: `hostname`" >> $LOG
 echo "python `which python`": >> $LOG
@@ -51,17 +51,14 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/k_best/librispeech/seq_level_ranked/hpt/k_3-ranked-hpt-beta_1.yaml \
-#     >> $LOG 2> $ERR
+python scripts/eval_whisper_multiple_checkpoints.py \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/librispeech_clean_100h/k_3/uniform/full/final \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/librispeech_clean_100h/k_3/ranked/hpt/beta_1/final \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/librispeech_clean_100h/k_3/ranked/hpt/beta_2/final \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/librispeech_clean_100h/k_3/ranked/hpt/beta_5/final \
+    --dataset-name librispeech_clean \
+    --batch-size 1024 >> $LOG 2> $ERR
 
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/k_best/librispeech/seq_level_ranked/hpt/k_3-ranked-hpt-beta_2.yaml \
-#     >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/k_best/librispeech/seq_level_ranked/hpt/k_3-ranked-hpt-beta_5.yaml \
-#     >> $LOG 2> $ERR
 
 #! #############################################
 

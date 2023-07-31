@@ -19,11 +19,11 @@ dataset_name: librispeech_clean_100h
 optim: adamw_torch
 learning_rate: 1e-5
 warmup_steps: 300
-eval_steps: 600
+eval_steps: 1000
 generation_num_beams: 1
-logging_steps: 300
-save_steps: 6000  # do not save
-num_train_epochs: 1
+logging_steps: 500
+save_steps: 1000
+num_train_epochs: 3
 
 zero_shot_eval: False
 eval_batch_size: 256
