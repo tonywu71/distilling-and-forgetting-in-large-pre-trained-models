@@ -52,12 +52,12 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 # python scripts/distil_whisper.py \
-#     configs/distil_configs/word_level/from_finetuned_medium/full/distil_word_level-full-alpha_5e-1_temp_1-warmup.yaml \
+#     configs/distil_configs/word_level/from_finetuned_medium/full/distil_word_level-full-alpha_8e-1_temp_1.yaml \
 #     >> $LOG 2> $ERR
 
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/word_level/from_finetuned_medium/full/distil_word_level-full-alpha_8e-1_temp_1-warmup.yaml \
-#     >> $LOG 2> $ERR
+python scripts/distil_whisper.py \
+    configs/distil_configs/word_level/from_finetuned_medium/full/distil_word_level-full-alpha_8e-1_temp_1-no_repeat_ngram_3.yaml \
+    >> $LOG 2> $ERR
 
 #! #############################################
 

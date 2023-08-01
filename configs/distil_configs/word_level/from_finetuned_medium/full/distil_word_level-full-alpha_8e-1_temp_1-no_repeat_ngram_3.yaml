@@ -3,14 +3,14 @@
 # - 850 for batch_size = 32 and num_train_epochs = 0.25
 # - 340 for batch_size = 32 and num_train_epochs = 0.1
 
-experiment_name: distil_word_level-finetuned_medium_to_tiny-full-alpha_8e-1_temp_1
+experiment_name: distil_word_level-finetuned_medium_to_tiny-full-alpha_8e-1_temp_1-no_repeat_ngram_3
 lang_name: english
 task: transcribe
 method_distil: word_level
 teacher_model_name_or_path: /home/tw581/rds/hpc-work/checkpoints/finetuning/whisper_medium/ami_100h_hpt_reference_teacher/checkpoint-3000
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/full/alpha_8e-1_temp_1
+model_dir: ./checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/full/alpha_8e-1_temp_1-no_repeat_ngram_3
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -35,6 +35,7 @@ save_final_model: True
 
 alpha_ce: 0.8
 temperature: 1
+no_repeat_ngram_size: 3
 
 smart_load: True
 force_reprocess_dataset: False
