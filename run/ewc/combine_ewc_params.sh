@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_k_best-librispeech_clean_100h-hpt
+#SBATCH -J combine_ewc_params
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=05:00:00
+#SBATCH --time=00:10:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,17 +51,11 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/k_best/librispeech/seq_level_ranked/hpt/k_3-ranked-hpt-beta_1.yaml \
-#     >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/k_best/librispeech/seq_level_ranked/hpt/k_3-ranked-hpt-beta_2.yaml \
-#     >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/k_best/librispeech/seq_level_ranked/hpt/k_3-ranked-hpt-beta_5.yaml \
-#     >> $LOG 2> $ERR
+python scripts/combine_ewc_params.py \
+    checkpoints/whisper-tiny/english/transcribe/ami_100h/train \
+    checkpoints/whisper-tiny/french/transcribe/mls_french_diagnostic/train \
+    checkpoints/whisper-tiny/combined/transcribe_ami+mls_french \
+    >> $LOG 2> $ERR
 
 #! #############################################
 

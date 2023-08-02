@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_fab-finetuned
+#SBATCH -J cache_ami_100h_k_best
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=00:30:00
+#SBATCH --time=12:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -41,7 +41,7 @@ LOG=$DIRPATH_EXP/$SLURM_JOB_ID.log
 ERR=$DIRPATH_EXP/$SLURM_JOB_ID.err
 
 
-echo -e "JobID: $JOBID\n======" > $LOG
+echo -e "JobID: $SLURM_JOB_ID\n======" > $LOG
 echo "Time: `date`" >> $LOG
 echo "Running on master node: `hostname`" >> $LOG
 echo "python `which python`": >> $LOG
@@ -51,12 +51,12 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# =====================       Vanilla fine-tuning       =====================
+python scripts/distil_whisper.py \
+    configs/distil_configs/k_best/ami_100h/cache_ami_100h-k_best-medium.yaml \
+    --end-after-caching \
+    >> $LOG 2> $ERR
 
-python scripts/eval_whisper.py \
-    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-2/checkpoint-3000 \
-    --dataset-name fab \
-    --subset ami --subset librispeech_fr \
-    --batch-size 1024 >> $LOG 2> $ERR
+#! #############################################
+
 
 echo "Time: `date`" >> $LOG
