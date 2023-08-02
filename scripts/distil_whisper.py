@@ -28,18 +28,17 @@ from dataloader.dataset_loader import load_dataset_dict
 from dataloader.filtering import filter_samples_1_best
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from dataloader.utils import get_map_function_to_restore_missing_special_tokens
 from evaluation.wer_metric import compute_string_edit_metrics_fct
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
-from normalization.formatting import remove_casing_and_punctuation
 from normalization.whisper_normalization import get_whisper_normalizer
+from trainer.teacher_postprocessing import postprocess_teacher_outputs
 from trainer.distillation_word_level import DistillationWordLevelTrainingArguments, DistillationWordLevelTrainer
 from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments, DistillationSeqLevelTrainer
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
 
-from utils.constants import DEFAULT_TOKENIZER_MAX_LENGTH, GEN_MAX_LENGTH, DEFAULT_NUM_PROC
+from utils.constants import GEN_MAX_LENGTH
 
 
 
@@ -181,34 +180,11 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 5))
     
 
-    # 1-best specific filtering/post-processing:
-    is_1_best = (config.method_distil == "seq_level_uniform") and (config.distillation_num_beams == 1)
+    # Filtering/post-processing:
+    if is_seq_level and (config.postprocess_teacher or config.strip_teacher):
+        dataset_dict = postprocess_teacher_outputs(dataset_dict=dataset_dict, config=config)
 
-    if is_1_best and (config.postprocess_teacher or config.strip_teacher):
-        tokenizer = WhisperTokenizerFast.from_pretrained(config.teacher_model_name_or_path, language=config.lang_name, task=config.task)
-        dataset_dict = dataset_dict.map(lambda batch: {"teacher_text": tokenizer.batch_decode(batch["teacher_sequences"], skip_special_tokens=True)},
-                                        batched=True)
-        
-        if config.postprocess_teacher:
-            print("Remove casing and punctuation from the teacher's outputs...")
-            dataset_dict = dataset_dict.map(lambda x: {"teacher_text": remove_casing_and_punctuation(x["teacher_text"])},
-                                            num_proc=DEFAULT_NUM_PROC)
-        
-        if config.strip_teacher:
-            print("Strip starting/ending whitespaces from the teacher's outputs...")
-            dataset_dict = dataset_dict.map(lambda x: {"teacher_text": x["teacher_text"].strip()},
-                                            num_proc=DEFAULT_NUM_PROC)
-        
-        dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": tokenizer(batch["teacher_text"],
-                                                                                     truncation=True,
-                                                                                     max_length=DEFAULT_TOKENIZER_MAX_LENGTH).input_ids},
-                                        batched=True, remove_columns=["teacher_text"])
-        map_function_to_restore_missing_special_tokens = get_map_function_to_restore_missing_special_tokens(col="teacher_sequences",
-                                                                                                            pretrained_model_name_or_path=config.student_model_name_or_path,
-                                                                                                            language=config.lang_name,
-                                                                                                            task=config.task)
-        dataset_dict = dataset_dict.map(map_function_to_restore_missing_special_tokens, num_proc=DEFAULT_NUM_PROC)
-    
+    is_1_best = (config.method_distil == "seq_level_uniform") and (config.distillation_num_beams == 1)
     
     if config.max_exceeding_tokens or config.max_teacher_gzip_ratio or config.max_ratio_instant_tokens:
         if is_1_best:
@@ -276,7 +252,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Same for the teacher model.
     if teacher_model is not None:  # ignore teacher model if not used
         teacher_model.generate = partial(teacher_model.generate, language=config.lang_name, task=config.task, use_cache=True)
-        # NOTE: The teacher model geneartion is NOT zero-shot.
+        # NOTE: The teacher model generation is NOT zero-shot.
     
     
     # Prepare training:
