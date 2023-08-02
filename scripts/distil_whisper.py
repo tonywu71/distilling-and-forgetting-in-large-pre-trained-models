@@ -25,12 +25,12 @@ from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.collator_distil import DataCollatorWithPaddingForSeqLevelDistillation
 from dataloader.dataset_loader import load_dataset_dict
-from dataloader.filtering import filter_samples_1_best
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
 from evaluation.wer_metric import compute_string_edit_metrics_fct
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
 from normalization.whisper_normalization import get_whisper_normalizer
+from trainer.teacher_filtering import filter_teacher_outputs
 from trainer.teacher_postprocessing import postprocess_teacher_outputs
 from trainer.distillation_word_level import DistillationWordLevelTrainingArguments, DistillationWordLevelTrainer
 from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments, DistillationSeqLevelTrainer
@@ -38,7 +38,7 @@ from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
 
-from utils.constants import GEN_MAX_LENGTH
+from utils.constants import GEN_MAX_LENGTH, DEFAULT_NUM_PROC
 
 
 
@@ -183,24 +183,9 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Filtering/post-processing:
     if is_seq_level and (config.postprocess_teacher or config.strip_teacher):
         dataset_dict = postprocess_teacher_outputs(dataset_dict=dataset_dict, config=config)
-
-    is_1_best = (config.method_distil == "seq_level_uniform") and (config.distillation_num_beams == 1)
     
     if config.max_exceeding_tokens or config.max_teacher_gzip_ratio or config.max_ratio_instant_tokens:
-        if is_1_best:
-            print("Filtering out samples for which the teacher got poor transcriptions...")
-            dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
-        elif config.method_distil == "word_level":
-            config.method_distil = "seq_level_uniform"  # hotfix for `smart_load_dataset_with_k_beam_search`
-            config.distillation_num_beams = 1
-            dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
-                                                                 dataset_dict=dataset_dict,
-                                                                 teacher_caching_batch_size=teacher_caching_batch_size)
-            dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
-            config.method_distil = "word_level"
-            config.distillation_num_beams = None
-        else:
-            raise NotImplementedError(f"Filtering not implement for distillation method `{config.method_distil}`.")
+        dataset_dict = filter_teacher_outputs(dataset_dict=dataset_dict, config=config)
     
     
     # Initialize the models from pretrained checkpoints:
