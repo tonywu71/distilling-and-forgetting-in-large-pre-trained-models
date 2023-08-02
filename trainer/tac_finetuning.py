@@ -1,4 +1,5 @@
 from typing import Optional, List
+from functools import partial
 
 import torch
 
@@ -7,6 +8,8 @@ from transformers.training_args_seq2seq import Seq2SeqTrainingArguments
 from transformers.modeling_utils import PreTrainedModel
 from transformers.models.whisper import WhisperForConditionalGeneration, WhisperProcessor
 from transformers.feature_extraction_utils import BatchFeature
+from optimum.bettertransformer import BetterTransformer
+
 
 from trainer.trainer_utils import get_padded_mask_from_tensor
 from utils.constants import GEN_MAX_LENGTH, LOSS_MASK_IDX
@@ -40,15 +43,29 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         self.args = args
         self.processor = processor
         
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.cuda.is_available():
+            self.device = "cuda:0"
+            self.torch_dtype = torch.float16  # see https://huggingface.co/learn/audio-course/chapter5/evaluation?fw=pt
+        elif torch.backends.mps.is_available():  # for Apple Silicon
+            self.device = torch.device('mps')
+            self.torch_dtype = torch.float32  # float16 not supported by MPS
+        else:
+            self.device = "cpu"
+            self.torch_dtype = torch.float32
         
         print("Creating a copy of the original model...")
-        self.original_model = WhisperForConditionalGeneration.from_pretrained(self.model.config._name_or_path).to(self.device)
+        self.original_model = WhisperForConditionalGeneration.from_pretrained(self.model.config._name_or_path).to(self.device).to(self.torch_dtype)
         
+        if torch.cuda.is_available():
+            print("CUDA is available. Transforming the original model to use the BetterTransformer...")
+            self.original_model_model = BetterTransformer.transform(self.original_model)
+
         # Freeze the copy of the original model:
         for param in self.original_model.parameters():
             param.requires_grad = False
         self.original_model._requires_grad = False
+
+        self.original_model.generate = partial(self.original_model.generate, task="transcribe", use_cache=True)
     
     
     def compute_loss(self,
@@ -58,15 +75,15 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         """
         Override the `compute_loss` method from `Seq2SeqTrainer`.
         """
+
+        # Compute the default cross-entropy loss for the target task:
         loss, output_student = super().compute_loss(model, inputs, return_outputs=True)
         
+        # Compute the cross-entropy loss for the other tasks:
         for language_to_preserve in self.args.languages_to_preserve:
             tac_inputs = self.get_tac_inputs(inputs, language=language_to_preserve)
             loss_other_task = super().compute_loss(model, tac_inputs, return_outputs=False)
             loss += self.args.gamma_tac * loss_other_task / len(self.args.languages_to_preserve)
-        
-        # Reset the forced decoder ids to the original value:
-        model.config.forced_decoder_ids = self.processor.get_decoder_prompt_ids(language="english", task="transcribe")
         
         return (loss, output_student) if return_outputs else loss
 
@@ -76,15 +93,21 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         Get the TAC inputs. They are built by replacing the labels from `inputs` with the predicted labels from the original model
         for the current language.
         """
-        self.original_model.config.forced_decoder_ids = self.processor.get_decoder_prompt_ids(language=language, task="transcribe")
+        predicted_ids_tac = self.original_model.generate(inputs["input_features"].to(self.device).to(self.torch_dtype),
+                                                         language=language, max_length=GEN_MAX_LENGTH)
         
-        predicted_ids_tac = self.original_model.generate(inputs["input_features"],  # greedy decoding
-                                                         max_length=GEN_MAX_LENGTH)
+        # NOTE: `generate` returns a tensor with the SOT token at the beginning. However,
+        #       `compute_loss` expects the tensor to start with the first token of the target sequence.
+        #       Therefore, we have to remove the first token from the predicted tensor.
+
+        # Remove the first token (SOT) from the predicted tensor:
+        predicted_ids_tac = predicted_ids_tac[:, 1:]
         
         # Replace padding with correct token for correct loss computation:
         padded_mask = get_padded_mask_from_tensor(predicted_ids_tac)
         predicted_ids_tac = predicted_ids_tac.masked_fill(padded_mask.eq(1), LOSS_MASK_IDX)
         
+        # Override the labels from `inputs` with the predicted labels from the original model:
         inputs_tac = inputs.copy()
         inputs_tac["labels"] = predicted_ids_tac
         
