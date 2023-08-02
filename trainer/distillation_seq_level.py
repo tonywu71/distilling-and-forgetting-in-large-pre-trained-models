@@ -129,22 +129,27 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
         teacher_sequences = teacher_sequences.reshape(batch_size * distillation_num_beams, n_tokens_teacher_seq)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq)
         attention_mask_teacher_sequences = attention_mask_teacher_sequences.reshape(batch_size * distillation_num_beams, n_tokens_teacher_seq)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq)
         
-        
+
+        # ---------------------------- Cross-entropy term ----------------------------
+
         # Forward pass through student with labels as decoder input:
-        labels_right_shifted = shift_tokens_right(labels, model.config.pad_token_id, model.config.decoder_start_token_id)
         student_output_wrt_labels: Seq2SeqLMOutput = model.forward(input_features=input_features,
-                                                                   decoder_input_ids=labels_right_shifted,
                                                                    decoder_attention_mask=attention_mask_labels,
                                                                    labels=labels)
         
-        # NOTE: `shift_tokens_right` already added the BOS token and replaced the loss mask token with the pad token, so we can safely use the sequence as decoder input.
-        
-        # Compute the cross-entropy loss:
+        # Get the cross-entropy loss:
         loss_ce = student_output_wrt_labels.loss  # (1,)
         
+
+
+        # ---------------------------- Distillation term ----------------------------
+
         # Repeat input features for the number of beams. The resulting tensor will have shape (batch_size * distillation_num_beams, dim_features).
         input_features = input_features.repeat_interleave(distillation_num_beams, dim=0)  # (batch_size * distillation_num_beams, 80, 3000)
         
+        # NOTE: In order to weight the terms in the KD loss properly, we must get the per-sequence loss instead of the total loss.
+        #       Hence, we cannot use the `forward` loss auto-compute with the `labels` argument.
+
         # Forward pass through student with respect to teacher sequences as decoder input:
         teacher_sequences_right_shifted = shift_tokens_right(teacher_sequences, model.config.pad_token_id, model.config.decoder_start_token_id)
         student_output_wrt_teacher: Seq2SeqLMOutput = model.forward(input_features=input_features,
@@ -176,12 +181,14 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
         # Get log-probabilities for each generation step:
         log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences_right_shifted[:, :, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, 1)
         
+        # NOTE: The cross-entropy loss is computed with reduction='mean' on the entire sequence, so we need to take the mean
+        # of the sequence log-probabilities for consistency with the previous loss.
+
         # Compute the sequence negative log-probability of `y_hat`, which is equal to `loss_kd`:
         # log_prob_t_hat_step_wise.squeeze() -> (batch_size * distillation_num_beams, n_tokens_teacher_seq)
-        # Hence we need to sum over the last dimension to get the sequence log-probability (product rule in the log space):
-        loss_kd_per_sentence = - torch.sum(log_prob_t_hat_step_wise.squeeze(), axis=-1)  # (batch_size * distillation_num_beams,)
+        loss_kd_per_sentence = - torch.mean(log_prob_t_hat_step_wise.squeeze(), axis=-1)  # (batch_size * distillation_num_beams,)
         loss_kd_per_sentence = loss_kd_per_sentence.reshape(batch_size, distillation_num_beams)  # (batch_size, distillation_num_beams)
-        
+
         # Compute the weighted mean of the sequence log-probabilities:
         # Inputs:
         # - weights -> (distillation_num_beams,)
@@ -195,11 +202,11 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
             loss_kd = torch.sum(weights * teacher_sequences_prob * loss_kd_per_sentence, axis=-1)  # (batch_size,)
         else:
             loss_kd = torch.sum(teacher_sequences_prob * loss_kd_per_sentence, axis=-1)  # (batch_size,)
-        
+
         # Because the default cross-entropy loss is computed with reduction='mean', we need to
         # also take the mean of the sequence log-probabilities to be consistent:
         loss_kd = torch.mean(loss_kd,)  # (1,)
-        
+
         # Return weighted student loss
         loss = self.args.alpha_ce * loss_ce + (1. - self.args.alpha_ce) * loss_kd
         
