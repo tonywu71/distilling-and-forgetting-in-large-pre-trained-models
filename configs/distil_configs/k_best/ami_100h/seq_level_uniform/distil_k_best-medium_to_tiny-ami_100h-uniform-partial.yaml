@@ -2,14 +2,14 @@
 # - 3391 for batch_size = 32 and num_train_epochs = 1
 # - 10173 for batch_size = 32 and num_train_epochs = 3
 
-experiment_name: distil_k_best-medium_to_tiny-librispeech_clean_100h-k_3-uniform-partial
+experiment_name: distil_k_best-medium_to_tiny-ami_100h-k_3-uniform-partial
 lang_name: english
 task: transcribe
 method_distil: seq_level_uniform
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_k_best/whisper_medium_to_tiny/librispeech_clean_100h/k_3/uniform/partial
+model_dir: ./checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/uniform/partial
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32

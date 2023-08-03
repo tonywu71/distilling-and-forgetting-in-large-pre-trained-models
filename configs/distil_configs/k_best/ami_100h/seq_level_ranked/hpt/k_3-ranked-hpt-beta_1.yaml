@@ -2,14 +2,14 @@
 # - 3391 for batch_size = 32 and num_train_epochs = 1
 # - 10173 for batch_size = 32 and num_train_epochs = 3
 
-experiment_name: distil_k_best-medium_to_tiny-librispeech_clean_100h-k_3-ranked-hpt-beta_1
+experiment_name: distil_k_best-medium_to_tiny-ami_100h-k_3-ranked-hpt-beta_1
 lang_name: english
 task: transcribe
 method_distil: seq_level_ranked
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_k_best/whisper_medium_to_tiny/librispeech_clean_100h/k_3/ranked/hpt/beta_1
+model_dir: ./checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/ranked/hpt/beta_1
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -34,7 +34,7 @@ save_final_model: True
 
 distillation_num_beams: 3
 alpha_ce: 0.
-decay_beta: 1.0
+beta_decay: 1.0
 postprocess_teacher: True
 strip_teacher: True
 max_teacher_gzip_ratio: 1.5

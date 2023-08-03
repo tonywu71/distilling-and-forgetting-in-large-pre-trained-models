@@ -9,9 +9,9 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_k_best-librispeech_clean_100h-full
+#SBATCH -J distil_k_best-ami_100h
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A DUDLEY-SL3-GPU
+#SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -51,9 +51,25 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/distil_whisper.py \
-    configs/distil_configs/k_best/ami_100h/seq_level_uniform/distil_k_best-medium_to_tiny-ami_100h-uniform-partial.yaml \
-    >> $LOG 2> $ERR
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/k_best/ami_100h/seq_level_uniform/distil_k_best-medium_to_tiny-ami_100h-uniform-partial.yaml \
+#     >> $LOG 2> $ERR
+
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/k_best/ami_100h/seq_level_ranked/hpt/k_3-ranked-hpt-beta_1.yaml \
+#     >> $LOG 2> $ERR
+
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/k_best/ami_100h/seq_level_ranked/hpt/k_3-ranked-hpt-beta_2.yaml \
+#     >> $LOG 2> $ERR
+
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/k_best/ami_100h/seq_level_ranked/hpt/k_3-ranked-hpt-beta_5.yaml \
+#     >> $LOG 2> $ERR
+
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/k_best/ami_100h/seq_level_ranked/hpt/k_3-ranked-hpt-beta_10.yaml \
+#     >> $LOG 2> $ERR
 
 #! #############################################
 
