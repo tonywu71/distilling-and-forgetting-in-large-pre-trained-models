@@ -176,7 +176,7 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
         
         # Repeat attention_mask for the n_vocab dimension:
         student_log_prob_all_mask = attention_mask_teacher_sequences[:, :, None].expand(-1, -1, vocab_size)  # right-shifted -> (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
-        output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.ne(1), 0)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
+        output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.eq(1), 0)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
         
         # Get log-probabilities for each generation step:
         log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences_right_shifted[:, :, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, 1)
@@ -185,8 +185,12 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
         # of the sequence log-probabilities for consistency with the previous loss.
 
         # Compute the sequence negative log-probability of `y_hat`, which is equal to `loss_kd`:
-        # log_prob_t_hat_step_wise.squeeze() -> (batch_size * distillation_num_beams, n_tokens_teacher_seq)
-        loss_kd_per_sentence = - torch.mean(log_prob_t_hat_step_wise.squeeze(), axis=-1)  # (batch_size * distillation_num_beams,)
+
+        # NOTE: When we compute the mean, we have to ignore the padded tokens. Otherwise, the mean will be incorrect.
+        n_tokens_per_seq = attention_mask_teacher_sequences.eq(0).sum(axis=-1, keepdim=True)  # (batch_size * distillation_num_beams, 1)
+
+        # NOTE: log_prob_t_hat_step_wise.squeeze() -> (batch_size * distillation_num_beams, n_tokens_teacher_seq)
+        loss_kd_per_sentence = - torch.sum(log_prob_t_hat_step_wise.squeeze() / n_tokens_per_seq, axis=-1)  # (batch_size * distillation_num_beams,)
         loss_kd_per_sentence = loss_kd_per_sentence.reshape(batch_size, distillation_num_beams)  # (batch_size, distillation_num_beams)
 
         # Compute the weighted mean of the sequence log-probabilities:

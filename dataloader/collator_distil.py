@@ -12,6 +12,9 @@ from utils.constants import LOSS_MASK_IDX
 class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWithPadding):
     """
     Class to collate data for speech seq2seq models with padding during sequence distillation.
+
+    NOTE: If `return_attention_mask` is True, then the attention mask will be computed from the labels.
+          Elements with value 1 correspond to tokens that should be masked out.
     """
     
     def __init__(self,
