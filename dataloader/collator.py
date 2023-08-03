@@ -9,6 +9,9 @@ from utils.constants import DEFAULT_LABEL_TOKENIZED_COL, LOSS_MASK_IDX, DEFAULT_
 class DataCollatorSpeechSeq2SeqWithPadding:
     """
     Class to collate data for speech seq2seq models with padding.
+
+    NOTE: If `return_attention_mask` is True, then the attention mask will be computed from the labels.
+          Elements with value 0 correspond to padding tokens. Thus, they should be masked out during training.
     """
     
     def __init__(self,

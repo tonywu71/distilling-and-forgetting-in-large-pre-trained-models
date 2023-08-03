@@ -14,7 +14,7 @@ class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWi
     Class to collate data for speech seq2seq models with padding during sequence distillation.
 
     NOTE: If `return_attention_mask` is True, then the attention mask will be computed from the labels.
-          Elements with value 1 correspond to tokens that should be masked out.
+          Elements with value 0 correspond to padding tokens. Thus, they should be masked out during training.
     """
     
     def __init__(self,
@@ -76,8 +76,9 @@ class DataCollatorWithPaddingForSeqLevelDistillation(DataCollatorSpeechSeq2SeqWi
             
             # NOTE: Right now, `attention_mask_teacher_sequences` is not correct because it doesn't take into account the padding performed by the generate method during
             #       caching. Therefore, we will have to recompute the attention mask here.
-            attention_mask_teacher_sequences = get_padded_mask_from_tensor(teacher_sequences)
-            teacher_sequences = teacher_sequences.masked_fill(attention_mask_teacher_sequences.eq(1), LOSS_MASK_IDX)
+
+            attention_mask_teacher_sequences = get_padded_mask_from_tensor(teacher_sequences)  # elements with value 0 correspond to padding tokens
+            teacher_sequences = teacher_sequences.masked_fill(attention_mask_teacher_sequences.eq(0), LOSS_MASK_IDX)
             
             batch["teacher_sequences"] = teacher_sequences.reshape(batch_size, -1, teacher_sequences.shape[-1])  # (batch_size, num_beams, n_tokens)
             batch["attention_mask_teacher_sequences"] = attention_mask_teacher_sequences.reshape(batch_size, -1, teacher_sequences.shape[-1])  # (batch_size, num_beams, n_tokens)
