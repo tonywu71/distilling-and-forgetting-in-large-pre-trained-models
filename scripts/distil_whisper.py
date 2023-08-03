@@ -38,7 +38,7 @@ from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
 
-from utils.constants import GEN_MAX_LENGTH, DEFAULT_NUM_PROC
+from utils.constants import GEN_MAX_LENGTH
 
 
 
@@ -86,6 +86,12 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Prepare tags for W&B:
     list_tags = [config.dataset_name,
                  config.method_distil]
+    
+    if is_seq_level:
+        if config.distillation_num_beams == 1:
+            list_tags.append("1_best_kd")
+        if config.distillation_num_beams > 1:
+            list_tags.append("k_best_kd")
     
     if end_after_caching:
         print("\n-----------------------\n")
