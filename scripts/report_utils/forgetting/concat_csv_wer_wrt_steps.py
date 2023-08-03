@@ -64,7 +64,7 @@ def main(dirpath_checkpoints: Path = typer.Argument(..., exists=True, dir_okay=T
         df = df[df["Dataset"] != "Average"]
         
         # Get number of step using Regex:
-        match = re.search(r"checkpoint-(\d+)-fab.csv", f.name)
+        match = re.search(r"checkpoint-(\d+)-fab[-\w]*.csv", f.name)
         if match:
             steps = int(match.group(1))
         else:
