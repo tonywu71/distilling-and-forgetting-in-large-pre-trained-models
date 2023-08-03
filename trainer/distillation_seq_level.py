@@ -146,12 +146,17 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
 
         # Repeat input features for the number of beams. The resulting tensor will have shape (batch_size * distillation_num_beams, dim_features).
         input_features = input_features.repeat_interleave(distillation_num_beams, dim=0)  # (batch_size * distillation_num_beams, 80, 3000)
+
+        # `shift_tokens_right` takes a 2D tensor as input, so we need to reshape the teacher sequences to be able to use it. This is
+        # also necessary to align the labels with the shape of `input_features`.
+        teacher_sequences_right_shifted = shift_tokens_right(teacher_sequences.reshape(batch_size * distillation_num_beams, -1),
+                                                             model.config.pad_token_id,
+                                                             model.config.decoder_start_token_id)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq)
         
         # NOTE: In order to weight the terms in the KD loss properly, we must get the per-sequence loss instead of the total loss.
         #       Hence, we cannot use the `forward` loss auto-compute with the `labels` argument.
 
         # Forward pass through student with respect to teacher sequences as decoder input:
-        teacher_sequences_right_shifted = shift_tokens_right(teacher_sequences, model.config.pad_token_id, model.config.decoder_start_token_id)
         student_output_wrt_teacher: Seq2SeqLMOutput = model.forward(input_features=input_features,
                                                                     decoder_input_ids=teacher_sequences_right_shifted,
                                                                     decoder_attention_mask=attention_mask_teacher_sequences)
