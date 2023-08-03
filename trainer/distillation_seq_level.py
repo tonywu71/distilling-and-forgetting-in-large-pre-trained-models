@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any
 
 import numpy as np
 import torch
+from torch.nn import CrossEntropyLoss
 
 from transformers.models.whisper import WhisperProcessor, WhisperForConditionalGeneration
 from transformers.models.whisper import WhisperProcessor
@@ -162,43 +163,15 @@ class DistillationSeqLevelTrainer(DistillationTrainerBase):
                                                                     decoder_attention_mask=attention_mask_teacher_sequences)
         
         student_logits_wrt_teacher = student_output_wrt_teacher.logits  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
-        _, _, vocab_size = student_logits_wrt_teacher.shape
-        
-        # Temporarily reshape logits to be able to properly use softmax along the last dimension:
-        student_logits = student_logits_wrt_teacher.reshape(batch_size, distillation_num_beams, n_tokens_teacher_seq, vocab_size)  # (batch_size, distillation_num_beams, n_tokens_teacher_seq, vocab_size)
-        
-        # Normalize logits:
-        student_log_prob_all = torch.nn.functional.log_softmax(student_logits, dim=-1)  # (batch_size, distillation_num_beams, n_tokens_teacher_seq, vocab_size)
-        
-        # Reshape back to original shape:
-        student_log_prob_all = student_log_prob_all.reshape(batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
-        
-        # NOTE: The first `K = distillation_num_beams` rows of output_log_prob_all_masked correspond to the same example but with different beams.
-        
-        # Set the values associated to the pad tokens to 0:
-        # NOTE: Because we will sum the log-probabilities to make use of the product rule in the log space,
-        #       a sufficient method to ignore the padded values is to set them to 0.
-        
-        # Repeat attention_mask for the n_vocab dimension:
-        student_log_prob_all_mask = attention_mask_teacher_sequences[:, :, None].expand(-1, -1, vocab_size)  # right-shifted -> (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
-        
-        # All the values associated to the pad tokens will be set to 0. We can infer their position from the attention mask (0 iif pad token):
-        output_log_prob_all_masked = student_log_prob_all.masked_fill(student_log_prob_all_mask.eq(0), 0)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, vocab_size)
-        
-        # Get log-probabilities for each generation step:
-        log_prob_t_hat_step_wise = output_log_prob_all_masked.take_along_dim(teacher_sequences_right_shifted[:, :, None], dim=-1)  # (batch_size * distillation_num_beams, n_tokens_teacher_seq, 1)
-        log_prob_t_hat_step_wise = log_prob_t_hat_step_wise.squeeze()  # (batch_size * distillation_num_beams, n_tokens_teacher_seq)
 
-        # NOTE: The cross-entropy loss is computed with reduction='mean' on the entire sequence, so we need to take the mean
-        # of the sequence log-probabilities for consistency with the previous loss.
-
-        # Compute the sequence negative log-probability of `y_hat`, which is equal to `loss_kd`:
-
-        # NOTE: When we compute the mean, we have to ignore the padded tokens. Otherwise, the mean will be incorrect.
+        loss_fct = CrossEntropyLoss(reduction="none")
+        loss_wrt_teacher = loss_fct(student_logits_wrt_teacher.view(-1, model.config.vocab_size),
+                                    teacher_sequences.reshape(-1)).view(batch_size * distillation_num_beams, n_tokens_teacher_seq)  # (batch_size, distillation_num_beams, n_tokens_teacher_seq)
+        
         n_tokens_per_seq = attention_mask_teacher_sequences.eq(1).sum(axis=-1, keepdim=True)  # (batch_size * distillation_num_beams, 1)
-        loss_kd_per_sentence = - torch.sum(log_prob_t_hat_step_wise / n_tokens_per_seq, axis=-1)  # (batch_size * distillation_num_beams,)
+        loss_kd_per_sentence = torch.sum(loss_wrt_teacher / n_tokens_per_seq, axis=-1)  # (batch_size * distillation_num_beams,)
         
-        loss_kd_per_sentence = loss_kd_per_sentence.reshape(batch_size, distillation_num_beams)  # (batch_size, distillation_num_beams)
+        loss_kd_per_sentence = loss_kd_per_sentence.view(batch_size, distillation_num_beams)  # (batch_size, distillation_num_beams)
 
         # Compute the weighted mean of the sequence log-probabilities:
         # Inputs:
