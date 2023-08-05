@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J eval_whisper_on_ami_validation_multiple_checkpoints
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A DUDLEY-SL3-GPU
+#SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=03:00:00
+#SBATCH --time=02:00:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -52,14 +52,14 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/alpha/alpha_2e-1_temp_5/final \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/alpha/alpha_5e-1_temp_1/final \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/alpha/alpha_8e-1_temp_1/final \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/temperature/alpha_0_temp_1/final \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/temperature/alpha_0_temp_5e-1/final \
-    checkpoints/distil_word_level/whisper_finetuned_medium_to_tiny/temperature/alpha_0_temp_5e+1/final \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/ranked/hpt/beta_1/checkpoint-3000 \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/ranked/hpt/beta_2/checkpoint-3000 \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/ranked/hpt/beta_5/checkpoint-3000 \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/ranked/hpt/beta_10/checkpoint-3000 \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/uniform/partial/checkpoint-3000 \
     --dataset-name ami_validation \
-    --batch-size 1024 >> $LOG 2> $ERR
+    --batch-size 1024 \
+    >> $LOG 2> $ERR
 
 #! #############################################
 

@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J finetune_ewc_ami_100h
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -51,15 +51,15 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/finetune_whisper.py \
-#     configs/finetune_ewc_configs/preserve_french/finetune_ewc_tiny-ami_100h-preserve_french-lambda_1e-1-full.yaml \
-#     --ewc \
-#     >> $LOG 2> $ERR
-
 python scripts/finetune_whisper.py \
-    configs/finetune_ewc_configs/combined/finetune_ewc_tiny-ami_100h-combined-full.yaml \
+    configs/finetune_ewc_configs/preserve_french/finetune_ewc_tiny-ami_100h-preserve_french-lambda_1e-4-full.yaml \
     --ewc \
     >> $LOG 2> $ERR
+
+# python scripts/finetune_whisper.py \
+#     configs/finetune_ewc_configs/combined/finetune_ewc_tiny-ami_100h-combined-full.yaml \
+#     --ewc \
+#     >> $LOG 2> $ERR
 
 #! #############################################
 

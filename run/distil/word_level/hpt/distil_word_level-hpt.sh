@@ -9,9 +9,9 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J distil_word_level_hpt_temperature
+#SBATCH -J distil_word_level_hpt_lr
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -51,9 +51,11 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/hpt/alpha_0/distil_word_level-hpt-alpha_0_temp_1.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/hpt/alpha_0/distil_word_level-hpt-alpha_0_temp_5e-1.yaml >> $LOG 2> $ERR
-# python scripts/distil_whisper.py configs/distil_configs/word_level/from_finetuned_medium/hpt/alpha_0/distil_word_level-hpt-alpha_0_temp_5e+1.yaml >> $LOG 2> $ERR
+python scripts/distil_whisper.py \
+    configs/distil_configs/word_level/from_vanilla_medium_unsupervised/hpt/distil_word_level_unsupervised-hpt-alpha_8e-1_temp_1e+0.yaml
+    >> $LOG 2> $ERR
+
+# configs/distil_configs/word_level/from_vanilla_medium_unsupervised/hpt/distil_word_level_unsupervised-hpt-alpha_5e-1_temp_1e+0.yaml \
 
 #! #############################################
 

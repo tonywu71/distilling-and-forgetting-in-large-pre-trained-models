@@ -1,36 +1,37 @@
 # Total training steps:
-# - 3391 for batch_size = 32 and num_train_epochs = 1
+# - 30 for batch_size = 32 and num_train_epochs = 10
 
-experiment_name: finetune_ewc-whisper_tiny-ami_100h-preserve_french-lambda_1e-4
+experiment_name: finetune_tac-tiny-librispeech_dummy-debug
 lang_name: english
 task: transcribe
 pretrained_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-4
+model_dir: ./checkpoints/finetune_tac/whisper_tiny/librispeech_dummy/
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
 gradient_accumulation_steps: 1
 gradient_checkpointing: False
-dataset_name: ami_100h
+dataset_name: librispeech_dummy
 optim: adamw_torch
 learning_rate: 1e-5
-warmup_steps: 300
-eval_steps: 600
+warmup_steps: 5
+eval_steps: 10
 generation_num_beams: 1
-logging_steps: 300
-save_steps: 600
-num_train_epochs: 1
+logging_steps: 10
+save_steps: 10000  # do not save checkpoints
+num_train_epochs: 10
 
-zero_shot_eval: False
 eval_batch_size: 256
 eval_accumulation_steps:
-save_total_limit:
-early_stopping_patience:
-save_final_model: True
+save_total_limit: 2
+early_stopping_patience: -1
+save_final_model: False
 
-dirpath_ewc: checkpoints/whisper-tiny/french/transcribe/mls_french_diagnostic/train
-lambda_ewc: 0.0001
+gamma_tac: 0.2
+languages_to_preserve: [french]
+use_kl: True
+temperature: 1.0
 
 smart_load: True
 force_reprocess_dataset: False

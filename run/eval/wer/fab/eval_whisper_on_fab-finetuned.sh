@@ -54,9 +54,9 @@ echo "python `which python`": >> $LOG
 # =====================       Vanilla fine-tuning       =====================
 
 python scripts/eval_whisper.py \
-    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-2/checkpoint-3000 \
+    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-4/checkpoint-1800 \
     --dataset-name fab \
-    --subset ami --subset librispeech_fr \
+    --subset ami --subset tedlium --subset librispeech_fr \
     --batch-size 1024 >> $LOG 2> $ERR
 
 echo "Time: `date`" >> $LOG
