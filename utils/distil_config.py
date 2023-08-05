@@ -70,7 +70,8 @@ class DistilConfig:
     
     # `word_level`:
     temperature: Optional[float] = None
-    no_repeat_ngram_size: Optional[int] = None
+    unsupervised_word_level: bool = False
+    no_repeat_ngram_size: Optional[int] = None  # EXPERIMENTAL
     
     # 1-best sequence-level:
     postprocess_teacher: bool = False

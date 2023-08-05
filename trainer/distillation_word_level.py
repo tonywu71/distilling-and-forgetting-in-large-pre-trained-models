@@ -81,8 +81,7 @@ class DistillationWordLevelTrainer(DistillationTrainerBase):
                                                                          attention_mask=attention_mask)
             logits_teacher = output_teacher.logits  # (batch_size, n_tokens_labels, vocab_size)
 
-        # [Optional] Apply `no_repeat_ngram` to the teacher logits:
-        if self.args.no_repeat_ngram_size is not None:
+        if self.args.no_repeat_ngram_size is not None:  # EXPERIMENTAL
             self.apply_no_repeat_ngram(logits=logits_teacher, labels=labels, no_repeat_ngram_size=self.args.no_repeat_ngram_size)
         
         # Initialize KL-divergence loss:
@@ -109,6 +108,7 @@ class DistillationWordLevelTrainer(DistillationTrainerBase):
                               labels: torch.Tensor,
                               no_repeat_ngram_size: int) -> torch.Tensor:
         """
+        [EXPERIMENTAL - NOT TESTED]
         Modify logits_teacher so much so that the probability of all tokens that would create an already-seen
         n-gram is 0 (i.e. a logit of -inf).
         """

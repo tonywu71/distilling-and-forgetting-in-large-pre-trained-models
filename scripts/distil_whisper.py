@@ -172,6 +172,24 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         print("\n-----------------------\n")
     
 
+    if config.method_distil == "word_level" and config.unsupervised_word_level:
+        # TODO: Implementation is a bit hacky. Refactor this.
+        print("Word-level distillation will be performed in an unsupervised manner.")
+        
+        # Hotfix to use `smart_load_dataset_with_k_beam_search`:
+        config.method_distil = "seq_level_uniform"
+        config.distillation_num_beams = 1
+
+        # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
+        dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
+                                                             dataset_dict=dataset_dict,
+                                                             teacher_caching_batch_size=teacher_caching_batch_size)
+        
+        # NOTE: We won't replace the `labels` column with the `teacher_sequences` column yet because we want to
+        #       post-process and/or filter the teacher outputs first.
+        print("\n-----------------------\n")
+
+
     if end_after_caching:
         print("Ending script after caching teacher outputs.")
         wandb.finish()
@@ -193,7 +211,19 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     if config.max_exceeding_tokens or config.max_teacher_gzip_ratio or config.max_ratio_instant_tokens:
         dataset_dict = filter_teacher_outputs(dataset_dict=dataset_dict, config=config)
     
+
+    if config.method_distil == "word_level" and config.unsupervised_word_level:
+        # TODO: Implementation is a bit hacky. Refactor this.
+        
+        # We will replace the `labels` column with the `teacher_sequences` column (train split only):
+        dataset_dict["train"] = dataset_dict.remove_columns(["labels"])
+        dataset_dict["train"] = dataset_dict.rename_column("teacher_sequences", "labels")
+
+        # Restore the original config:
+        config.method_distil = "word_level"
+        config.distillation_num_beams = None
     
+
     # Initialize the models from pretrained checkpoints:
     if config.method_distil == "word_level":
         print(f"Loading teacher model `{config.teacher_model_name_or_path}`...")
