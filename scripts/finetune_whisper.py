@@ -230,6 +230,8 @@ def main(config_filepath: str,
     elif isinstance(config, TACFinetuneConfig):
         training_args = TACFinetuningTrainingArguments(languages_to_preserve=config.languages_to_preserve,
                                                        gamma_tac=config.gamma_tac,
+                                                       use_kl=config.use_kl,
+                                                       temperature=config.temperature,
                                                        **training_arguments_dict)
     else:
         training_args = Seq2SeqTrainingArguments(**training_arguments_dict)

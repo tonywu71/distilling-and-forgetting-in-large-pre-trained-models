@@ -2,6 +2,8 @@ from typing import Optional, List
 from functools import partial
 
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 from transformers.trainer_seq2seq import Seq2SeqTrainer
 from transformers.training_args_seq2seq import Seq2SeqTrainingArguments
@@ -11,7 +13,7 @@ from transformers.feature_extraction_utils import BatchFeature
 from optimum.bettertransformer import BetterTransformer
 
 
-from trainer.trainer_utils import get_padded_mask_from_tensor
+from trainer.trainer_utils import get_language_special_token, get_padded_mask_from_tensor
 from utils.constants import GEN_MAX_LENGTH, LOSS_MASK_IDX
 
 
@@ -23,11 +25,15 @@ class TACFinetuningTrainingArguments(Seq2SeqTrainingArguments):
     def __init__(self,
                  languages_to_preserve: Optional[List[str]] = None,
                  gamma_tac: float = 0.5,
+                 use_kl: bool = False,
+                 temperature: float = 1.0,
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.gamma_tac = gamma_tac
         self.languages_to_preserve = languages_to_preserve if languages_to_preserve is not None else []
+        self.use_kl = use_kl
+        self.temperature = temperature
 
 
 class TACFinetuningTrainer(Seq2SeqTrainer):
@@ -77,15 +83,18 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         """
 
         # Compute the default cross-entropy loss for the target task:
-        loss, output_student = super().compute_loss(model, inputs, return_outputs=True)
+        loss, outputs_target = super().compute_loss(model, inputs, return_outputs=True)
         
         # Compute the cross-entropy loss for the other tasks:
         for language_to_preserve in self.args.languages_to_preserve:
-            tac_inputs = self.get_tac_inputs(inputs, language=language_to_preserve)
-            loss_other_task = super().compute_loss(model, tac_inputs, return_outputs=False)
+            if self.args.use_kl:
+                logits_target = outputs_target.logits
+                loss_other_task = self.compute_tac_loss_with_kd(inputs, logits_target, language_to_preserve)
+            else:
+                tac_inputs = self.get_tac_inputs(inputs, language=language_to_preserve)
+                loss_other_task = super().compute_loss(model, tac_inputs, return_outputs=False)
             loss += self.args.gamma_tac * loss_other_task / len(self.args.languages_to_preserve)
-        
-        return (loss, output_student) if return_outputs else loss
+        return (loss, outputs_target) if return_outputs else loss
 
     
     def get_tac_inputs(self, inputs: BatchFeature, language: str) -> BatchFeature:
@@ -112,3 +121,33 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         inputs_tac["labels"] = predicted_ids_tac
         
         return inputs_tac
+
+
+    def compute_tac_loss_with_kd(self, inputs, logits_target, language_to_preserve: str):
+        """
+        Compute the TAC loss with knowledge distillation.
+        """
+        inputs_tac = inputs.copy().to(self.device).to(self.torch_dtype)
+
+        # Replace language token with correct one:
+        new_lang_token = get_language_special_token(language_to_preserve)
+        inputs_tac["labels"][:, 0] = new_lang_token
+
+        # Forward pass through original model (teacher-forced):
+        with torch.no_grad():
+            original_logits = self.original_model.forward(**inputs_tac).logits
+        
+        # Initialize KL-divergence loss:
+        kl_div_loss = nn.KLDivLoss(reduction="batchmean")
+        
+        # Important:
+        # - `KLDivLoss` argument order is the opposite of the one for the KL(·||·) mathematical notation
+        # - `KLDivLoss` expects log-probabilities for `input` to avoid underflow issues
+        
+        # Soften probabilities and compute distillation loss:
+        # NOTE: `input` should be log-probabilities according to the documentation of `KLDivLoss`.
+        loss_kd = self.args.temperature ** 2 * kl_div_loss(
+            input=F.log_softmax(original_logits / self.args.temperature, dim=-1),
+            target=F.softmax(logits_target / self.args.temperature, dim=-1))  # (1,)
+
+        return loss_kd
