@@ -172,7 +172,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         print("\n-----------------------\n")
     
 
-    if config.method_distil == "word_level" and config.unsupervised_word_level:
+    if config.unsupervised_word_level:
         # TODO: Implementation is a bit hacky. Refactor this.
         print("Word-level distillation will be performed in an unsupervised manner.")
         
@@ -212,12 +212,12 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         dataset_dict = filter_teacher_outputs(dataset_dict=dataset_dict, config=config)
     
 
-    if config.method_distil == "word_level" and config.unsupervised_word_level:
+    if config.unsupervised_word_level:
         # TODO: Implementation is a bit hacky. Refactor this.
         
         # We will replace the `labels` column with the `teacher_sequences` column (train split only):
-        dataset_dict["train"] = dataset_dict.remove_columns(["labels"])
-        dataset_dict["train"] = dataset_dict.rename_column("teacher_sequences", "labels")
+        dataset_dict["train"] = dataset_dict["train"].remove_columns(["labels"])
+        dataset_dict["train"] = dataset_dict["train"].rename_column("teacher_sequences", "labels")
 
         # Restore the original config:
         config.method_distil = "word_level"
