@@ -25,6 +25,7 @@ class TACFinetuningTrainingArguments(Seq2SeqTrainingArguments):
     def __init__(self,
                  languages_to_preserve: Optional[List[str]] = None,
                  gamma_tac: float = 0.5,
+                 task_tac: str = "transcribe",
                  use_kl: bool = False,
                  temperature: float = 1.0,
                  *args,
@@ -32,6 +33,7 @@ class TACFinetuningTrainingArguments(Seq2SeqTrainingArguments):
         super().__init__(*args, **kwargs)
         self.gamma_tac = gamma_tac
         self.languages_to_preserve = languages_to_preserve if languages_to_preserve is not None else []
+        self.task_tac = task_tac
         self.use_kl = use_kl
         self.temperature = temperature
 
@@ -71,7 +73,7 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
             param.requires_grad = False
         self.original_model._requires_grad = False
 
-        self.original_model.generate = partial(self.original_model.generate, task="transcribe", use_cache=True)
+        self.original_model.generate = partial(self.original_model.generate, task=self.args.task_tac, use_cache=True)
     
     
     def compute_loss(self,
