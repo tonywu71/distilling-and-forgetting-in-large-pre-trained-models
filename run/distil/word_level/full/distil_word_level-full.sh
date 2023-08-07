@@ -55,8 +55,12 @@ echo "python `which python`": >> $LOG
 #     configs/distil_configs/word_level/from_finetuned_medium/full/distil_word_level-full-alpha_8e-1_temp_1.yaml \
 #     >> $LOG 2> $ERR
 
+# python scripts/distil_whisper.py \
+#     configs/distil_configs/word_level/from_vanilla_base/librispeech/distil_word_level-base_to_tiny-librispeech-full.yaml \
+#     >> $LOG 2> $ERR
+
 python scripts/distil_whisper.py \
-    configs/distil_configs/word_level/from_vanilla_base/librispeech/distil_word_level-base_to_tiny-librispeech-full.yaml \
+    configs/distil_configs/word_level/from_small_to_base/librispeech/distil_word_level-small_to_base-librispeech-full.yaml \
     >> $LOG 2> $ERR
 
 #! #############################################

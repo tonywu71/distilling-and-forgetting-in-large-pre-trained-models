@@ -72,7 +72,7 @@ echo "python `which python`": >> $LOG
 #     >> $LOG 2> $ERR
 
 python scripts/distil_whisper.py \
-    configs/distil_configs/word_level/from_vanilla_medium_unsupervised/hpt/distil_word_level_unsupervised-hpt-alpha_9e-1_temp_1e+0.yaml \ 
+    configs/distil_configs/word_level/from_vanilla_medium_unsupervised/hpt/distil_word_level_unsupervised-hpt-alpha_9e-1_temp_1.yaml \ 
     >> $LOG 2> $ERR
 
 #! #############################################
