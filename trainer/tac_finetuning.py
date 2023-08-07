@@ -90,11 +90,11 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         # Compute the cross-entropy loss for the other tasks:
         for language_to_preserve in self.args.languages_to_preserve:
             if self.args.use_kl:
-                logits_target = outputs_target.logits
-                loss_other_task = self.compute_tac_loss_with_kd(inputs, logits_target, language_to_preserve)
+                loss_other_task = self.compute_tac_loss_with_kd(model, inputs, language_to_preserve)
             else:
                 tac_inputs = self.get_tac_inputs(inputs, language=language_to_preserve)
                 loss_other_task = super().compute_loss(model, tac_inputs, return_outputs=False)
+            breakpoint()
             loss += self.args.gamma_tac * loss_other_task / len(self.args.languages_to_preserve)
         return (loss, outputs_target) if return_outputs else loss
 
@@ -125,7 +125,7 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         return inputs_tac
 
 
-    def compute_tac_loss_with_kd(self, inputs, logits_target, language_to_preserve: str):
+    def compute_tac_loss_with_kd(self, model, inputs, language_to_preserve: str):
         """
         Compute the TAC loss with knowledge distillation.
         """
@@ -133,11 +133,18 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
 
         # Replace language token with correct one:
         new_lang_token = get_language_special_token(language_to_preserve)
-        inputs_tac["labels"][:, 0] = new_lang_token
+        lang_token_tensor = torch.LongTensor([[new_lang_token]]).expand(inputs_tac["labels"].shape[0], 1).to(self.device)
+        inputs_tac["labels"] = torch.cat([lang_token_tensor, inputs_tac["labels"][:, 1:]], dim=1)
 
         # Forward pass through original model (teacher-forced):
+        # FIXME: Right now, we are using teacher-forcing on the wrong labels (English).
+        #        An easy fix would be to first generate the new labels using `self.original_model.generate`
+        #        and to use them as the `decoder_input_ids` argument for both models.
         with torch.no_grad():
             original_logits = self.original_model.forward(**inputs_tac).logits
+
+        # Forward pass through currently trained model (teacher-forced):
+        target_logits = model.forward(**inputs_tac).logits
         
         # Initialize KL-divergence loss:
         kl_div_loss = nn.KLDivLoss(reduction="batchmean")
@@ -150,6 +157,6 @@ class TACFinetuningTrainer(Seq2SeqTrainer):
         # NOTE: `input` should be log-probabilities according to the documentation of `KLDivLoss`.
         loss_kd = self.args.temperature ** 2 * kl_div_loss(
             input=F.log_softmax(original_logits / self.args.temperature, dim=-1),
-            target=F.softmax(logits_target / self.args.temperature, dim=-1))  # (1,)
+            target=F.softmax(target_logits / self.args.temperature, dim=-1))  # (1,)
 
         return loss_kd
