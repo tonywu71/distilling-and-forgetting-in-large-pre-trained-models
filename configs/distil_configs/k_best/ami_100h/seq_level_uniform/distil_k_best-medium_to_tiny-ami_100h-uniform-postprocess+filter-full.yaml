@@ -2,14 +2,14 @@
 # - 3391 for batch_size = 32 and num_train_epochs = 1
 # - 10173 for batch_size = 32 and num_train_epochs = 3
 
-experiment_name: distil_k_best-medium_to_tiny-ami_100h-uniform-filter_only-full
+experiment_name: distil_k_best-medium_to_tiny-ami_100h-uniform-postprocess+filter-full
 lang_name: english
 task: transcribe
 method_distil: seq_level_uniform
 teacher_model_name_or_path: openai/whisper-medium
 student_model_name_or_path: openai/whisper-tiny
 is_tokenizer_multilingual: True
-model_dir: ./checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/uniform/filter_only-full
+model_dir: ./checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/uniform/postprocess+filter-full
 freeze_encoder: True
 freeze_decoder: False
 batch_size: 32
@@ -29,11 +29,13 @@ zero_shot_eval: False
 eval_batch_size: 256
 eval_accumulation_steps:
 save_total_limit: 2
-early_stopping_patience: 4
+early_stopping_patience:
 save_final_model: True
 
 alpha_ce: 0.
 distillation_num_beams: 3
+postprocess_teacher: True
+strip_teacher: True
 max_teacher_gzip_ratio: 1.5
 
 smart_load: True
