@@ -51,28 +51,8 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/word_level/from_vanilla_medium_unsupervised/hpt/distil_word_level_unsupervised-hpt-alpha_3e-1_temp_1.yaml \
-#     >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/word_level/from_vanilla_medium_unsupervised/hpt/distil_word_level_unsupervised-hpt-alpha_3e-1_temp_2.yaml \
-#     >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/word_level/from_vanilla_medium_unsupervised/hpt/distil_word_level_unsupervised-hpt-alpha_5e-1_temp_1.yaml \
-#     >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/word_level/from_vanilla_medium_unsupervised/hpt/distil_word_level_unsupervised-hpt-alpha_5e-1_temp_2.yaml \ 
-#     >> $LOG 2> $ERR
-
-# python scripts/distil_whisper.py \
-#     configs/distil_configs/word_level/from_vanilla_medium_unsupervised/hpt/distil_word_level_unsupervised-hpt-alpha_8e-1_temp_1.yaml \ 
-#     >> $LOG 2> $ERR
-
 python scripts/distil_whisper.py \
-    configs/distil_configs/word_level/from_vanilla_medium_unsupervised/hpt/distil_word_level_unsupervised-hpt-alpha_9e-1_temp_1.yaml \ 
+    configs/distil_configs/word_level/from_vanilla_medium_unsupervised/hpt/distil_word_level_unsupervised-hpt-alpha_9e-1_temp_1.yaml \
     >> $LOG 2> $ERR
 
 #! #############################################

@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J eval_whisper_on_fab-finetuned
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A DUDLEY-SL3-GPU
+#SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -54,7 +54,7 @@ echo "python `which python`": >> $LOG
 # =====================       Vanilla fine-tuning       =====================
 
 python scripts/eval_whisper.py \
-    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-4/checkpoint-1800 \
+    checkpoints/finetune_tac/whisper_tiny/hpt/translate/checkpoint-1200 \
     --dataset-name fab \
     --subset ami --subset tedlium --subset librispeech_fr \
     --batch-size 1024 >> $LOG 2> $ERR
