@@ -51,14 +51,14 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py openai/whisper-tiny --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-500 --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-1000 --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-1500 --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-2000 --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-2500 --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3000 --dataset-name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 --dataset-name fab >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py openai/whisper-tiny --dataset-name fad >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-500 --dataset-name fad >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-1000 --dataset-name fad >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-1500 --dataset-name fad >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-2000 --dataset-name fad >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-2500 --dataset-name fad >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3000 --dataset-name fad >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 --dataset-name fad >> $LOG 2> $ERR
 
 #! #############################################
 

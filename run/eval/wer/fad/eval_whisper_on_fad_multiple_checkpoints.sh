@@ -9,8 +9,8 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_implicit_lm_on_fab
-#! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
+#SBATCH -J eval_whisper_on_fad_multiple_checkpoints
+#! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=01:00:00
+#SBATCH --time=01:40:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,8 +51,25 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py openai/whisper-tiny --dataset_name fab >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 --dataset_name fab >> $LOG 2> $ERR
+# python scripts/eval_whisper_multiple_checkpoints.py \
+#     checkpoints/finetune_ewc/whisper_tiny/combined/ami_100h/full/checkpoint-600 \
+#     checkpoints/finetune_ewc/whisper_tiny/combined/ami_100h/full/checkpoint-1200 \
+#     checkpoints/finetune_ewc/whisper_tiny/combined/ami_100h/full/checkpoint-2400 \
+#     --dataset-name fad \
+#     --subset ami --subset librispeech_fr \
+#     --batch-size 1024 \
+#     >> $LOG 2> $ERR
+
+python scripts/eval_whisper_multiple_checkpoints.py \
+    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-4/checkpoint-600 \
+    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-4/checkpoint-1200 \
+    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-4/checkpoint-2400 \
+    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-4/checkpoint-3000 \
+    --dataset-name fad \
+    --subset ami --subset tedlium --subset librispeech_fr \
+    --batch-size 1024 \
+    >> $LOG 2> $ERR
+
 
 #! #############################################
 

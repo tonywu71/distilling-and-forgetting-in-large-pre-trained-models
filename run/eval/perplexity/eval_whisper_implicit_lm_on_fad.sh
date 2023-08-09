@@ -9,8 +9,8 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_fab-vanilla
-#! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
+#SBATCH -J eval_whisper_implicit_lm_on_fad
+#! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
@@ -51,17 +51,8 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper.py \
-#     openai/whisper-tiny \
-#     --dataset-name fab \
-#     --subset ami --subset tedlium --subset librispeech_fr \
-#     --batch-size 1024 >> $LOG 2> $ERR
-
-python scripts/eval_whisper.py \
-    openai/whisper-tiny \
-    --dataset-name fab \
-    --subset ami --subset tedlium --subset librispeech_fr \
-    --batch-size 1024 >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py openai/whisper-tiny --dataset_name fab >> $LOG 2> $ERR
+# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_fab.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 --dataset_name fab >> $LOG 2> $ERR
 
 #! #############################################
 

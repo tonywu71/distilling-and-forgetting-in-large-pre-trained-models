@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J distil_word_level_full
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
