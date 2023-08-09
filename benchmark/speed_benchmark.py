@@ -1,5 +1,6 @@
 from typing import Tuple
 from time import perf_counter
+
 import numpy as np
 from transformers.pipelines import Pipeline
 
@@ -12,7 +13,6 @@ def get_speed_benchmark(pipeline: Pipeline,
     """
     Get the speed benchmark `(time_avg_ms, time_std_ms)` for the pipeline.
     """
-    
     # Get placeholder for latencies:
     latencies = []
     
