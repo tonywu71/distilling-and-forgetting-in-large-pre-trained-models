@@ -9,7 +9,7 @@ from dataloader.dataset_for_evaluation.ami_test import AMITestSet
 from dataloader.dataset_for_evaluation.ami_eval import AMIEvalSet
 from dataloader.dataset_for_evaluation.esb_diagnostic_dataset import ESBDiagnosticDataset
 from dataloader.dataset_for_evaluation.esb_diagnostic_custom_dataset import ESBDiagnosticCustomDataset
-from dataloader.dataset_for_evaluation.fab_dataset import FABDataset
+from dataloader.dataset_for_evaluation.fab_dataset import FADDataset
 from dataloader.dataset_for_evaluation.mls_dataset import MLSDataset
 from dataloader.dataset_for_evaluation.mls_diagnostic_dataset_custom import MLSDiagnosticDatasetCustom
 
@@ -26,5 +26,5 @@ EVAL_DATASET_NAME_TO_DATASET_GROUP: Dict[str, BaseDatasetGroup] = {
     "esbdc": ESBDiagnosticCustomDataset,
     "mls": MLSDataset,
     "mlsdc": MLSDiagnosticDatasetCustom,
-    "fab": FABDataset
+    "fad": FADDataset
 }

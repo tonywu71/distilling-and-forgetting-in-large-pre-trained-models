@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from utils.initialize import initialize_env, print_envs
 initialize_env()
 
-from dataloader.dataset_for_evaluation.fab_dataset import FABDataset
+from dataloader.dataset_for_evaluation.fab_dataset import FADDataset
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
     
     print("Loading FAB dataset...")
     
-    fab_dataset = FABDataset(subset=None)
+    fab_dataset = FADDataset(subset=None)
     
     print("Done.")
     

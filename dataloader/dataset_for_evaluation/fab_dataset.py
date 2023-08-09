@@ -8,9 +8,9 @@ from dataloader.dataset_for_training.dataset_loader_ami import remove_unnecessar
 
 
 
-class FABDataset(BaseDatasetGroup):
+class FADDataset(BaseDatasetGroup):
     """
-    Class that regroups a few datasets as part of the Forgetting Assessment Benchmark (FAB).
+    Class that regroups a few datasets as part of the Forgetting Assessment Dataset (FAD).
     """
     
     def __init__(self,
