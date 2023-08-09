@@ -137,6 +137,8 @@ def main(config_filepath: str,
                                           lowercase=config.lowercase,
                                           augment=config.data_augmentation)
     
+    # NOTE: Because the validation splits are subsampled, we should run the full evaluation on the validation split
+    #       manually after traning.
     if config.dataset_name == "librispeech_clean_100h":
         print("Subsampling the 100h LibriSpeech validation split to 50% of its original size for faster evaluation...")
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 2))
