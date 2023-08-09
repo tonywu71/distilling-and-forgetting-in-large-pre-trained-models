@@ -23,15 +23,15 @@ from utils.file_io import extract_output_savepath_from_model_path
 from utils.constants import DEFAULT_EVAL_BATCH_SIZE, DEFAULT_LABEL_STR_COL, GEN_MAX_LENGTH
 
 
-def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
-                                  ds_group: BaseDatasetGroup,
-                                  task: str = "transcribe",
-                                  zero_shot: bool = False,
-                                  num_beams: int = 1,
-                                  batch_size: int = DEFAULT_EVAL_BATCH_SIZE,
-                                  fast_tokenizer: bool = True,
-                                  save_preds: bool = False,
-                                  generate_kwargs: Optional[Dict[str, Any]] = None) -> pd.DataFrame:
+def eval_whisper_wer_on_dataset_group(pretrained_model_name_or_path: str,
+                                      ds_group: BaseDatasetGroup,
+                                      task: str = "transcribe",
+                                      zero_shot: bool = False,
+                                      num_beams: int = 1,
+                                      batch_size: int = DEFAULT_EVAL_BATCH_SIZE,
+                                      fast_tokenizer: bool = True,
+                                      save_preds: bool = False,
+                                      generate_kwargs: Optional[Dict[str, Any]] = None) -> pd.DataFrame:
     """
     Evaluate a Whisper model on a dataset group and return a DataFrame with the results.
     """
@@ -57,7 +57,6 @@ def eval_whisper_on_dataset_group(pretrained_model_name_or_path: str,
     
     # Loop over the datasets:
     dict_string_edit_metrics = defaultdict(list)
-    
     tbar = tqdm(ds_group.items())
     
     for dataset_name, dataset in tbar:
