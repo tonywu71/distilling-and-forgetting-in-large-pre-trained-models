@@ -7,7 +7,7 @@ from dataloader.dataset_for_evaluation.mls_dataset import MLSDataset
 
 class MLSDiagnosticDatasetCustom(MLSDataset):
     """
-    Custom and lightweight version of the MLS dataset.
+    Custom and lightweight version of the MLS dataset (MLSDC).
     """
     
     def __init__(self,
@@ -38,7 +38,7 @@ class MLSDiagnosticDatasetCustom(MLSDataset):
                                                         use_auth_token=True)
                     self.str2dataset["english"] = concatenate_datasets(
                         [librispeech_en_clean, librispeech_en_other])  # 2*90 = 180min  # type: ignore
-                    
+
                 else:
                     self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
                                                                 name=dataset_name,

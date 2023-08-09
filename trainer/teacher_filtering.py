@@ -16,7 +16,7 @@ def filter_teacher_outputs(dataset_dict: DatasetDict,
             dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
         else:
             dataset_dict["train"] = dataset_dict["train"].map(lambda x: {"teacher_sequences_copy": x["teacher_sequences"],
-                                                                            "teacher_sequences": x["teacher_sequences"][0]},
+                                                                         "teacher_sequences": x["teacher_sequences"][0]},
                                                                 num_proc=DEFAULT_NUM_PROC)
             dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
             dataset_dict["train"] = dataset_dict["train"].map(lambda x: {"teacher_sequences": x["teacher_sequences_copy"]},

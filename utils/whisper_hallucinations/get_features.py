@@ -3,7 +3,6 @@ import io
 import gzip
 
 import torch
-from transformers.models.whisper import WhisperTokenizer, WhisperTokenizerFast
 from datasets import Dataset
 
 
