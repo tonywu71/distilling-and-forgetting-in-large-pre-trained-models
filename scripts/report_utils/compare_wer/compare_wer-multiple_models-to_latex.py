@@ -1,7 +1,7 @@
 import typer
 
 import os, sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 from typing import List
 from pathlib import Path
@@ -17,7 +17,7 @@ def main(filepaths: List[str]=typer.Argument(..., help="Paths to CSV files.")):
     To be used for LaTeX table generation in reports.
     """
     
-    list_df = [pd.read_csv(filepath, index_col=0).T for filepath in filepaths]
+    list_df = [pd.read_csv(filepath, usecols=["Dataset", "WER (%)"], index_col=0).T for filepath in filepaths]
     list_models = [Path(filepath).stem for filepath in filepaths]
     
     for idx, (df, model) in enumerate(zip(list_df, list_models)):
@@ -25,7 +25,7 @@ def main(filepaths: List[str]=typer.Argument(..., help="Paths to CSV files.")):
     
     df = pd.concat(list_df, axis=0).T
     
-    output = df.round(2).to_latex()
+    output = df.round(2).to_latex(float_format="%.2f", escape=True)
     
     print("```latex")
     print(output + "```")
