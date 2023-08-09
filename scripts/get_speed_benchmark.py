@@ -30,7 +30,7 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     LIBRISPEECH_DUMMY_PATH = "hf-internal-testing/librispeech_asr_dummy"
     LANGUAGE = "english"
     TASK = "transcribe"
-    NUM_BEAMS = 5
+    NUM_BEAMS = 1
     NUM_WARMUP = 10
     NUM_TIMED_RUNS = 100
     
@@ -91,10 +91,10 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     
     # Create pipeline:
     whisper_asr = pipeline(task="automatic-speech-recognition",
-                            model=model,  # type: ignore
-                            tokenizer=processor.tokenizer,  # type: ignore
-                            feature_extractor=processor.feature_extractor,  # type: ignore
-                            device=device
+                           model=model,  # type: ignore
+                           tokenizer=processor.tokenizer,  # type: ignore
+                           feature_extractor=processor.feature_extractor,  # type: ignore
+                           device=device
     )
     
     # Get speed benchmark:
