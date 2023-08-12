@@ -93,13 +93,15 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     wandb.login()
 
     tags = [dataset_name]
+    name = f"eval_{dataset_name}-{extract_exp_name_from_model_path(pretrained_model_name_or_path)}"
     if implicit_lm_ppl:
         tags.append("implicit_lm_ppl")
+        name += "-implicit_lm_ppl"
 
     wandb.init(project=os.environ["WANDB_PROJECT_EVALUATION"],
                job_type="evaluation",
                tags=tags,
-               name=f"eval_{dataset_name}-{extract_exp_name_from_model_path(pretrained_model_name_or_path)}",
+               name=name,
                config=config,
                mode="disabled" if debug else None)
     

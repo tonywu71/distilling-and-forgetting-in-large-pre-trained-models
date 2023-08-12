@@ -94,8 +94,8 @@ def eval_whisper_implicit_lm_on_dataset_group(pretrained_model_name_or_path: str
             attention_mask = torch.cat([attention_mask_prefix, attention_mask[:, 2:]], dim=1)
 
             # Shift inputs for next-word prediction:
-            decoder_input_ids = tokenized_seq[:, 1:]
-            decoder_input_ids_right_shifted = tokenized_seq[:, :-1]
+            decoder_input_ids = tokenized_seq[:, 1:]  # [w1, w2, ..., wN, EOT]
+            decoder_input_ids_right_shifted = tokenized_seq[:, :-1]  # [SOT, w1, w2, ..., wN]
             attention_mask_right_shifted = attention_mask[:, :-1]
 
             # One-step generation:

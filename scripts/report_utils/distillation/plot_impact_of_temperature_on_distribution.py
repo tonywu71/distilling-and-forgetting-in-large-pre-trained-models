@@ -18,7 +18,7 @@ from utils.constants import DEFAULT_OUTPUT_DIR
 sns.set_theme(context="paper", style="ticks")
 
 
-DEFAULT_LIST_TEMPERATURES = [0.001, 0.5, 1, 5, 100]
+DEFAULT_LIST_TEMPERATURES = [0.01, 0.5, 1, 5, 10]
 
 def plot_impact_of_temperature_on_distribution(n_classes: int = typer.Option(4, help="Number of classes."),
                                                title: bool = typer.Option(False, "-t", "--title", help="Whether to add a title to the plot."),
@@ -40,14 +40,14 @@ def plot_impact_of_temperature_on_distribution(n_classes: int = typer.Option(4, 
     df.index += 1
     
     for temperature in DEFAULT_LIST_TEMPERATURES:
-        df[f"T = {temperature}"] = softmax(df["logits"] / temperature)
+        df[f"$\\tau = {temperature}$"] = softmax(df["logits"] / temperature)
     df = df.drop(columns=["logits"])
     
     # Plot:
     df.plot.bar(subplots=True, legend=False, layout=(1, -1), sharey=True, figsize=(8, 3))
     
     if title:
-        plt.suptitle(r"Impact of the temperature $T$ on the distribution of the teacher's predictions $p'_{i}(\mathbf{x})$ " + f"for {n_classes} classes")
+        plt.suptitle(r"Impact of the temperature $\tau$ on the distribution of the teacher's predictions $p'_{i}(\mathbf{x})$ " + f"for {n_classes} classes")
     
     # Save figure:
     filename = "temperature_impact_on_teacher_distribution"
