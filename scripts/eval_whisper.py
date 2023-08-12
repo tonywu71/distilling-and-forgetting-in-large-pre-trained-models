@@ -127,8 +127,9 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
 
     if implicit_lm_ppl:
         results = eval_whisper_implicit_lm_on_dataset_group(pretrained_model_name_or_path=pretrained_model_name_or_path,
-                                                      ds_group=dataset_group,
-                                                      task=task)
+                                                            ds_group=dataset_group,
+                                                            batch_size=batch_size,
+                                                            task=task)
 
         print("Results:")
         print(results)
