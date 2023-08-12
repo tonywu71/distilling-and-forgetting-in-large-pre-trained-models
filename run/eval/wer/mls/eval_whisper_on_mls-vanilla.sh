@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=02:30:00
+#SBATCH --time=01:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -56,13 +56,6 @@ python scripts/eval_whisper.py \
     --dataset-name mls \
     --batch-size 1024 \
     >> $LOG 2> $ERR
-
-# python scripts/eval_whisper.py openai/whisper-base --dataset-name mls >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-small --dataset-name mls >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-small.en --dataset-name mls >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-medium --dataset-name mls >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-large-v2 --dataset-name mls >> $LOG 2> $ERR
-
 
 #! #############################################
 

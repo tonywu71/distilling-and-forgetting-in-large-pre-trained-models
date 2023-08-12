@@ -9,7 +9,7 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_implicit_lm_on_esb
+#SBATCH -J eval_whisper_implicit_lm_on_esbdc-vanilla
 #! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
@@ -51,18 +51,12 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny.en --dataset_name esb_librispeech >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-tiny --dataset_name esb_librispeech >> $LOG 2> $ERR
-
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-base.en --dataset_name esb_librispeech >> $LOG 2> $ERR
-
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-small.en --dataset_name esb_librispeech >> $LOG 2> $ERR
-
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-medium --dataset_name esb_librispeech >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py openai/whisper-medium.en --dataset_name esb_librispeech >> $LOG 2> $ERR
-
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py checkpoints/finetuning/whisper_tiny-librispeech_clean_100h-benchmark-freeze_encoder/checkpoint-3500 --dataset_name esb_librispeech >> $LOG 2> $ERR
-# python scripts/eval_whisper_implicit_lm/eval_whisper_implicit_lm_on_esb.py checkpoints/finetuning/english_model/finetune-whisper_tiny_en-librispeech_clean_100h-freeze_encoder/checkpoint-2500 --dataset_name esb_librispeech >> $LOG 2> $ERR
+python scripts/eval_whisper.py \
+    openai/whisper-tiny \
+    --dataset-name esbdc \
+    --batch-size 1024 \
+    --implicit-lm-ppl \
+    >> $LOG 2> $ERR
 
 #! #############################################
 

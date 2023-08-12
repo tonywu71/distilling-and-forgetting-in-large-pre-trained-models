@@ -9,8 +9,8 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_fad-vanilla
-#! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
+#SBATCH -J eval_whisper_implicit_lm_on_mlsdc-finetuned
+#! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=00:40:00
+#SBATCH --time=01:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -52,9 +52,10 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper.py \
-    openai/whisper-tiny \
-    --dataset-name fad \
+    checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-3000 \
+    --dataset-name mlsdc \
     --batch-size 1024 \
+    --implicit-lm-ppl \
     >> $LOG 2> $ERR
 
 #! #############################################

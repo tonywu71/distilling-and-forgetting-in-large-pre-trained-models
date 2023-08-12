@@ -9,8 +9,8 @@
 #!#############################################################
 #! sbatch directives begin here ###############################
 #! Name of the job:
-#SBATCH -J eval_whisper_on_fad-vanilla
-#! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
+#SBATCH -J eval_whisper_implicit_lm_on_esbdc-finetuned
+#! Which project scshould be charged (NB Wilkes2 projects end in '-GPU'):
 #SBATCH -A MLMI-tw581-SL2-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
@@ -52,9 +52,10 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper.py \
-    openai/whisper-tiny \
-    --dataset-name fad \
+    checkpoints/finetuning/whisper_tiny/librispeech_clean_100h/checkpoint-3000 \
+    --dataset-name esbdc \
     --batch-size 1024 \
+    --implicit-lm-ppl \
     >> $LOG 2> $ERR
 
 #! #############################################
