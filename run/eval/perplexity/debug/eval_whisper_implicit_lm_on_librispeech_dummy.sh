@@ -51,8 +51,16 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
+# python scripts/eval_whisper.py \
+#     openai/whisper-tiny \
+#     --dataset-name librispeech_dummy \
+#     --batch-size 1 \
+#     --implicit-lm-ppl \
+#     --debug \
+#     >> $LOG 2> $ERR
+
 python scripts/eval_whisper.py \
-    openai/whisper-tiny \
+    checkpoints/finetuning/whisper_tiny/librispeech_clean_100h/checkpoint-3000 \
     --dataset-name librispeech_dummy \
     --batch-size 1 \
     --implicit-lm-ppl \

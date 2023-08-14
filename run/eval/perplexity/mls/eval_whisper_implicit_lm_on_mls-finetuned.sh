@@ -54,7 +54,7 @@ echo "python `which python`": >> $LOG
 python scripts/eval_whisper.py \
     checkpoints/finetuning/whisper_tiny/librispeech_clean_100h/checkpoint-3000 \
     --dataset-name mls \
-    --batch-size 1024 \
+    --batch-size 256 \
     --implicit-lm-ppl \
     >> $LOG 2> $ERR
 

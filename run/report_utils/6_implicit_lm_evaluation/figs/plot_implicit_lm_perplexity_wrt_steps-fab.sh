@@ -1,16 +1,36 @@
+# ====================================================================================================
 # Generate CSV from eval outputs:
-python scripts/report_utils/implicit_lm/concat_csv_forgetting_perplexity_on_fab.py \
-    outputs/finetuning/whisper_tiny/compare_freezing_strategies_on_librispeech_clean/librispeech_clean_100h-benchmark-freeze_encoder/implicit_lm_perplexity/implicit_lm_perplexity_wrt_steps_on_fab/checkpoint-500-implicit_lm-perplexity-fab.csv \
-    outputs/finetuning/whisper_tiny/compare_freezing_strategies_on_librispeech_clean/librispeech_clean_100h-benchmark-freeze_encoder/implicit_lm_perplexity/implicit_lm_perplexity_wrt_steps_on_fab/checkpoint-1000-implicit_lm-perplexity-fab.csv \
-    outputs/finetuning/whisper_tiny/compare_freezing_strategies_on_librispeech_clean/librispeech_clean_100h-benchmark-freeze_encoder/implicit_lm_perplexity/implicit_lm_perplexity_wrt_steps_on_fab/checkpoint-1500-implicit_lm-perplexity-fab.csv \
-    outputs/finetuning/whisper_tiny/compare_freezing_strategies_on_librispeech_clean/librispeech_clean_100h-benchmark-freeze_encoder/implicit_lm_perplexity/implicit_lm_perplexity_wrt_steps_on_fab/checkpoint-2000-implicit_lm-perplexity-fab.csv \
-    outputs/finetuning/whisper_tiny/compare_freezing_strategies_on_librispeech_clean/librispeech_clean_100h-benchmark-freeze_encoder/implicit_lm_perplexity/implicit_lm_perplexity_wrt_steps_on_fab/checkpoint-2500-implicit_lm-perplexity-fab.csv \
-    outputs/finetuning/whisper_tiny/compare_freezing_strategies_on_librispeech_clean/librispeech_clean_100h-benchmark-freeze_encoder/implicit_lm_perplexity/implicit_lm_perplexity_wrt_steps_on_fab/checkpoint-3000-implicit_lm-perplexity-fab.csv \
-    outputs/finetuning/whisper_tiny/compare_freezing_strategies_on_librispeech_clean/librispeech_clean_100h-benchmark-freeze_encoder/implicit_lm_perplexity/implicit_lm_perplexity_wrt_steps_on_fab/checkpoint-3500-implicit_lm-perplexity-fab.csv
+python scripts/report_utils/implicit_lm/concat_csv_forgetting_perplexity.py \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_fad/checkpoint-0-implicit_lm-ppl-fad.csv \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_fad/checkpoint-600-implicit_lm-ppl-fad.csv \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_fad/checkpoint-1200-implicit_lm-ppl-fad.csv \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_fad/checkpoint-1800-implicit_lm-ppl-fad.csv \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_fad/checkpoint-2400-implicit_lm-ppl-fad.csv \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_fad/checkpoint-3000-implicit_lm-ppl-fad.csv
 
 # Generate plot from previous CSV:
-python scripts/report_utils/implicit_lm/plot_forgetting_perplexity_wrt_checkpoints_on_fab.py \
-    outputs/report/6_implicit_lm_evaluation/perplexity_wrt_checkpoints-fab/concat_csv_forgetting_perplexity_on_fab.csv
+python scripts/report_utils/implicit_lm/plot_forgetting_perplexity_wrt_checkpoints.py \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_fad/concat_csv_forgetting_perplexity_on_fad.csv
 
-python scripts/report_utils/implicit_lm/plot_forgetting_perplexity_wrt_checkpoints_on_fab.py \
-    outputs/report/6_implicit_lm_evaluation/perplexity_wrt_checkpoints-fab/concat_csv_forgetting_perplexity_on_fab.csv --is-relative
+python scripts/report_utils/implicit_lm/plot_forgetting_perplexity_wrt_checkpoints.py \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_fad/concat_csv_forgetting_perplexity_on_fad.csv \
+    --is-relative
+
+
+# ====================================================================================================
+# Generate CSV from eval outputs:
+python scripts/report_utils/implicit_lm/concat_csv_forgetting_perplexity.py \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_mlsdc/checkpoint-0-implicit_lm-ppl-mlsdc.csv \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_mlsdc/checkpoint-600-implicit_lm-ppl-mlsdc.csv \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_mlsdc/checkpoint-1200-implicit_lm-ppl-mlsdc.csv \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_mlsdc/checkpoint-1800-implicit_lm-ppl-mlsdc.csv \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_mlsdc/checkpoint-2400-implicit_lm-ppl-mlsdc.csv \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_mlsdc/checkpoint-3000-implicit_lm-ppl-mlsdc.csv
+
+# Generate plot from previous CSV:
+python scripts/report_utils/implicit_lm/plot_forgetting_perplexity_wrt_checkpoints.py \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_mlsdc/concat_csv_forgetting_perplexity_on_mlsdc.csv
+
+python scripts/report_utils/implicit_lm/plot_forgetting_perplexity_wrt_checkpoints.py \
+    outputs/finetuning/whisper_tiny/ami_100h/ppl_wrt_steps_on_mlsdc/concat_csv_forgetting_perplexity_on_mlsdc.csv \
+    --is-relative

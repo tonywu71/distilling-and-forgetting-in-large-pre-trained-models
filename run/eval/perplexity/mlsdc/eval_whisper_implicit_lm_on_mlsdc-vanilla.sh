@@ -53,8 +53,8 @@ echo "python `which python`": >> $LOG
 
 python scripts/eval_whisper.py \
     openai/whisper-tiny \
-    --dataset-name mls \
-    --batch-size 1024 \
+    --dataset-name mlsdc \
+    --batch-size 256 \
     --implicit-lm-ppl \
     >> $LOG 2> $ERR
 
