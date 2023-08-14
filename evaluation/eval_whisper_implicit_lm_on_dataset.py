@@ -27,7 +27,8 @@ def eval_whisper_implicit_lm_on_dataset_group(pretrained_model_name_or_path: str
                                               ds_group: BaseDatasetGroup,
                                               batch_size: int = DEFAULT_EVAL_BATCH_SIZE,  # only 1 is supported for now
                                               fast_tokenizer: bool = True,
-                                              task: str="transcribe") -> pd.Series:
+                                              task: str="transcribe",
+                                              zero_shot: bool = False) -> pd.Series:
     
     if ds_group.is_multilingual:
         assert ds_group.language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."
@@ -60,6 +61,10 @@ def eval_whisper_implicit_lm_on_dataset_group(pretrained_model_name_or_path: str
         else:
             language = ds_group.ds_name_to_lang[dataset_name]
         
+        if zero_shot:
+            language = None
+            task = None
+
         if fast_tokenizer:
             tokenizer = WhisperTokenizerFast.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
         else:
@@ -85,13 +90,16 @@ def eval_whisper_implicit_lm_on_dataset_group(pretrained_model_name_or_path: str
         for batch in dataloader:
             # Note that we need to move the data to the device manually (which is not the case with Trainer):
             input_features = batch["input_features"].to(device).to(torch_dtype)
-            tokenized_seq = concat_special_tokens(batch[DEFAULT_LABEL_TOKENIZED_COL].to(device),
-                                                  pretrained_model_name_or_path,
-                                                  language=language,
-                                                  task=task)
             attention_mask = batch["attention_mask"].to(device)
-            attention_mask_prefix = torch.Tensor([1, 1, 1, 1]).expand(attention_mask.shape[0], -1).to(attention_mask.device)
-            attention_mask = torch.cat([attention_mask_prefix, attention_mask[:, 2:]], dim=1)
+            tokenized_seq = batch[DEFAULT_LABEL_TOKENIZED_COL].to(device)
+
+            if not zero_shot:
+                tokenized_seq = concat_special_tokens(tokenized_seq,
+                                                      pretrained_model_name_or_path,
+                                                      language=language,
+                                                      task=task)
+                attention_mask_prefix = torch.Tensor([1, 1, 1, 1]).expand(attention_mask.shape[0], -1).to(attention_mask.device)
+                attention_mask = torch.cat([attention_mask_prefix, attention_mask[:, 2:]], dim=1)
 
             # Shift inputs for next-word prediction:
             decoder_input_ids = tokenized_seq[:, 1:]  # [w1, w2, ..., wN, EOT]
@@ -118,7 +126,7 @@ def eval_whisper_implicit_lm_on_dataset_group(pretrained_model_name_or_path: str
             perplexity = torch.exp(-mean_log_prob_seq)  # (batch_size,)
             
             # Add to the list of perplexities:
-            ppl_per_batch.append(perplexity)
+            ppl_per_batch.append(perplexity.item())
         
         # Add to the list of perplexities:
         ppl_current_dataset = torch.cat(ppl_per_batch, dim=0).mean().item()

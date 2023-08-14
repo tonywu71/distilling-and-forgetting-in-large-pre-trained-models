@@ -129,14 +129,18 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
         results = eval_whisper_implicit_lm_on_dataset_group(pretrained_model_name_or_path=pretrained_model_name_or_path,
                                                             ds_group=dataset_group,
                                                             batch_size=batch_size,
-                                                            task=task)
+                                                            task=task,
+                                                            zero_shot=zero_shot)
 
         print("Results:")
         print(results)
 
         # Save results:
         if savepath is None:
-            savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + "-implicit_lm-ppl" + f"-{dataset_name}.csv"
+            savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + "-implicit_lm-ppl" + f"-{dataset_name}"
+            if zero_shot:
+                savepath += "-zero_shot"
+            savepath += ".csv"
         
         Path(savepath).parent.mkdir(exist_ok=True, parents=True)
         results.to_csv(f"{savepath}")
