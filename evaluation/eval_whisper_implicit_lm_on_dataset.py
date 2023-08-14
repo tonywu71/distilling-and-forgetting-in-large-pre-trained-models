@@ -117,6 +117,10 @@ def eval_whisper_implicit_lm_on_dataset_group(pretrained_model_name_or_path: str
 
             # Take probabilities for the ground-truth tokens:
             log_prob_tokens = log_prob_all.take_along_dim(decoder_input_ids[..., None], dim=-1).squeeze(dim=-1)  # (batch_size, seq_len)
+
+            # FIXME: The current implementation predicts is not correct as EOT will be discarded only for the longest sequence in the batch.
+            #        For the other sequences, the prediction for the EOT token will be taken into account in the perplexity computation.
+            #        We hypothesize that this is negligible as a well-trained model should predict that EOT follows EOT with a very high probability.
             
             # All the values associated to the pad tokens will be set to 0 in order to ignore them when we will sum.
             log_prob_seq = log_prob_tokens.masked_fill(attention_mask_right_shifted.eq(0), 0).sum(dim=-1)  # (batch_size,)
@@ -126,7 +130,7 @@ def eval_whisper_implicit_lm_on_dataset_group(pretrained_model_name_or_path: str
             perplexity = torch.exp(-mean_log_prob_seq)  # (batch_size,)
             
             # Add to the list of perplexities:
-            ppl_per_batch.append(perplexity.item())
+            ppl_per_batch.append(perplexity)
         
         # Add to the list of perplexities:
         ppl_current_dataset = torch.cat(ppl_per_batch, dim=0).mean().item()
