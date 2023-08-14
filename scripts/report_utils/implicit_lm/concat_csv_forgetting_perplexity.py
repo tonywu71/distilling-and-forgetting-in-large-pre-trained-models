@@ -26,7 +26,7 @@ def main(filepaths: List[str]):
     df = pd.concat(list_df, axis=0).T
     
     # Save concatenated CSV table:
-    savepath = (DEFAULT_OUTPUT_DIR / "concat_csv_forgetting_perplexity_on_fab").with_suffix(".csv")
+    savepath = (DEFAULT_OUTPUT_DIR / "concat_csv_forgetting_perplexity").with_suffix(".csv")
     savepath.parent.mkdir(parents=True, exist_ok=True)
     df.round(2).to_csv(savepath)
     print(f"Saved concatenated CSV table to `{savepath}`.")

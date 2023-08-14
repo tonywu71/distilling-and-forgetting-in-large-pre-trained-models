@@ -16,15 +16,14 @@ sns.set_theme(context="paper", style="ticks")
 def main(filepath: str, is_relative: bool=False):
     """
     Script that takes a CSV output from `compare_multiple_models_to_csv.py` and saves
-    a plot of the evolution of perplexity with respect to fine-tuning checkpoints on the
-    FAB dataset.
+    a plot of the evolution of perplexity with respect to fine-tuning checkpoints.
     """
     
     df = pd.read_csv(filepath).set_index("Dataset")
-    df.index.name = "FAB dataset"
+    df.index.name = "Dataset"
     df = df.T
-    df.index = df.index.str.extract(r'checkpoint-(\d+)-implicit_lm-perplexity-fab').astype(int).values.flatten()  # type: ignore
-    
+    df.index = df.index.str.extract(r'checkpoint-(\d+)-implicit_lm-ppl[-\w]*').astype(int).values.flatten()
+
     if is_relative:
         df = 100 * (df - df.iloc[0]) / df.iloc[0]
     
@@ -36,7 +35,7 @@ def main(filepath: str, is_relative: bool=False):
     plt.ylabel("Perplexity") if not is_relative else plt.ylabel("Relative perplexity difference (%)")
     
     # Save figure:
-    filename_stem = "perplexity_wrt_steps_on_fab"
+    filename_stem = "perplexity_wrt_steps"
     if is_relative:
         filename_stem += "-relative"
     savepath = (DEFAULT_OUTPUT_DIR / filename_stem).with_suffix(".png")
