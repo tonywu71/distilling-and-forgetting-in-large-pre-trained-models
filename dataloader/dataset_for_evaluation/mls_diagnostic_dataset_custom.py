@@ -7,7 +7,7 @@ from dataloader.dataset_for_evaluation.mls_dataset import MLSDataset
 
 class MLSDiagnosticDatasetCustom(MLSDataset):
     """
-    Custom and lightweight version of the MLS dataset.
+    Custom and lightweight version of the MLS dataset (MLSDC).
     """
     
     def __init__(self,
@@ -26,23 +26,23 @@ class MLSDiagnosticDatasetCustom(MLSDataset):
                 if dataset_name == "english":
                     librispeech_en_clean = load_dataset(path="librispeech_asr",
                                                         name="clean",
-                                                        split="test[:180]",  # 90min
+                                                        split="test[:10%]",
                                                         cache_dir=self.dataset_name_to_cache_dir["english"],
                                                         streaming=False,
                                                         use_auth_token=True)
                     librispeech_en_other = load_dataset(path="librispeech_asr",
                                                         name="other",
-                                                        split="test[:180]",  # 90min
+                                                        split="test[:10%]",
                                                         cache_dir=self.dataset_name_to_cache_dir["english"],
                                                         streaming=False,
                                                         use_auth_token=True)
                     self.str2dataset["english"] = concatenate_datasets(
-                        [librispeech_en_clean, librispeech_en_other])  # 2*90 = 180min  # type: ignore
-                    
+                        [librispeech_en_clean, librispeech_en_other])
+
                 else:
                     self.str2dataset[dataset_name] = load_dataset(path=self.dataset_path,
                                                                 name=dataset_name,
-                                                                split="test[:120]",  # 60min
+                                                                split="test[:20%]",
                                                                 cache_dir=self.dataset_name_to_cache_dir[dataset_name],
                                                                 streaming=self.streaming,
                                                                 use_auth_token=True)

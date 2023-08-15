@@ -24,7 +24,7 @@ eval_steps: 1000
 generation_num_beams: 1
 logging_steps: 500
 save_steps: 1000
-num_train_epochs: 1.5
+num_train_epochs: 3
 
 zero_shot_eval: False
 eval_batch_size: 256

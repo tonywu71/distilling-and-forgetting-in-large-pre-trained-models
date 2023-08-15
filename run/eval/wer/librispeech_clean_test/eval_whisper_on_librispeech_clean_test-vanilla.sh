@@ -11,7 +11,7 @@
 #! Name of the job:
 #SBATCH -J eval_whisper_on_librispeech_clean_test-vanilla
 #! Which project should be charged (NB Wilkes2 projects end in '-GPU'):
-#SBATCH -A MLMI-tw581-SL2-GPU
+#SBATCH -A DUDLEY-SL3-GPU
 #! How many whole nodes should be allocated?
 #SBATCH --nodes=1
 #! How many (MPI) tasks will there be in total?
@@ -51,8 +51,16 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/eval_whisper.py openai/whisper-tiny --dataset-name librispeech_clean_test >> $LOG 2> $ERR
-# python scripts/eval_whisper.py openai/whisper-medium --dataset-name librispeech_clean_test >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-tiny --dataset-name librispeech_clean >> $LOG 2> $ERR
+# python scripts/eval_whisper.py openai/whisper-medium --dataset-name librispeech_clean >> $LOG 2> $ERR
+
+python scripts/eval_whisper.py \
+    openai/whisper-tiny \
+    --dataset-name librispeech_clean \
+    --batch-size 1024 \
+    --num-beams 3 \
+    --savepath "./outputs/distil_k_best/whisper-tiny-k_3-librispeech" \
+    >> $LOG 2> $ERR
 
 #! #############################################
 

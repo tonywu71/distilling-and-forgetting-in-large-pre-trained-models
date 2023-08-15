@@ -17,6 +17,7 @@ from transformers import (pipeline,
                           WhisperProcessor,
                           WhisperForConditionalGeneration)
 from datasets import load_dataset
+from optimum.bettertransformer import BetterTransformer
 
 import wandb
 
@@ -24,13 +25,24 @@ from benchmark.speed_benchmark import get_speed_benchmark
 from utils.file_io import extract_exp_name_from_model_path, extract_output_savepath_from_model_path
 
 
-def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to pretrained model.")):
+def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to pretrained model."),
+         fp16: bool = typer.Option(False, help="Whether to use FP16 or not."),
+         better_transformer: bool = typer.Option(False, help="Whether to use BetterTransformer or not.")):
+    
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    torch_dtype = torch.float32
+
+    if fp16:
+        assert device == "cuda:0", "FP16 only works on CUDA devices."
+        torch_dtype = torch.float16
+    if better_transformer:
+        assert device == "cuda:0", "BetterTransformer only works on CUDA devices."
+    
     
     LIBRISPEECH_DUMMY_PATH = "hf-internal-testing/librispeech_asr_dummy"
     LANGUAGE = "english"
     TASK = "transcribe"
-    NUM_BEAMS = 5
+    NUM_BEAMS = 1
     NUM_WARMUP = 10
     NUM_TIMED_RUNS = 100
     
@@ -44,7 +56,9 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
         "DEVICE": device,
         "num_beams": NUM_BEAMS,
         "num_warmup": NUM_WARMUP,
-        "num_timed_runs": NUM_TIMED_RUNS
+        "num_timed_runs": NUM_TIMED_RUNS,
+        "fp16": fp16,
+        "better_transformer": better_transformer
     }
     
     # Initialize W&B:
@@ -81,21 +95,24 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
     
     
     # Load model:
-    model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path)
-    
+    model = WhisperForConditionalGeneration.from_pretrained(pretrained_model_name_or_path, torch_dtype=torch_dtype).to(device)
     processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path,
                                                  language=LANGUAGE,
                                                  task=TASK)
-        
-    model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=LANGUAGE, task=TASK)  # type: ignore
+    
+    model.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=LANGUAGE, task=TASK)
+
+    if better_transformer:
+        model = BetterTransformer.transform(model)
+    
     
     # Create pipeline:
     whisper_asr = pipeline(task="automatic-speech-recognition",
-                            model=model,  # type: ignore
-                            tokenizer=processor.tokenizer,  # type: ignore
-                            feature_extractor=processor.feature_extractor,  # type: ignore
-                            device=device
-    )
+                           model=model,
+                           tokenizer=processor.tokenizer,
+                           feature_extractor=processor.feature_extractor,
+                           torch_dtype=torch_dtype,
+                           device=device)
     
     # Get speed benchmark:
     time_avg_ms, time_std_ms = get_speed_benchmark(pipeline=whisper_asr,
@@ -112,7 +129,12 @@ def main(pretrained_model_name_or_path: str = typer.Argument(..., help="Path to 
                                     name=extract_exp_name_from_model_path(pretrained_model_name_or_path))
     
     # Save results:
-    savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + "-speed_benchmark.csv"
+    savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + "-speed_benchmark"
+    if fp16:
+        savepath += "-fp16"
+    if better_transformer:
+        savepath += "-better_transformer"
+    savepath += ".csv"
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     ser_speed_benchmark.to_csv(savepath)
     print(f"Speed benchmark saved to `{savepath}`.")

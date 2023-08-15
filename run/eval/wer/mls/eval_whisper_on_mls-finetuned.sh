@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=01:00:00
+#SBATCH --time=01:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -51,8 +51,12 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/freeze_encoder_final --dataset-name mls >> $LOG 2> $ERR
-python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/ami_100h/final --dataset-name mls --batch-size 1024 >> $LOG 2> $ERR
+python scripts/eval_whisper.py \
+    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-4/checkpoint-3000 \
+    --dataset-name mls \
+    --batch-size 1024 \
+    >> $LOG 2> $ERR
+
 
 #! #############################################
 

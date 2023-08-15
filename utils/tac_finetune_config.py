@@ -10,6 +10,9 @@ from utils.finetune_config import FinetuneConfig
 class TACFinetuneConfig(FinetuneConfig):
     gamma_tac: float = 0.1
     languages_to_preserve: List[str] = field(default_factory=list)
+    task_tac: str = "transcribe"
+    use_kl: bool = False
+    temperature: float = 1.0
 
 
     def __post_init__(self) -> None:

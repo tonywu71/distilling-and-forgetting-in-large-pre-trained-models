@@ -137,6 +137,8 @@ def main(config_filepath: str,
                                           lowercase=config.lowercase,
                                           augment=config.data_augmentation)
     
+    # NOTE: Because the validation splits are subsampled, we should run the full evaluation on the validation split
+    #       manually after traning.
     if config.dataset_name == "librispeech_clean_100h":
         print("Subsampling the 100h LibriSpeech validation split to 50% of its original size for faster evaluation...")
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 2))
@@ -230,6 +232,9 @@ def main(config_filepath: str,
     elif isinstance(config, TACFinetuneConfig):
         training_args = TACFinetuningTrainingArguments(languages_to_preserve=config.languages_to_preserve,
                                                        gamma_tac=config.gamma_tac,
+                                                       task_tac=config.task_tac,
+                                                       use_kl=config.use_kl,
+                                                       temperature=config.temperature,
                                                        **training_arguments_dict)
     else:
         training_args = Seq2SeqTrainingArguments(**training_arguments_dict)

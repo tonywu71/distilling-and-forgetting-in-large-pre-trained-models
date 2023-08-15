@@ -51,8 +51,11 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-# python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/freeze_encoder_final --dataset-name esbdc >> $LOG 2> $ERR
-python scripts/eval_whisper.py checkpoints/finetuning/whisper_tiny/ami_100h/final --dataset-name esbdc --batch-size 512 >> $LOG 2> $ERR
+python scripts/eval_whisper.py \
+    checkpoints/finetune_ewc/whisper_tiny/preserve_french/ami_100h-lambda_1e-4/checkpoint-3000 \
+    --dataset-name esbdc \
+    --batch-size 1024 \
+    >> $LOG 2> $ERR
 
 #! #############################################
 

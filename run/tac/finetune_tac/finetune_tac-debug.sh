@@ -51,7 +51,10 @@ echo "python `which python`": >> $LOG
 #! ####                    MAIN                    ###########
 #! ###########################################################
 
-python scripts/finetune_whisper.py configs/finetune_tac_configs/debug/finetune_tac-tiny-debug.yaml --tac >> $LOG 2> $ERR
+python scripts/finetune_whisper.py \
+    configs/finetune_tac_configs/debug/finetune_tac-tiny-debug.yaml \
+    --tac \
+    >> $LOG 2> $ERR
 
 #! #############################################
 

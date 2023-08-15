@@ -1,0 +1,47 @@
+# Total training steps:
+# - 3391 for batch_size = 32 and num_train_epochs = 1
+# - 10173 for batch_size = 32 and num_train_epochs = 3
+
+experiment_name: distil_k_best-medium_to_tiny-ami_100h-k_3-ranked-hpt-beta_5
+lang_name: english
+task: transcribe
+method_distil: seq_level_ranked
+teacher_model_name_or_path: openai/whisper-medium
+student_model_name_or_path: openai/whisper-tiny
+is_tokenizer_multilingual: True
+model_dir: ./checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/ranked/hpt/beta_5
+freeze_encoder: True
+freeze_decoder: False
+batch_size: 32
+gradient_accumulation_steps: 1
+gradient_checkpointing: False
+dataset_name: ami_100h
+optim: adamw_torch
+learning_rate: 1e-5
+warmup_steps: 300
+eval_steps: 600
+generation_num_beams: 1
+logging_steps: 300
+save_steps: 600
+num_train_epochs: 1
+
+zero_shot_eval: False
+eval_batch_size: 256
+eval_accumulation_steps:
+save_total_limit: 2
+early_stopping_patience:
+save_final_model: True
+
+distillation_num_beams: 3
+alpha_ce: 0.
+beta_decay: 5.0
+postprocess_teacher: True
+strip_teacher: True
+max_teacher_gzip_ratio: 1.5
+
+smart_load: True
+force_reprocess_dataset: False
+eval_first_step: False
+log_preds_to_wandb: True
+log_raw_str: True
+n_samples_per_wandb_logging_step: 16

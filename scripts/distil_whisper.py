@@ -25,21 +25,20 @@ from callbacks.eval_first_step_callback import EvalFirstStepCallback
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
 from dataloader.collator_distil import DataCollatorWithPaddingForSeqLevelDistillation
 from dataloader.dataset_loader import load_dataset_dict
-from dataloader.filtering import filter_samples_1_best
 from dataloader.preprocessing_train.preprocessing import preprocess_dataset
 from dataloader.smart_load_dataset_dict import smart_load_dataset_dict
-from dataloader.utils import get_map_function_to_restore_missing_special_tokens
 from evaluation.wer_metric import compute_string_edit_metrics_fct
 from k_beam_search.smart_load_k_beam_search import smart_load_dataset_with_k_beam_search
-from normalization.formatting import remove_casing_and_punctuation
 from normalization.whisper_normalization import get_whisper_normalizer
+from trainer.teacher_filtering import filter_teacher_outputs
+from trainer.teacher_postprocessing import postprocess_teacher_outputs
 from trainer.distillation_word_level import DistillationWordLevelTrainingArguments, DistillationWordLevelTrainer
 from trainer.distillation_seq_level import DistillationSeqLevelTrainingArguments, DistillationSeqLevelTrainer
 from utils.distil_config import DistilConfig
 from utils.file_io import fix_model_dir_conflicts
 from utils.sanity_checks import assert_if_distillation_tokenizers_match
 
-from utils.constants import DEFAULT_TOKENIZER_MAX_LENGTH, GEN_MAX_LENGTH, DEFAULT_NUM_PROC
+from utils.constants import GEN_MAX_LENGTH
 
 
 
@@ -52,7 +51,16 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     Distil Whisper based on the provided config file.
     """
 
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    # Get the device:
+    if torch.cuda.is_available():
+        device = "cuda:0"
+        teacher_dtype = torch.float16  # see https://huggingface.co/learn/audio-course/chapter5/evaluation?fw=pt
+    elif torch.backends.mps.is_available():  # for Apple Silicon
+        device = torch.device('mps')
+        teacher_dtype = torch.float32  # float16 not supported by MPS
+    else:
+        device = "cpu"
+        teacher_dtype = torch.float32
     
     # --------------------   Load config   --------------------
     config = DistilConfig.from_yaml(config_filepath)
@@ -78,6 +86,12 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Prepare tags for W&B:
     list_tags = [config.dataset_name,
                  config.method_distil]
+    
+    if is_seq_level:
+        if config.distillation_num_beams == 1:
+            list_tags.append("1_best_kd")
+        if config.distillation_num_beams > 1:
+            list_tags.append("k_best_kd")
     
     if end_after_caching:
         print("\n-----------------------\n")
@@ -158,12 +172,32 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         print("\n-----------------------\n")
     
 
+    if config.unsupervised_word_level:
+        # TODO: Implementation is a bit hacky. Refactor this.
+        print("Word-level distillation will be performed in an unsupervised manner.")
+        
+        # Hotfix to use `smart_load_dataset_with_k_beam_search`:
+        config.method_distil = "seq_level_uniform"
+        config.distillation_num_beams = 1
+
+        # Overwrite `dataset_dict` with the pre-computed K-beam search outputs from the teacher model:
+        dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
+                                                             dataset_dict=dataset_dict,
+                                                             teacher_caching_batch_size=teacher_caching_batch_size)
+        
+        # NOTE: We won't replace the `labels` column with the `teacher_sequences` column yet because we want to
+        #       post-process and/or filter the teacher outputs first.
+        print("\n-----------------------\n")
+
+
     if end_after_caching:
         print("Ending script after caching teacher outputs.")
         wandb.finish()
         return
     
     
+    # NOTE: Because the validation splits are subsampled, we should run the full evaluation on the validation split
+    #       manually after traning.
     if config.dataset_name == "librispeech_clean_100h":
         print("Subsampling the 100h LibriSpeech validation split to 50% of its original size for faster evaluation...")
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 2))
@@ -172,56 +206,30 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
         dataset_dict["validation"] = dataset_dict["validation"].select(range(dataset_dict["validation"].num_rows // 5))
     
 
-    # 1-best specific filtering/post-processing:
-    is_1_best = (config.method_distil == "seq_level_uniform") and (config.distillation_num_beams == 1)
-
-    if is_1_best and (config.postprocess_teacher or config.strip_teacher):
-        tokenizer = WhisperTokenizerFast.from_pretrained(config.teacher_model_name_or_path, language=config.lang_name, task=config.task)
-        dataset_dict = dataset_dict.map(lambda batch: {"teacher_text": tokenizer.batch_decode(batch["teacher_sequences"], skip_special_tokens=True)},
-                                        batched=True)
-        
-        if config.postprocess_teacher:
-            print("Remove casing and punctuation from the teacher's outputs...")
-            dataset_dict = dataset_dict.map(lambda x: {"teacher_text": remove_casing_and_punctuation(x["teacher_text"])},
-                                            num_proc=DEFAULT_NUM_PROC)
-        
-        if config.strip_teacher:
-            print("Strip starting/ending whitespaces from the teacher's outputs...")
-            dataset_dict = dataset_dict.map(lambda x: {"teacher_text": x["teacher_text"].strip()},
-                                            num_proc=DEFAULT_NUM_PROC)
-        
-        dataset_dict = dataset_dict.map(lambda batch: {"teacher_sequences": tokenizer(batch["teacher_text"],
-                                                                                     truncation=True,
-                                                                                     max_length=DEFAULT_TOKENIZER_MAX_LENGTH).input_ids},
-                                        batched=True, remove_columns=["teacher_text"])
-        map_function_to_restore_missing_special_tokens = get_map_function_to_restore_missing_special_tokens(col="teacher_sequences",
-                                                                                                            pretrained_model_name_or_path=config.student_model_name_or_path,
-                                                                                                            language=config.lang_name,
-                                                                                                            task=config.task)
-        dataset_dict = dataset_dict.map(map_function_to_restore_missing_special_tokens, num_proc=DEFAULT_NUM_PROC)
-    
+    # Filtering/post-processing:
+    if is_seq_level and (config.postprocess_teacher or config.strip_teacher):
+        dataset_dict = postprocess_teacher_outputs(dataset_dict=dataset_dict, config=config)
     
     if config.max_exceeding_tokens or config.max_teacher_gzip_ratio or config.max_ratio_instant_tokens:
-        if is_1_best:
-            print("Filtering out samples for which the teacher got poor transcriptions...")
-            dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
-        elif config.method_distil == "word_level":
-            config.method_distil = "seq_level_uniform"  # hotfix for `smart_load_dataset_with_k_beam_search`
-            config.distillation_num_beams = 1
-            dataset_dict = smart_load_dataset_with_k_beam_search(config=config,
-                                                                 dataset_dict=dataset_dict,
-                                                                 teacher_caching_batch_size=teacher_caching_batch_size)
-            dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
-            config.method_distil = "word_level"
-            config.distillation_num_beams = None
-        else:
-            raise NotImplementedError(f"Filtering not implement for distillation method `{config.method_distil}`.")
+        dataset_dict = filter_teacher_outputs(dataset_dict=dataset_dict, config=config)
     
+
+    if config.unsupervised_word_level:
+        # TODO: Implementation is a bit hacky. Refactor this.
+        
+        # We will replace the `labels` column with the `teacher_sequences` column (train split only):
+        dataset_dict["train"] = dataset_dict["train"].remove_columns(["labels"])
+        dataset_dict["train"] = dataset_dict["train"].rename_column("teacher_sequences", "labels")
+
+        # Restore the original config:
+        config.method_distil = "word_level"
+        config.distillation_num_beams = None
     
+
     # Initialize the models from pretrained checkpoints:
     if config.method_distil == "word_level":
         print(f"Loading teacher model `{config.teacher_model_name_or_path}`...")
-        teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device)  # type: ignore
+        teacher_model = WhisperForConditionalGeneration.from_pretrained(config.teacher_model_name_or_path).to(device).to(teacher_dtype)
         if torch.cuda.is_available():
             print("CUDA is available. Transforming the teacher model to use the BetterTransformer...")
             teacher_model = BetterTransformer.transform(teacher_model)
@@ -267,7 +275,7 @@ def main(config_filepath: str = typer.Argument(..., help="Path to the YAML confi
     # Same for the teacher model.
     if teacher_model is not None:  # ignore teacher model if not used
         teacher_model.generate = partial(teacher_model.generate, language=config.lang_name, task=config.task, use_cache=True)
-        # NOTE: The teacher model geneartion is NOT zero-shot.
+        # NOTE: The teacher model generation is NOT zero-shot.
     
     
     # Prepare training:

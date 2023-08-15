@@ -17,12 +17,12 @@ gradient_checkpointing: False
 dataset_name: ami_100h
 optim: adamw_torch
 learning_rate: 1e-5
-warmup_steps: 85
-eval_steps: 280
+warmup_steps: 300
+eval_steps: 600
 generation_num_beams: 1
-logging_steps: 140
-save_steps: 2800  # do not save the model during training
-num_train_epochs: 0.25
+logging_steps: 300
+save_steps: 600
+num_train_epochs: 1
 
 zero_shot_eval: False
 eval_batch_size: 256

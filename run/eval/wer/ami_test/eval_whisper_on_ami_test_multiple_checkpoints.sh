@@ -21,7 +21,7 @@
 #! Note that the job submission script will enforce no more than 32 cpus per GPU.
 #SBATCH --gres=gpu:1
 #! How much wallclock time will be required?
-#SBATCH --time=00:50:00
+#SBATCH --time=01:30:00
 #! What types of email messages do you wish to receive?
 #SBATCH --mail-type=NONE
 #! Uncomment this to prevent the job from being requeued (e.g. if
@@ -52,11 +52,13 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper_multiple_checkpoints.py \
-    checkpoints/distil_1_best/whisper_medium_prefinetuned_to_tiny/ami_100h-gzip_filter-full/checkpoint-6600 \
-    checkpoints/distil_1_best/whisper_medium_to_tiny/ami_100h-postprocess_gzip_filter-full/final \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/uniform/filter_only-full/checkpoint-3000 \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/uniform/filter_only-full/final \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/uniform/postprocess-full/final \
+    checkpoints/distil_k_best/whisper_medium_to_tiny/ami_100h/k_3/uniform/postprocess+filter-full/checkpoint-5400 \
     --dataset-name ami \
-    --batch-size 1024 >> $LOG 2> $ERR
-
+    --batch-size 1024 \
+    >> $LOG 2> $ERR
 
 #! #############################################
 

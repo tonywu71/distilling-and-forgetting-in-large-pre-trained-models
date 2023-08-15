@@ -2,111 +2,142 @@ import os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import numpy as np
+from typing import Optional, List
+from functools import partial
+
 import torch
+from torch.utils.data import DataLoader
 
 import pandas as pd
 from tqdm.auto import tqdm
 
-from transformers.models.whisper import WhisperProcessor
+from transformers.models.whisper import (WhisperTokenizer,
+                                         WhisperTokenizerFast,
+                                         WhisperFeatureExtractor)
+from optimum.bettertransformer import BetterTransformer
 
 from dataloader.dataset_for_evaluation.base_dataset_group import BaseDatasetGroup
 from dataloader.collator import DataCollatorSpeechSeq2SeqWithPadding
+from dataloader.preprocessing_train.preprocessing import prepare_dataset_fct
 from models.whisper_zero_cross_attention import WhisperForConditionalGenerationZeroCrossAttention
-from normalization.whisper_normalization import get_whisper_normalizer
-from utils.constants import DEFAULT_LABEL_TOKENIZED_COL
+from utils.constants import DEFAULT_LABEL_TOKENIZED_COL, DEFAULT_EVAL_BATCH_SIZE, DEFAULT_NUM_PROC
 
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-
-def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
-                                        ds_group: BaseDatasetGroup,
-                                        task: str="transcribe") -> pd.Series:
+def eval_whisper_implicit_lm_on_dataset_group(pretrained_model_name_or_path: str,
+                                              ds_group: BaseDatasetGroup,
+                                              batch_size: int = DEFAULT_EVAL_BATCH_SIZE,  # only 1 is supported for now
+                                              fast_tokenizer: bool = True,
+                                              task: str="transcribe",
+                                              zero_shot: bool = False) -> pd.Series:
     
     if ds_group.is_multilingual:
         assert ds_group.language is None, "Language must be `None` for multilingual datasets as it is inferred from the BaseDatasetGroup's metadata."
     
+    if torch.cuda.is_available():
+        device = "cuda:0"
+        torch_dtype = torch.float16  # see https://huggingface.co/learn/audio-course/chapter5/evaluation?fw=pt
+    elif torch.backends.mps.is_available():  # for Apple Silicon
+        device = torch.device('mps')
+        torch_dtype = torch.float32  # float16 not supported by MPS
+    else:
+        device = "cpu"
+        torch_dtype = torch.float32
+
     # Load model:
-    model_zero_cross_attention = WhisperForConditionalGenerationZeroCrossAttention.from_pretrained(pretrained_model_name_or_path).to(device)  # type: ignore
+    model = WhisperForConditionalGenerationZeroCrossAttention.from_pretrained(pretrained_model_name_or_path, torch_dtype=torch_dtype).to(device)
     
+    if device == "cuda:0":
+        model = BetterTransformer.transform(model)
+
     # Loop over the datasets:
-    perplexity_results = []
+    ppl_results = []
     tbar = tqdm(ds_group.items())
     
     for dataset_name, dataset in tbar:
-        tbar.set_description(f"Processing {dataset_name}...")
+        tbar.set_description(f"Evaluating {dataset_name}...")
         
         if not ds_group.is_multilingual:
             language = ds_group.language
         else:
             language = ds_group.ds_name_to_lang[dataset_name]
         
-        
-        # Handle the special case of the English dataset with the basic normalizer.
-        # NOTE: `whisper_norm` is actually unused for perplexity computation but we
-        # keep it for consistency with `eval_whisper_on_dataset`.
-        if language == "english-basic_normalizer":
-            whisper_norm = get_whisper_normalizer(language=None)
-            language = "english"
+        if zero_shot:
+            language = None
+            task = None
+
+        if fast_tokenizer:
+            tokenizer = WhisperTokenizerFast.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
         else:
-            whisper_norm = get_whisper_normalizer(language=language)
+            tokenizer = WhisperTokenizer.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
         
-        processor = WhisperProcessor.from_pretrained(pretrained_model_name_or_path,
-                                                     language=language,
-                                                     task=task)
+        feature_extractor = WhisperFeatureExtractor.from_pretrained(pretrained_model_name_or_path)
         
+        prepare_dataset = partial(prepare_dataset_fct,
+                                  tokenizer=tokenizer,
+                                  feature_extractor=feature_extractor)
+        dataset = dataset.map(prepare_dataset, num_proc=DEFAULT_NUM_PROC)
+
         # Load data collator:
-        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=processor.tokenizer,
-                                                             feature_extractor=processor.feature_extractor,
-                                                             replace_padded_with_loss_mask_for_labels=True)
+        data_collator = DataCollatorSpeechSeq2SeqWithPadding(tokenizer=tokenizer,
+                                                             feature_extractor=feature_extractor,
+                                                             return_attention_mask=True)
+
+        dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=data_collator)
+
+        # Placeholders for per-batch perplexities:
+        ppl_per_batch: List[torch.Tensor] = []
         
-        # Set the forced decoder ids:
-        model_zero_cross_attention.config.forced_decoder_ids = processor.get_decoder_prompt_ids(language=language, task=task)  # type: ignore
-        
-        # Placeholders for per-example perplexities:
-        perplexities_curr_dataset = []
-        
-        for data in dataset:
-            data = {
-                "input_features": processor.feature_extractor(data["audio"]["array"],  # type: ignore
-                                                              sampling_rate=processor.feature_extractor.sampling_rate).input_features[0],  # drop batch dimension  # type: ignore
-                DEFAULT_LABEL_TOKENIZED_COL: processor.tokenizer(data[DEFAULT_LABEL_STR_COL]).input_ids  # type: ignore
-            }
-            
-            # Collate the data into batches of size 1:
-            data = data_collator([data])  # type: ignore
-            
+        for batch in dataloader:
             # Note that we need to move the data to the device manually (which is not the case with Trainer):
-            input_features = data["input_features"].to(device)
-            tokenized_seq = data[DEFAULT_LABEL_TOKENIZED_COL].to(device)
-            
+            input_features = batch["input_features"].to(device).to(torch_dtype)
+            attention_mask = batch["attention_mask"].to(device)
+            tokenized_seq = batch[DEFAULT_LABEL_TOKENIZED_COL].to(device)
+
+            if not zero_shot:
+                tokenized_seq = concat_special_tokens(tokenized_seq,
+                                                      pretrained_model_name_or_path,
+                                                      language=language,
+                                                      task=task)
+                attention_mask_prefix = torch.Tensor([1, 1, 1, 1]).expand(attention_mask.shape[0], -1).to(attention_mask.device)
+                attention_mask = torch.cat([attention_mask_prefix, attention_mask[:, 2:]], dim=1)
+
             # Shift inputs for next-word prediction:
-            decoder_input_ids = tokenized_seq[:, :-1]
-            shifted_left_decoder_input_ids = tokenized_seq[:, 1:]
+            decoder_input_ids = tokenized_seq[:, 1:]  # [w1, w2, ..., wN, EOT]
+            decoder_input_ids_right_shifted = tokenized_seq[:, :-1]  # [SOT, w1, w2, ..., wN]
+            attention_mask_right_shifted = attention_mask[:, :-1]
 
             # One-step generation:
-            output = model_zero_cross_attention.forward(input_features=input_features,  # type: ignore
-                                                        decoder_input_ids=decoder_input_ids)  # type: ignore
-
-            # Convert logits to log-probabilities:
-            log_prob_all = torch.nn.functional.log_softmax(output.logits, dim=-1)  # type: ignore
+            with torch.no_grad():
+                output = model.forward(input_features=input_features,
+                                       decoder_input_ids=decoder_input_ids_right_shifted,
+                                       attention_mask=attention_mask_right_shifted)
             
+            # Convert logits to log-probabilities:
+            log_prob_all = torch.nn.functional.log_softmax(output.logits, dim=-1)  # (batch_size, seq_len, vocab_size)
+
             # Take probabilities for the ground-truth tokens:
-            log_prob = log_prob_all.take_along_dim(shifted_left_decoder_input_ids[..., None], dim=-1)
+            log_prob_tokens = log_prob_all.take_along_dim(decoder_input_ids[..., None], dim=-1).squeeze(dim=-1)  # (batch_size, seq_len)
+
+            # FIXME: The current implementation predicts is not correct as EOT will be discarded only for the longest sequence in the batch.
+            #        For the other sequences, the prediction for the EOT token will be taken into account in the perplexity computation.
+            #        We hypothesize that this is negligible as a well-trained model should predict that EOT follows EOT with a very high probability.
+            
+            # All the values associated to the pad tokens will be set to 0 in order to ignore them when we will sum.
+            log_prob_seq = log_prob_tokens.masked_fill(attention_mask_right_shifted.eq(0), 0).sum(dim=-1)  # (batch_size,)
+            mean_log_prob_seq = log_prob_seq / attention_mask_right_shifted.sum(dim=-1)  # (batch_size,)
             
             # Compute perplexity:
-            perplexity = torch.exp(-log_prob.mean()).item()
+            perplexity = torch.exp(-mean_log_prob_seq)  # (batch_size,)
             
             # Add to the list of perplexities:
-            perplexities_curr_dataset.append(perplexity)
+            ppl_per_batch.append(perplexity)
         
         # Add to the list of perplexities:
-        perplexity_results.append(np.mean(perplexities_curr_dataset))
-    
+        ppl_current_dataset = torch.cat(ppl_per_batch, dim=0).mean().item()
+        ppl_results.append(ppl_current_dataset)
     
     # Save the results:
-    results = pd.Series(perplexity_results, index=list(ds_group.keys()), name="Perplexity")
+    results = pd.Series(ppl_results, index=list(ds_group.keys()), name="Perplexity")
     results.index.name = "Dataset"
     
     # Compute the average WER:
@@ -116,3 +147,17 @@ def eval_whisper_implicit_lm_on_dataset(pretrained_model_name_or_path: str,
     results = results.round(2)
     
     return results
+
+
+def concat_special_tokens(x: torch.Tensor,
+                          pretrained_model_name_or_path: str,
+                          language: Optional[str] = None,
+                          task: Optional[str] = None) -> torch.Tensor:
+    """
+    Concatenate the language and task special tokens to the tokenized labels (batched).
+    Important: We assumed that all token sequences begin with `<sot>, <notimestamp>`.
+    """
+    tokenizer = WhisperTokenizer.from_pretrained(pretrained_model_name_or_path, language=language, task=task)
+    special_tokens = torch.LongTensor([tokenizer("").input_ids[:4]]).expand(x.shape[0], -1).to(x.device)
+    x = torch.cat([special_tokens, x[:, 2:]], dim=1)
+    return x

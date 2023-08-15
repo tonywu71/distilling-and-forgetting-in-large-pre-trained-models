@@ -8,9 +8,9 @@ from dataloader.dataset_for_training.dataset_loader_ami import remove_unnecessar
 
 
 
-class FABDataset(BaseDatasetGroup):
+class FADDataset(BaseDatasetGroup):
     """
-    Class that regroups a few datasets as part of the Forgetting Assessment Benchmark (FAB).
+    Class that regroups a few datasets as part of the Forgetting Assessment Dataset (FAD).
     """
     
     def __init__(self,
@@ -24,8 +24,7 @@ class FABDataset(BaseDatasetGroup):
             "ami_validation",
             "ami",
             "tedlium",
-            "librispeech_fr",
-            "librispeech_pt"
+            "librispeech_fr"
         ]
         self.is_multilingual = True
         self.ds_name_to_lang = {
@@ -33,8 +32,7 @@ class FABDataset(BaseDatasetGroup):
             "ami_validation": "en",
             "ami": "en",
             "tedlium": "en",
-            "librispeech_fr": "fr",
-            "librispeech_pt": "pt"
+            "librispeech_fr": "fr"
         }
         
         self._load_cache_dir_from_env_var()
@@ -44,8 +42,7 @@ class FABDataset(BaseDatasetGroup):
             "ami_validation": self.cache_dir_ami,
             "ami": self.cache_dir_ami,
             "tedlium": self.cache_dir_esb,
-            "librispeech_fr": self.cache_dir_mls,
-            "librispeech_pt": self.cache_dir_mls
+            "librispeech_fr": self.cache_dir_mls
         }
         
         self.post_init()
@@ -79,12 +76,6 @@ class FABDataset(BaseDatasetGroup):
                                            name="french",
                                            split="test",
                                            cache_dir=self.dataset_name_to_cache_dir["librispeech_fr"],
-                                           streaming=self.streaming,
-                                           use_auth_token=True),
-            "librispeech_pt": load_dataset(path="facebook/multilingual_librispeech",
-                                           name="portuguese",
-                                           split="test",
-                                           cache_dir=self.dataset_name_to_cache_dir["librispeech_pt"],
                                            streaming=self.streaming,
                                            use_auth_token=True)
         }

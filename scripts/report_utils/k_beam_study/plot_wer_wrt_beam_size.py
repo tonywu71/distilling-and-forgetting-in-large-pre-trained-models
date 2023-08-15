@@ -28,7 +28,7 @@ def main(dirpath: Path = typer.Argument(..., file_okay=False, dir_okay=True),
     # Load and concatenate all CSV files:
     list_df = [pd.read_csv(filepath).assign(k=filepath.stem) for filepath in list_filepaths]
     df = pd.concat(list_df).reset_index(drop=True)
-    df["k"] = df["k"].str.extract(r'[\w+]-k_(\d+)')
+    df["k"] = df["k"].str.extract(r'k_(\d+)')
     df = df.set_index("k").sort_index()
     
     # Print the DataFrame:

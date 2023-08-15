@@ -15,10 +15,17 @@ def save_edit_metrics_to_csv(df_edit_metrics: pd.DataFrame,
     """
     Save the edit metrics to a CSV file.
     """
-    if suffix:
-        savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}-{suffix}.csv"
+    if savepath:
+        savepath = str(Path(savepath).with_suffix(""))  # remove extension if there is one
     else:
-        savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}.csv"
+        savepath = extract_output_savepath_from_model_path(pretrained_model_name_or_path) + f"-{dataset_name}"
+    
+    if suffix:
+        savepath += f"-{suffix}"
+    
+    # Add extension:
+    savepath += ".csv"
+    
     Path(savepath).parent.mkdir(exist_ok=True, parents=True)
     df_edit_metrics.to_csv(savepath)
     print(f"Edit metrics saved to `{savepath}`.")
