@@ -52,7 +52,7 @@ echo "python `which python`": >> $LOG
 #! ###########################################################
 
 python scripts/eval_whisper.py \
-    checkpoints/finetuning/whisper_tiny/librispeech_clean_100h/checkpoint-3000 \
+    checkpoints/finetuning/whisper_tiny/ami_100h/checkpoint-3000 \
     --dataset-name esbdc \
     --batch-size 256 \
     --implicit-lm-ppl \
