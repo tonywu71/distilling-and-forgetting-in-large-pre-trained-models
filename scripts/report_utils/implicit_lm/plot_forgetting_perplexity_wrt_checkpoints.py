@@ -13,14 +13,14 @@ from utils.constants import DEFAULT_OUTPUT_DIR
 sns.set_theme(context="paper", style="ticks")
 
 
-def main(filepath: str, is_relative: bool=False):
+def main(filepath: str, is_relative: bool=False, legend_title: str="Dataset"):
     """
     Script that takes a CSV output from `compare_multiple_models_to_csv.py` and saves
     a plot of the evolution of perplexity with respect to fine-tuning checkpoints.
     """
     
     df = pd.read_csv(filepath).set_index("Dataset")
-    df.index.name = "Dataset"
+    df.index.name = legend_title
     df = df.T
     df.index = df.index.str.extract(r'checkpoint-(\d+)-implicit_lm-ppl[-\w]*').astype(int).values.flatten()
 
