@@ -36,7 +36,7 @@ def postprocess_teacher_outputs(dataset_dict: DatasetDict,
                                                                                                             task=config.task)
         dataset_dict = dataset_dict.map(map_function_to_restore_missing_special_tokens, num_proc=DEFAULT_NUM_PROC)
 
-    else:
+    else:  # k > 1
         tokenizer = WhisperTokenizer.from_pretrained(config.teacher_model_name_or_path, language=config.lang_name, task=config.task)
 
         dataset_dict = dataset_dict.map(lambda x: {"teacher_text": tokenizer.batch_decode(x["teacher_sequences"], skip_special_tokens=True)},

@@ -15,13 +15,14 @@ def filter_teacher_outputs(dataset_dict: DatasetDict,
         if config.distillation_num_beams == 1:
             dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
         else:
-            dataset_dict["train"] = dataset_dict["train"].map(lambda x: {"teacher_sequences_copy": x["teacher_sequences"],
-                                                                         "teacher_sequences": x["teacher_sequences"][0]},
-                                                                num_proc=DEFAULT_NUM_PROC)
-            dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
-            dataset_dict["train"] = dataset_dict["train"].map(lambda x: {"teacher_sequences": x["teacher_sequences_copy"]},
-                                                                num_proc=DEFAULT_NUM_PROC)
-            dataset_dict["train"] = dataset_dict["train"].remove_columns("teacher_sequences_copy")
+            for k in range(config.distillation_num_beams):
+                dataset_dict["train"] = dataset_dict["train"].map(lambda x: {"teacher_sequences_copy": x["teacher_sequences"],
+                                                                            "teacher_sequences": x["teacher_sequences"][k]},
+                                                                    num_proc=DEFAULT_NUM_PROC)
+                dataset_dict["train"] = filter_samples_1_best(ds=dataset_dict["train"], config=config)
+                dataset_dict["train"] = dataset_dict["train"].map(lambda x: {"teacher_sequences": x["teacher_sequences_copy"]},
+                                                                    num_proc=DEFAULT_NUM_PROC)
+                dataset_dict["train"] = dataset_dict["train"].remove_columns("teacher_sequences_copy")
     
     else:  # word-level
         config.method_distil = "seq_level_uniform"  # hotfix for `smart_load_dataset_with_k_beam_search`
