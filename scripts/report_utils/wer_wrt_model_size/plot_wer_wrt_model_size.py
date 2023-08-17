@@ -18,7 +18,9 @@ sns.set_theme(context="paper", style="ticks")
 def main(datapath: str = typer.Argument(..., help="Path to CSV file containing WERs."),
          log: bool = typer.Option(False, "--log", "-l", help="Whether to plot the x-axis on a log scale."),
          plot_expected: bool = typer.Option(False, "--plot-expected", "-i", help="Whether to plot the expected distilled model."),
-         figsize: Tuple[float, float] = typer.Option((7, 3), help="Figure size (width, height).")):
+         figsize: Tuple[float, float] = typer.Option((7, 3), help="Figure size (width, height).",),
+         markersize: int = typer.Option(400, help="Size of the markers."),
+         alpha: float = typer.Option(1.0, help="Alpha value for the markers.")):
     """
     `datapath` must be the filepath of a manually created CSV file containing the WER and the model size for each model.
     
@@ -39,7 +41,8 @@ def main(datapath: str = typer.Argument(..., help="Path to CSV file containing W
     df = df.dropna(subset=["WER (%)"])
     
     # Prepare markers:
-    markers = {model: "o" for model in df["Model"].unique()}
+    list_vanilla_models = ["tiny", "base", "small", "medium", "large", "large-v2"]
+    markers = {model: "o" if model in list_vanilla_models else "X" for model in df["Model"].unique()}
     
     # Add expected distilled model:
     if plot_expected:
@@ -57,7 +60,7 @@ def main(datapath: str = typer.Argument(..., help="Path to CSV file containing W
     fig, ax = plt.subplots(figsize=figsize)
 
     sns.scatterplot(data=df, x="Size (M parameters)", y="WER (%)", hue="Model",
-                    s=400, style="Model", markers=markers, ax=ax)  # type: ignore
+                    s=markersize, style="Model", markers=markers, alpha=alpha, ax=ax)  # type: ignore
     if log:
         plt.xscale("log")
         

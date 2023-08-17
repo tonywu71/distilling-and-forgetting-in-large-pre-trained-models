@@ -3,6 +3,8 @@ import typer
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 
@@ -16,7 +18,8 @@ sns.set_theme(context="paper", style="ticks")
 
 
 def main(k: int = typer.Argument(..., help="Maximum value of k."),
-         title: bool = typer.Option(False, "-t", "--title", help="Whether to add a title to the plot.")):
+         title: bool = typer.Option(False, "-t", "--title", help="Whether to add a title to the plot."),
+         figsize: Tuple[int, int] = typer.Option((6, 2), "-s", "--figsize", help="Figure size.")):
     LIST_BETA = [0.1, 1, 2, 5]
     assert k >= 1, "`k` must be greater than or equal to 1."
     
@@ -29,16 +32,17 @@ def main(k: int = typer.Argument(..., help="Maximum value of k."),
     df = df.set_index("k")
     df = df / df.sum()  # normalize the weights
     
-    df = df.add_prefix("beta = ")
+    df = df.add_prefix(r"$\beta = ")
+    df = df.add_suffix(r"$")
     
     # Plot:
-    df.plot.bar(subplots=True, legend=False, layout=(1, -1), sharey=True, figsize=(8, 3))
+    df.plot.bar(subplots=True, legend=False, layout=(1, -1), sharey=True, figsize=figsize)
     if title:
         plt.suptitle(r"Distribution of $w_k$ for $\beta \in \{0.1, 1, 2, 5\}$")
     
     # Save figure:
     savepath = (DEFAULT_OUTPUT_DIR / f"weight_seq_level_ranked_k_{k}").with_suffix(".png")
-    savepath.mkdir(parents=True, exist_ok=True)
+    savepath.parent.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     plt.savefig(savepath)
     print(f"Saved plot to `{savepath}`.")
