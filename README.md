@@ -8,10 +8,12 @@ Tony Wu, tw581@cam.ac.uk
 
 Repository containing the code for my dissertation on "Distilling and Forgetting in Large Pre-Trained Models" for the MPhil in Machine Learning and Machine Intelligence (MLMI) at the University of Cambridge.
 
+> [!NOTE]
+> The complete thesis can be found on the Cambridge MLMI website [[url]](https://www.mlmi.eng.cam.ac.uk/files/2022_-_2023_dissertations/distilling_and_forgetting_in_pre-trained_models_public.pdf).
+
 Project supervisor: Mark Gales (mjfg100@cam.ac.uk)
+
 Co-supervisors: Mengjie Qian (mq227@cam.ac.uk), Adian Liusie (al826@eng.cam.ac.uk)
-
-
 
 ## TL;DR
 
